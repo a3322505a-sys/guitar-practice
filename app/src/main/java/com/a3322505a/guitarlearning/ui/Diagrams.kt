@@ -23,10 +23,6 @@ import com.a3322505a.guitarlearning.music.*
 import kotlin.math.hypot
 
 enum class Hint(val title: String) { FULL("完整提示"), ROOTS("仅主音／根音"), HIDDEN("隐藏音位／指法") }
-val Ink = Color(0xFF203F35)
-val Green = Color(0xFF176B53)
-val Gold = Color(0xFFFFCE77)
-val Paper = Color(0xFFFFFBF3)
 
 private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: Float, color: Color = Ink, size: Int = 13) {
     val layout = measurer.measure(value, TextStyle(color=color, fontSize=size.sp))
@@ -34,15 +30,15 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 }
 
 @Composable
-fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, onTap: (Position)->Unit) {
+fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit) {
     val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val low = positions.minOf { it.fret }
     val high = positions.maxOf { it.fret }
     val columns = high-low+1
     val measurer=rememberTextMeasurer()
-    val diagramHeight=if(LocalConfiguration.current.screenHeightDp<500) 176.dp else 238.dp
+    val diagramHeight=height
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val width=maxOf(maxWidth, (columns*48+46).dp)
+        val width=maxOf(maxWidth, (columns*36+56).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
             Canvas(Modifier.width(width).height(diagramHeight).pointerInput(visible, enabled, onTap) {
                 if(enabled) detectTapGestures { tap ->
@@ -58,7 +54,7 @@ fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boo
                 val left=46.dp.toPx(); val cell=(size.width-left-10.dp.toPx())/columns
                 val vertical=size.height/238.dp.toPx()
                 val top=40.dp.toPx()*vertical; val row=32.dp.toPx()*vertical
-                drawRect(Color(0xFFF2E8D5), Offset(left,top-12.dp.toPx()*vertical), androidx.compose.ui.geometry.Size(size.width-left,5*row+24.dp.toPx()*vertical))
+                drawRoundRect(Color(0xFFEDF7F0), Offset(left,top-12.dp.toPx()*vertical), androidx.compose.ui.geometry.Size(size.width-left,5*row+24.dp.toPx()*vertical), androidx.compose.ui.geometry.CornerRadius(8.dp.toPx()))
                 for(i in 0..columns) drawLine(Color(0xFFB9AA94),Offset(left+i*cell,top-12.dp.toPx()*vertical),Offset(left+i*cell,top+5*row+12.dp.toPx()*vertical),1.2.dp.toPx())
                 for(i in 0 until columns) label(measurer, if(low+i==0) "0 / O" else "${low+i}",left+(i+0.5f)*cell,16.dp.toPx()*vertical)
                 if(low==0) drawLine(Ink,Offset(left+cell,top-12.dp.toPx()*vertical),Offset(left+cell,top+5*row+12.dp.toPx()*vertical),3.dp.toPx())
@@ -71,7 +67,7 @@ fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boo
                     val center=Offset(left+(p.fret-low+0.5f)*cell,top+(p.string-1)*row)
                     val root=key.isRoot(p)
                     val active=p in current
-                    drawCircle(if(active) Color(0xFFF5A44D) else if(root) Gold else Green,13.dp.toPx()*vertical,center)
+                    drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
                     if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
                     label(measurer,if(degrees) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
                 }
@@ -82,9 +78,9 @@ fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boo
 }
 
 @Composable
-fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boolean, onTap: (Position)->Unit) {
+fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 300.dp, onTap: (Position)->Unit) {
     val measurer=rememberTextMeasurer()
-    val diagramHeight=if(LocalConfiguration.current.screenHeightDp<500) 200.dp else 300.dp
+    val diagramHeight=height
     val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter { it.midi%12==chord.root }; Hint.HIDDEN -> emptyList() }
     Canvas(Modifier.fillMaxWidth().height(diagramHeight).pointerInput(chord,hint,enabled,onTap) {
         if(enabled) detectTapGestures { tap ->
@@ -115,7 +111,7 @@ fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boo
             val changed=chord.name in listOf("D","Dm","A","Am") && if(chord.name.startsWith("D")) p.string==1 else p.string==2
             val active=p in current
             if(p.fret>0 || hint==Hint.ROOTS) {
-                drawCircle(if(active) Color(0xFFF5A44D) else if(root) Gold else Green,13.dp.toPx()*vertical,Offset(x,y))
+                drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,Offset(x,y))
                 label(measurer,if(hint==Hint.FULL && p.fret>0) chord.fingers[6-p.string].toString() else "根",x,y,if(root||active) Ink else Color.White)
             }
             if(active || changed && hint==Hint.FULL) drawCircle(if(active) Ink else Color(0xFF9364AE),17.dp.toPx()*vertical,Offset(x,y),style=Stroke(2.dp.toPx()))

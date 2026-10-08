@@ -3,29 +3,31 @@ package com.a3322505a.guitarlearning.audio
 import com.a3322505a.guitarlearning.practice.*
 import kotlin.math.*
 
-/** CC0 FreePats samples, selected by closest key and linearly resampled. */
-class Sampler(load: (Int) -> ByteArray) {
-    private val roots = listOf(36,41,45,48,52,55,59,64,67,71,74,80,85)
+/** CC0 samples selected by bank metadata; rendering never chooses a guitar fingering. */
+class Sampler(private val bank: SoundBank = SoundBank.NYLON, load: (Int) -> ByteArray) {
+    private val roots = bank.roots
     private val samples = roots.associateWith { root ->
         val bytes = load(root)
         val wave = FloatArray(bytes.size/2) { i ->
             ((bytes[i*2].toInt() and 255) or (bytes[i*2+1].toInt() shl 8)).toShort()/32768f
         }
-        val head = wave.take(7938)
+        require(wave.isNotEmpty()) { "Empty guitar sample $root" }
+        val head = wave.take(bank.sampleRate * 360 / 1000)
         val rms = sqrt(head.sumOf { (it*it).toDouble() } / head.size)
-        val gain = min(0.23/rms, 0.88/wave.maxOf { abs(it) })
+        val gain = min(0.23/max(rms, 0.00001), 0.88/max(wave.maxOf { abs(it) }, 0.00001f))
         FloatArray(wave.size) { wave[it] * gain.toFloat() }
     }
     fun note(midi: Int, frames: Int): FloatArray {
         val root = roots.minBy { abs(it-midi) }
         val wave = samples.getValue(root)
-        val ratio = 22050.0/SAMPLE_RATE * 2.0.pow((midi-root)/12.0)
-        val release = min(frames/3, SAMPLE_RATE*60/1000)
+        require(frames > 0)
+        val ratio = bank.sampleRate.toDouble()/SAMPLE_RATE * 2.0.pow((midi-root)/12.0)
+        val release = max(1, min(frames/3, SAMPLE_RATE*bank.releaseMs/1000))
         return FloatArray(frames) { i ->
             val at = i*ratio
             val index = at.toInt()
             val value = if(index >= wave.lastIndex) 0f else wave[index] + (wave[index+1]-wave[index])*(at-index).toFloat()
-            val attack = min(1.0, i/(SAMPLE_RATE*0.008))
+            val attack = min(1.0, i/(SAMPLE_RATE*bank.attackMs/1000))
             val tail = min(1.0, (frames-i-1).toDouble()/release)
             (value * attack * tail).toFloat()
         }

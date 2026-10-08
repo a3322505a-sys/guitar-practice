@@ -7,9 +7,17 @@ const val QUARTER = 12
 const val BAR = 48
 const val SAMPLE_RATE = 44100
 
-data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false)
+data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false) {
+    // An onset is unique within a finite sequence. All its chord tones share this identity.
+    val id get() = tick
+}
 data class Section(val tick: Int, val chord: String)
 data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList()) {
+    init {
+        require(length > 0)
+        require(events.map { it.id }.distinct().size == events.size)
+        require(events.all { it.tick >= 0 && it.duration > 0 && it.tick + it.duration <= length })
+    }
     val route get() = events.flatMap { it.positions }.distinct()
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
     fun sectionAt(tick: Double) = sections.indexOfLast { it.tick <= tick }

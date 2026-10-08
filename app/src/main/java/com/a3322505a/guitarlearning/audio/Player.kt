@@ -12,11 +12,12 @@ import java.util.concurrent.Executors
 enum class Phase { IDLE, PREPARING, PLAYING, PAUSED, ENDED, ERROR }
 data class Progress(val phase: Phase = Phase.IDLE, val tick: Double = 0.0, val message: String = "选择内容，点音探索，或开始练习")
 
-class Player(context: Context) {
+class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = null) {
     private val app = context.applicationContext
     private val handler = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor()
-    private val sampler by lazy { Sampler { root -> app.assets.open("guitar/$root.pcm").use { it.readBytes() } } }
+    private val bank = SoundBank.NYLON
+    private val sampler by lazy { Sampler(bank) { root -> app.assets.open("${bank.folder}/$root.pcm").use { it.readBytes() } } }
     private val audioManager = app.getSystemService(AudioManager::class.java)
     private val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(attributes)
@@ -26,7 +27,7 @@ class Player(context: Context) {
     @Volatile var click = true
     var progress by mutableStateOf(Progress())
         private set
-    var session: Session? = null
+    var session: Session? by mutableStateOf(null)
         private set
     private var resumeAt = 0.0
     val active get() = progress.phase == Phase.PLAYING || progress.phase == Phase.PREPARING
@@ -37,7 +38,7 @@ class Player(context: Context) {
         resumeAt = 0.0
         play(session!!, resumeAt)
     }
-    fun resume() { session?.let { play(it, resumeAt) } }
+    fun resume() { if (progress.phase == Phase.PAUSED) session?.let { play(it, resumeAt) } }
     fun restart() { session?.let { resumeAt=0.0; play(it, 0.0) } }
     fun pause() {
         if(!active) return
@@ -70,33 +71,31 @@ class Player(context: Context) {
         }
         progress = Progress(Phase.PREPARING, fromTick, "准备声音…")
         worker.execute {
-            var track: AudioTrack? = null
+            var output: PlaybackSink? = null
             try {
                 val pcm = Pcm(current, sampler)
                 if(id != generation) return@execute
                 val chunkSize = 512
-                track = AudioTrack.Builder().setAudioAttributes(attributes)
-                    .setAudioFormat(AudioFormat.Builder().setSampleRate(SAMPLE_RATE).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
-                    .setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(maxOf(2048, AudioTrack.getMinBufferSize(SAMPLE_RATE,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT))).build()
+                output = sinkFactory?.invoke() ?: AndroidSink(attributes)
                 val origin = current.frame(fromTick)
                 val end = current.totalTicks?.let { current.frame(it.toDouble()) }
                 var written = origin
-                track.play()
+                output.play()
                 while(id == generation && (end == null || written < end)) {
                     val count = if(end==null) chunkSize else minOf(chunkSize.toLong(),end-written).toInt()
                     val bytes = pcm.block(written, count, guitar, click)
                     var offset=0
                     while(offset<count && id==generation) {
-                        val n=track.write(bytes,offset,count-offset,AudioTrack.WRITE_BLOCKING)
+                        val n=output.write(bytes,offset,count-offset)
                         check(n>0) { "音频输出失败 ($n)" }
                         offset+=n
                     }
                     written+=offset
-                    val heard=origin+(track.playbackHeadPosition.toLong() and 0xffffffffL)
+                    val heard=origin+output.heardFrames
                     publish(id, Progress(Phase.PLAYING,current.tick(heard),""))
                 }
                 while(id==generation && end!=null) {
-                    val heard=origin+(track.playbackHeadPosition.toLong() and 0xffffffffL)
+                    val heard=origin+output.heardFrames
                     if(heard>=end) break
                     publish(id, Progress(Phase.PLAYING,current.tick(heard),""))
                     Thread.sleep(12)
@@ -105,9 +104,7 @@ class Player(context: Context) {
             } catch(error: Exception) {
                 publish(id,Progress(Phase.ERROR,message=error.message ?: "音频输出失败"))
             } finally {
-                track?.pause()
-                track?.flush()
-                track?.release()
+                output?.close()
             }
         }
     }

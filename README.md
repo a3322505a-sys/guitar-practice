@@ -1,46 +1,48 @@
 # 吉他练习
 
-独立的个人 Android 工程，Kotlin / Compose，一个 `:app` 模块。按 [执行方案](docs/执行.md) 实现离线音阶和开放和弦练习。
+独立的离线 Android 工程，Kotlin / Compose，单个 `:app` 模块。本轮按 [施工方案](docs/施工方案-20261008.md) P0—P5 实施，参考图仅用于视觉方向。
 
-首版内容：C 大调五型、A 自然小调视角、六类音阶练法、弦范围／一八度选择、四分／八分音符；C、Am、G、Em、D、Dm、E、A 的具体开放指法，以及逐弦检查、两和弦转换、规则下拨、简单分解。内容直接开放，可点音、听示范、跟练和撤提示自行对照。
+## 本轮更新
 
-默认 60 BPM、4/4、跟练预备 1 小节、4 次循环；示范播放 1 遍。暂停／后台停止推进和发声，手动继续从所在小节起点恢复。仅保存音名、提示和声音开关等使用设置，不读写 001 的学习档案。
+- 奶油白、柔和糖果色、大圆角卡片与绿色主操作；设置收进面板，练习图示成为主区域。导航、播放控制与系统安全区各自留出空间。
+- 指板／六线谱手动切换。宽窗默认六线谱，窄窗默认指板；手动偏好保存。六线谱与指板共用原练习事件及 AudioTrack 实际消耗帧，切换不重播。
+- 六线谱保留真实弦品、时值、多音和弦、扫弦及分解；含四分、八分、符梁、长音、休止与延音连线，按可读宽度分成多小节、多行，跟随当前谱行。
+- 统一撤提示；当前／下一目标、拍点与循环进度；系统配置重建保留参数和播放器。改变内容、速度或循环会结束旧序列，下次从头开始。
+- 新默认音源为 FreePats CC0 尼龙弦实录，22 个键中心覆盖本轮音域。新旧单音、开放和弦、分解经同一 App 渲染，并匹配响度供试听。
 
-代码保持直接：音乐事实与数据、有限事件编排、PCM 混音与播放、图示、页面各自负责一件事。没有旧课程、判题、数据库、通用课程引擎或未实现功能的空接口。设备输出错误会显示原因；取消和释放、音位边界、签名身份检查仍是实际功能所需。
+原有六类音阶练法、八个开放和弦、四类和弦练习、点音探索、整和弦／逐弦试听、声音开关、循环与后台暂停均保留。不新增成绩、课程、账号、导入导出或内容库；没有修改 001/002。
 
-## 本地入口
+## 交付入口
 
-- 签名 APK：[guitar-practice-3.0.0-local01-v49.apk](output/guitar-practice-3.0.0-local01-v49.apk)
-- [验收记录和未验证项](docs/验收记录.md)
-- [来源与许可](docs/来源与许可.md)
-- [本地组件渲染图](docs/screenshots/phone-scale.png)，属于 Robolectric 原生渲染，不是真机截图。
+- 版本：`3.1.0-local02` / `versionCode 50`，包名 `com.a3322505a.guitarlearning`，沿用原长期签名。
+- APK：[guitar-practice-3.1.0-local02-v50.apk](output/guitar-practice-3.1.0-local02-v50.apk)
+- [本轮验收与未验证项](docs/验收记录.md)、[阶段记录](docs/本轮施工记录.md)、[来源与许可](docs/来源与许可.md)
+- [手机和弦指板](docs/screenshots/v50/phone-chord.png)、[平板多行六线谱](docs/screenshots/v50/tablet-multiline-tab.png)
+- [新旧音色试听](output/audio-comparison/preview-old-then-new.wav)；单独片段、响度与哈希见 [音色对照说明](output/audio-comparison/README.md)。
 
-应用 ID `com.a3322505a.guitarlearning`，版本 `3.0.0-local01` / `versionCode 49`，沿用 001 长期签名。已核实源码基线是 alpha31 / 48；这不等于核实用户手机当前安装版本。
+截图是 Robolectric 原生组件渲染，不是真机或模拟器安装截图。真机覆盖安装、音画同步与主观听感尚待实际设备验证；代码检查与输出一致性不替代这些结论。本轮仅本地交付，没有远端发布。
 
-**安装运行与真机音画同步尚未验证，当前不能标为 P4 全部验收完成。** 详见验收记录。项目仅保存在本机，没有添加远端或推送 GitHub。
+## 本地构建
 
-## 构建
-
-本机复用现有 JDK 17 / Android SDK 35，脚本只设置其进程环境：
+本机脚本复用 JDK 17、SDK 35，不修改系统 Java、网络或签名资料：
 
 ```powershell
-.\scripts\build-local.ps1 testDebugUnitTest lintDebug assembleRelease
+.\scripts\build-local.ps1 --offline --no-daemon --max-workers=2 testDebugUnitTest lintDebug assembleRelease
 .\scripts\sign-local.ps1
 ```
 
-其他机器设置 JDK 17 和 Android SDK，配置 `local.properties` 后使用 `./gradlew testDebugUnitTest lintDebug assembleRelease`。Gradle 8.9、AGP 8.7.3、Kotlin 2.0.21 和 Compose BOM 2024.12.01 沿用已构建的工具版本；升级依赖留到后续有需要时处理。
+其他机器配置 JDK 17、Android SDK 35 和 `local.properties` 后运行 `./gradlew testDebugUnitTest lintDebug assembleRelease`。依赖版本沿用已验证基线，详见 Gradle 文件。签名脚本读取已有密钥路径，检查公有证书、版本元数据和签名；私钥及密码不入仓库。已签名同名产物不覆盖。
 
-签名脚本使用已有私钥及密码文件，校验证书后执行 zipalign / apksigner。仓库只保存路径示例和公有证书指纹，私钥、密码及本地工具不提交。
-
-## 修改入口
+## 代码入口
 
 | 文件 | 职责 |
 | --- | --- |
-| `music/Music.kt` | 标准调弦、音名、调性、五型与具体和弦数据 |
-| `practice/Sequence.kt` | 音阶路线、和弦弦序、时值、休止、循环与恢复小节 |
-| `audio/Pcm.kt` | CC0 采样重采样、整和弦／扫弦混音、绝对 tick 到采样帧 |
-| `audio/Player.kt` | 唯一播放入口，读取 AudioTrack 实际播放位置、取消、释放 |
-| `ui/Diagrams.kt` | 横向指板、竖向和弦图与同一几何的点击命中 |
-| `ui/PracticeApp.kt` | 两入口、选择、自检、播放控制与使用设置 |
+| `music/Music.kt` | 调弦、五型与开放和弦事实 |
+| `practice/Sequence.kt` | 原练习编排、事件、多音分组、循环与继续位置 |
+| `practice/TabNotation.kt` | 原事件的制谱分段、连线、谱行与统一 Cursor |
+| `audio/SoundBank.kt`、`audio/Pcm.kt` | 素材配置、音长、重采样、扫弦展开与混音 |
+| `audio/Player.kt`、`audio/PlaybackSink.kt` | 唯一会话与设备输出，按实际消耗帧推进 |
+| `ui/Diagrams.kt`、`ui/Tablature.kt` | 图示、原弦品、点击区域与谱行跟随 |
+| `ui/PracticeApp.kt`、`ui/Style.kt` | 页面参数、响应式布局、设置及视觉语义 |
 
-以上路径均在 `app/src/main/java/com/a3322505a/guitarlearning/`。现有 001、002 工程保留为来源，没有改动其源码。
+以上 Kotlin 文件位于 `app/src/main/java/com/a3322505a/guitarlearning/`。首版证据保留在 [v49 历史记录](docs/首版验收记录-v49.md)，原执行方案继续作为首版背景。

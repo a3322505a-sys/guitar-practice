@@ -17,7 +17,10 @@ if((Get-FileHash -LiteralPath $cert -Algorithm SHA256).Hash -ne '43b7af607adb264
 $aligned = Join-Path $output 'aligned-unsigned.apk'
 & (Join-Path $sdkTools 'zipalign.exe') -f -p 4 (Join-Path $project 'app\build\outputs\apk\release\app-release-unsigned.apk') $aligned
 if($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }
-$signed = Join-Path $output 'guitar-practice-3.0.0-local01-v49.apk'
+$metadata = Get-Content -LiteralPath (Join-Path $project 'app\build\outputs\apk\release\output-metadata.json') -Raw | ConvertFrom-Json
+$version = $metadata.elements[0]
+$signed = Join-Path $output ("guitar-practice-{0}-v{1}.apk" -f $version.versionName, $version.versionCode)
+if(Test-Path -LiteralPath $signed) { throw "Signed output already exists: $signed" }
 & $java -jar (Join-Path $sdkTools 'lib\apksigner.jar') sign --ks $Keystore --ks-key-alias guitar-release --ks-pass "file:$PasswordFile" --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out $signed $aligned
 if($LASTEXITCODE -ne 0) { throw 'Signing failed' }
 & $java -jar (Join-Path $sdkTools 'lib\apksigner.jar') verify --verbose --print-certs $signed

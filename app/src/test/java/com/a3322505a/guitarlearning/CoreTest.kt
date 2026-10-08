@@ -114,7 +114,7 @@ class CoreTest {
             assertEquals(round(ticks*44100*60/(137*12)).toLong(),s.frame(ticks))
         }
     }
-    private fun sampler() = Sampler { root -> File("src/main/assets/guitar/$root.pcm").readBytes() }
+    private fun sampler() = Sampler(SoundBank.NYLON) { root -> File("src/main/assets/guitar-nylon/$root.pcm").readBytes() }
     private fun energy(p: ShortArray) = p.sumOf { it.toDouble()*it }
     @Test fun realPcmOnsetsRestsMuteAndLoopSeam() {
         val seq=Sequence(listOf(Event(0,6,listOf(Position(5,3))),Event(6,6,emptyList()),Event(12,12,listOf(Position(4,0))),Event(24,24,emptyList())),48,"test")
