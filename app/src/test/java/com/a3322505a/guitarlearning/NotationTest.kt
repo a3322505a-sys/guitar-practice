@@ -48,10 +48,10 @@ class NotationTest {
         assertTrue(tabSystems(bars,1200).any { it.size>1 })
         val session=Session(Routes.scale(ScaleOptions()).sequence!!,60,true,4)
         assertTrue(session.cursor(30.0).pre)
-        val c=session.cursor(210.0)
+        val c=session.cursor(306.0)
         assertEquals(1,c.loop); assertEquals(1,c.bar); assertEquals(1,c.beat)
         assertEquals(66.0,c.localTick,0.0)
-        assertEquals(3,session.cursor(432.0).loop)
-        assertEquals(1,session.cursor(432.0).bar)
+        assertEquals(3,session.cursor(672.0).loop)
+        assertEquals(1,session.cursor(672.0).bar)
     }
 }

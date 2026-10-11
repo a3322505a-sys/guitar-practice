@@ -33,6 +33,8 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
     val state = rememberLazyListState()
     BoxWithConstraints(modifier.fillMaxSize().testTag("tablature")) {
         val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+        // Short landscape windows trim empty margins, while preserving string and digit sizes.
+        val systemHeight = (maxHeight.value / fontScale).coerceIn(196f,230f)
         val rows = remember(bars, maxWidth, fontScale) { tabSystems(bars, (maxWidth.value / fontScale).toInt()) }
         val target = cursor?.bar?.let { bar -> rows.indexOfFirst { row -> row.any { it.index == bar } } } ?: 0
         LaunchedEffect(sequence, target, following) {
@@ -40,7 +42,7 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
         }
         LazyColumn(state=state, verticalArrangement=Arrangement.spacedBy(12.dp)) {
             itemsIndexed(rows) { index, row ->
-                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale)
+                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,systemHeight)
             }
         }
     }
@@ -53,7 +55,7 @@ private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Posit
 }
 
 @Composable
-private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float) {
+private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, height: Float) {
     val measurer = rememberTextMeasurer()
     val description = buildString {
         append("六线谱，第 ${bars.first().index+1} 至 ${bars.last().index+1} 小节。上方 1 弦，下方 6 弦。")
@@ -63,22 +65,22 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                 if(s.strum) append("下拨，从有效低音弦到高音弦；")
         } }
     }
-    Canvas(Modifier.fillMaxWidth().height((230*scale).dp).semantics { contentDescription=description }) {
+    Canvas(Modifier.fillMaxWidth().height((height*scale).dp).semantics { contentDescription=description }) {
         val u=1.dp.toPx()*scale
         val left=32*u
-        val top=62*u
+        val top=(62-(230-height)*.7f)*u
         val gap=18*u
-        val rhythm=205*u
+        val rhythm=(height-25)*u
         val usable=size.width-left-8*u
         val total=bars.sumOf { it.readableWidth() }
         var x0=left
         text(measurer,"TAB",13*u,top+2.5f*gap,Muted,11)
         for(string in 1..6) text(measurer,"$string",24*u,top+(string-1)*gap,Muted,10)
-        if(bars.first().index == 0) text(measurer,"4/4",14*u,28*u,Ink,12)
+        if(bars.first().index == 0) text(measurer,"4/4",14*u,maxOf(14*u,top-34*u),Ink,12)
         for(bar in bars) {
             val width=usable*bar.readableWidth()/total
             val current=cursor?.pre == false && cursor.bar == bar.index
-            if(current) drawRoundRect(Mint,Offset(x0-3*u,4*u),Size(width,218*u),androidx.compose.ui.geometry.CornerRadius(12*u))
+            if(current) drawRoundRect(Mint,Offset(x0-3*u,4*u),Size(width,(height-12)*u),androidx.compose.ui.geometry.CornerRadius(12*u))
             text(measurer,"${bar.index+1}",x0+10*u,16*u,if(current) Green else Muted,12)
             for(i in 0..5) drawLine(Color(0xFFA0B4A9),Offset(x0,top+i*gap),Offset(x0+width,top+i*gap),u*.8f)
             drawLine(Ink,Offset(x0,top),Offset(x0,top+5*gap),u)
@@ -92,7 +94,7 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                 val notes=visible(s,hint,key)
                 if(hint != Hint.HIDDEN) {
                     val previous=bar.segments.getOrNull(i-1)
-                    if(s.chord!=null && (previous?.chord != s.chord || i==0) && !s.tieIn) text(measurer,s.chord,x,36*u,PurpleInk,13)
+                    if(s.chord!=null && (previous?.chord != s.chord || i==0) && !s.tieIn) text(measurer,s.chord,x,top-26*u,PurpleInk,13)
                     if(s.rest) rest(s.value, x,rhythm-10*u,u)
                     else {
                         for(p in notes) {

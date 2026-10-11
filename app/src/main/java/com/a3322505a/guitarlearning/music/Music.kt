@@ -34,11 +34,22 @@ object Patterns {
     val s1 = listOf(Position(5,3), Position(4,0), Position(4,2), Position(4,3), Position(3,0), Position(3,2), Position(2,0), Position(2,1))
 }
 
-data class Chord(val name: String, val root: Int, val third: Int, val frets: List<Int?>, val fingers: List<Int>) {
+data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
-    val arpeggio = listOf(positions.first(), positions.first { it.string == 3 }, positions.first { it.string == 2 }, positions.first { it.string == 1 })
-    fun role(p: Position) = when (p.midi % 12) { root -> "根音"; third -> "三音"; else -> "五音" }
+    val arpeggio get() = listOf(positions.first()) + positions.filter { it.string <= 3 }
+    fun role(p: Position) = when (p.midi % 12) {
+        root -> "根音"
+        third -> "三音"
+        else -> when ((p.midi - root) % 12) {
+            2 -> "二音（挂留）"
+            5 -> "四音（挂留）"
+            7 -> "五音"
+            10 -> "小七音"
+            11 -> "大七音"
+            else -> "非和弦音"
+        }
+    }
     fun label(index: Int) = frets[index]?.let { Music.name(Music.openMidi[5-index] + it) } ?: "X"
 }
 
@@ -52,6 +63,11 @@ object Chords {
         Chord("Dm", 2, 5, listOf(null,null,0,2,3,1), listOf(0,0,0,2,3,1)),
         Chord("E", 4, 8, listOf(0,2,2,1,0,0), listOf(0,2,3,1,0,0)),
         Chord("A", 9, 1, listOf(null,0,2,2,2,0), listOf(0,0,1,2,3,0)),
+        // Minimal accompaniment grips: X strings stay silent, no unplayed tones added.
+        Chord("Gsus2", 7, null, listOf(3,null,0,2,null,null), listOf(3,0,0,1,0,0)),
+        Chord("Asus4(no5)", 9, null, listOf(null,0,0,2,null,null), listOf(0,0,0,2,0,0)),
+        Chord("Bm7(no5)", 11, 2, listOf(null,2,0,2,null,null), listOf(0,1,0,2,0,0)),
+        Chord("D/F♯", 2, 6, listOf(2,null,0,2,null,null), listOf(1,0,0,2,0,0)),
     )
     fun named(name: String) = all.first { it.name == name }
 }

@@ -42,7 +42,7 @@ class Pcm(val session: Session, sampler: Sampler) {
     private val voices = session.sequence.events.flatMap { event ->
         event.positions.mapIndexed { index, p ->
             val offset = if(event.strum) (index * 0.012 * SAMPLE_RATE).roundToInt() else 0
-            val count = session.frame(event.duration.toDouble()).toInt()-offset
+            val count = session.frame(session.sequence.soundDuration(event, p).toDouble()).toInt()-offset
             val wave = cache.getOrPut(p.midi to count) { sampler.note(p.midi, count) }
             Voice(event.tick, offset, wave, (0.72/sqrt(event.positions.size.toDouble())).toFloat())
         }
