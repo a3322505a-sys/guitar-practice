@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -82,40 +83,51 @@ fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boo
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
     val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter { it.midi%12==chord.root }; Hint.HIDDEN -> emptyList() }
-    Canvas(Modifier.fillMaxWidth().height(diagramHeight).pointerInput(chord,hint,enabled,onTap) {
+    Canvas(Modifier.fillMaxWidth().height(diagramHeight).testTag("chord-diagram").pointerInput(chord,hint,enabled,onTap) {
         if(enabled) detectTapGestures { tap ->
-            val left=32.dp.toPx(); val step=(size.width-64.dp.toPx())/5
-            val vertical=size.height/300.dp.toPx()
-            val closest=(0..5).minBy { kotlin.math.abs(tap.x-(left+it*step)) }
-            val p=visible.firstOrNull { it.string==6-closest }
-            if(p!=null && kotlin.math.abs(tap.x-(left+closest*step))<step/2 && tap.y in (25.dp.toPx()*vertical)..(242.dp.toPx()*vertical)) onTap(p)
+            val geometry=ChordGeometry(size.width.toFloat(),size.height.toFloat())
+            val stringIndex=(0..5).minBy { kotlin.math.abs(tap.x-(geometry.left+it*geometry.stringStep)) }
+            visible.firstOrNull { it.string==6-stringIndex }?.let { p ->
+                if((tap-geometry.position(p)).getDistance() <= maxOf(22.dp.toPx(),geometry.unit*20)) onTap(p)
+            }
         }
     }) {
-        val left=32.dp.toPx(); val step=(size.width-64.dp.toPx())/5
-        val vertical=size.height/300.dp.toPx()
-        val top=64.dp.toPx()*vertical; val fretStep=40.dp.toPx()*vertical
-        for(i in 0..4) drawLine(if(i==0) Ink else Color(0xFFB7B9AF),Offset(left,top+i*fretStep),Offset(size.width-left,top+i*fretStep),if(i==0) 4.dp.toPx() else 1.dp.toPx())
+        val geometry=ChordGeometry(size.width,size.height)
+        val left=geometry.left; val step=geometry.stringStep
+        val top=geometry.top; val fretStep=geometry.fretStep
+        val right=left+5*step
+        // One scale for both axes: the grid stays square, even inside a wide card.
+        drawRoundRect(Color(0xFFF4F8F3),Offset(left,top),androidx.compose.ui.geometry.Size(5*step,4*fretStep),androidx.compose.ui.geometry.CornerRadius(5*geometry.unit))
+        for(i in 0..4) drawLine(if(i==0) Ink else Color(0xFFB7B9AF),Offset(left,top+i*fretStep),Offset(right,top+i*fretStep),if(i==0) 4.dp.toPx() else 1.dp.toPx())
         for(i in 0..5) {
             val x=left+i*step
             drawLine(Color(0xFF8B998E),Offset(x,top),Offset(x,top+4*fretStep),(1.1-i*0.11).dp.toPx())
-            label(measurer,"${6-i} 弦",x,281.dp.toPx()*vertical,size=12)
+            label(measurer,"${6-i}",x,geometry.stringY,size=12)
             if(hint==Hint.FULL) {
-                label(measurer,chord.label(i),x,253.dp.toPx()*vertical,size=15)
-                when(chord.frets[i]) { null -> label(measurer,"X",x,38.dp.toPx()*vertical); 0 -> label(measurer,"O",x,38.dp.toPx()*vertical) }
+                label(measurer,chord.label(i),x,geometry.noteY,size=13)
+                if(chord.frets[i]==null) label(measurer,"X",x,geometry.openY,color=Muted)
             }
         }
         for(p in visible) {
-            val x=left+(6-p.string)*step
-            val y=if(p.fret==0) 38.dp.toPx()*vertical else top+(p.fret-0.5f)*fretStep
+            val center=geometry.position(p)
             val root=p.midi%12==chord.root
-            val changed=chord.name in listOf("D","Dm","A","Am") && if(chord.name.startsWith("D")) p.string==1 else p.string==2
             val active=p in current
-            if(p.fret>0 || hint==Hint.ROOTS) {
-                drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,Offset(x,y))
-                label(measurer,if(hint==Hint.FULL && p.fret>0) chord.fingers[6-p.string].toString() else "根",x,y,if(root||active) Ink else Color.White)
-            }
-            if(active || changed && hint==Hint.FULL) drawCircle(if(active) Ink else Color(0xFF9364AE),17.dp.toPx()*vertical,Offset(x,y),style=Stroke(2.dp.toPx()))
+            drawCircle(if(active) Pink else if(root) Gold else Green,13*geometry.unit,center)
+            label(measurer,if(hint==Hint.ROOTS) "根" else if(p.fret==0) "O" else chord.fingers[6-p.string].toString(),center.x,center.y,if(root||active) Ink else Color.White)
+            if(active) drawCircle(Ink,17*geometry.unit,center,style=Stroke(2.dp.toPx()))
         }
-        for(i in 1..4) label(measurer,"$i",12.dp.toPx(),top+(i-0.5f)*fretStep,size=12)
+        for(i in 1..4) label(measurer,"$i",left-23*geometry.unit,top+(i-0.5f)*fretStep,size=12)
     }
+}
+
+private class ChordGeometry(width: Float, height: Float) {
+    val unit=minOf(width/260f,height/300f)
+    val stringStep=36*unit
+    val fretStep=45*unit
+    val left=width/2-90*unit
+    val top=(height-300*unit)/2+54*unit
+    val openY=top-26*unit
+    val noteY=top+207*unit
+    val stringY=top+236*unit
+    fun position(p: Position)=Offset(left+(6-p.string)*stringStep,if(p.fret==0) openY else top+(p.fret-.5f)*fretStep)
 }
