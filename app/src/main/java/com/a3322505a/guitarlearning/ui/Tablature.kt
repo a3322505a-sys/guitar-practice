@@ -42,7 +42,7 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
         }
         LazyColumn(state=state, verticalArrangement=Arrangement.spacedBy(12.dp)) {
             itemsIndexed(rows) { index, row ->
-                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,systemHeight)
+                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,systemHeight,sequence.beatsPerBar)
             }
         }
     }
@@ -55,10 +55,10 @@ private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Posit
 }
 
 @Composable
-private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, height: Float) {
+private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, height: Float, beatsPerBar: Int) {
     val measurer = rememberTextMeasurer()
     val description = buildString {
-        append("六线谱，第 ${bars.first().index+1} 至 ${bars.last().index+1} 小节。上方 1 弦，下方 6 弦。")
+        append("六线谱，第 ${bars.first().index+1} 至 ${bars.last().index+1} 小节。$beatsPerBar/4 拍。上方 1 弦，下方 6 弦。")
         if(hint != Hint.HIDDEN) bars.forEach { bar -> bar.segments.forEach { s ->
                 if(s.rest) append("休止 ${s.value.ticks/12.0} 拍；")
                 else visible(s,hint,key).forEach { append("${it.string} 弦 ${it.fret} 品；") }
@@ -76,7 +76,7 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
         var x0=left
         text(measurer,"TAB",13*u,top+2.5f*gap,Muted,11)
         for(string in 1..6) text(measurer,"$string",24*u,top+(string-1)*gap,Muted,10)
-        if(bars.first().index == 0) text(measurer,"4/4",14*u,maxOf(14*u,top-34*u),Ink,12)
+        if(bars.first().index == 0) text(measurer,"$beatsPerBar/4",14*u,maxOf(14*u,top-34*u),Ink,12)
         for(bar in bars) {
             val width=usable*bar.readableWidth()/total
             val current=cursor?.pre == false && cursor.bar == bar.index
@@ -86,7 +86,8 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
             drawLine(Ink,Offset(x0,top),Offset(x0,top+5*gap),u)
             val start=x0+27*u
             val span=width-49*u
-            fun at(s: TabSegment) = start + (s.tick%BAR).toFloat()/BAR*span
+            val barTicks=beatsPerBar*QUARTER
+            fun at(s: TabSegment) = start + (s.tick%barTicks).toFloat()/barTicks*span
             for((i,s) in bar.segments.withIndex()) {
                 val x=at(s)
                 val active=current && cursor!!.localTick >= s.tick && cursor.localTick < s.end
@@ -122,13 +123,24 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                         drawLine(PurpleInk,Offset(ax,head),Offset(ax-3*u,head+5*u),1.5f*u)
                         drawLine(PurpleInk,Offset(ax,head),Offset(ax+3*u,head+5*u),1.5f*u)
                     }
-                    // Pair eighths only within one beat; rests break beams.
+                    // One/two beams for eighths/sixteenths. Never cross a beat or rest.
                     val next=bar.segments.getOrNull(i+1)
-                    if(!s.rest && s.value==RhythmValue.EIGHTH && next?.value==RhythmValue.EIGHTH && !next.rest && s.tick/QUARTER==next.tick/QUARTER) {
-                        drawLine(Ink,Offset(x+5*u,rhythm-29*u),Offset(at(next)+5*u,rhythm-29*u),3*u)
-                    } else if(!s.rest && s.value==RhythmValue.EIGHTH && !(previous?.value==RhythmValue.EIGHTH && !previous.rest && previous.tick/QUARTER==s.tick/QUARTER)) {
-                        val flag=Path().apply { moveTo(x+5*u,rhythm-29*u); cubicTo(x+18*u,rhythm-20*u,x+15*u,rhythm-15*u,x+12*u,rhythm-10*u) }
-                        drawPath(flag,Ink,style=Stroke(2*u))
+                    if(!s.rest) {
+                        val before=beamCount(previous,s)
+                        val after=beamCount(s,next)
+                        repeat(s.value.flags) { level ->
+                            val y=rhythm-(29-6*level)*u
+                            if(after>level) drawLine(Ink,Offset(x+5*u,y),Offset(at(next!!)+5*u,y),3*u)
+                            else if(before<=level) {
+                                if(level>0 && (before>0 || after>0)) {
+                                    val direction=if(before>0) -1 else 1
+                                    drawLine(Ink,Offset(x+5*u,y),Offset(x+(5+8*direction)*u,y),3*u)
+                                } else {
+                                    val flag=Path().apply { moveTo(x+5*u,y); cubicTo(x+18*u,y+9*u,x+15*u,y+14*u,x+12*u,y+19*u) }
+                                    drawPath(flag,Ink,style=Stroke(2*u))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -157,6 +169,7 @@ private fun DrawScope.rhythm(v: RhythmValue,x: Float,y: Float,u: Float,active: B
     val head=Offset(x-5*u,y-3*u)
     if(v==RhythmValue.WHOLE || v==RhythmValue.HALF) drawOval(color,head,Size(11*u,7*u),style=Stroke(1.5f*u))
     else drawOval(color,head,Size(11*u,7*u))
+    if(v==RhythmValue.DOTTED_EIGHTH) drawCircle(color,1.6f*u,Offset(x+13*u,y))
     if(v!=RhythmValue.WHOLE) drawLine(color,Offset(x+5*u,y),Offset(x+5*u,y-29*u),1.2f*u)
 }
 private fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
@@ -167,10 +180,14 @@ private fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
             val p=Path().apply { moveTo(x-3*u,y-13*u); lineTo(x+4*u,y-5*u); lineTo(x-3*u,y); lineTo(x+4*u,y+6*u); cubicTo(x-7*u,y+2*u,x-6*u,y+10*u,x,y+13*u) }
             drawPath(p,Ink,style=Stroke(2.2f*u))
         }
-        RhythmValue.EIGHTH -> {
-            drawCircle(Ink,3*u,Offset(x-3*u,y-7*u))
-            val p=Path().apply { moveTo(x-3*u,y-7*u); quadraticTo(x+2*u,y-2*u,x+6*u,y-11*u); lineTo(x,y+11*u) }
-            drawPath(p,Ink,style=Stroke(1.8f*u))
+        RhythmValue.EIGHTH, RhythmValue.DOTTED_EIGHTH, RhythmValue.SIXTEENTH -> {
+            repeat(v.flags) { level ->
+                val yy=y+level*6*u
+                drawCircle(Ink,3*u,Offset(x-3*u,yy-7*u))
+                val p=Path().apply { moveTo(x-3*u,yy-7*u); quadraticTo(x+2*u,yy-2*u,x+6*u,yy-11*u); lineTo(x,y+11*u) }
+                drawPath(p,Ink,style=Stroke(1.8f*u))
+            }
+            if(v==RhythmValue.DOTTED_EIGHTH) drawCircle(Ink,1.6f*u,Offset(x+12*u,y-6*u))
         }
     }
 }
