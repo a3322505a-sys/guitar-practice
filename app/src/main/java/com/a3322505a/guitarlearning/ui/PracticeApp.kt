@@ -47,19 +47,39 @@ internal val ScaleSaver = listSaver<ScaleOptions, Any>(
         notesPerBeat=when(val rhythm=values.getOrNull(6)) { is Boolean -> if(rhythm) 2 else 1; is Int -> rhythm.takeIf { it in 1..3 } ?: 1; else -> 1 },
         startDegree=(values.getOrNull(7) as? Int)?.takeIf { it in 1..7 } ?: 1) })
 
+/** Visible button bounds grow with the window; phone layouts retain their existing sizes. */
+@Composable
+private fun PracticeTextButton(onClick: ()->Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.textButtonColors(), contentPadding: PaddingValues = PaddingValues(horizontal=12.dp),
+    content: @Composable RowScope.()->Unit) {
+    val large=LocalLargePracticeControls.current
+    TextButton(onClick=onClick,modifier=modifier.then(if(large) Modifier.sizeIn(minWidth=64.dp,minHeight=64.dp) else Modifier),
+        enabled=enabled,colors=colors,contentPadding=if(large) PaddingValues(horizontal=18.dp,vertical=12.dp) else contentPadding,content=content)
+}
+
+@Composable
+private fun ChordSteps(first: Chord, onSelect: (Chord)->Unit) {
+    val large=LocalLargePracticeControls.current
+    PracticeTextButton(onClick={onSelect(Chords.all[Chords.all.indexOf(first)-1])},enabled=first!=Chords.all.first(),
+        modifier=Modifier.width(if(large) 64.dp else 48.dp).testTag("previous-chord").semantics { contentDescription="上一和弦" },contentPadding=PaddingValues(0.dp)) { Text("‹",fontSize=if(large) 32.sp else 24.sp) }
+    PracticeTextButton(onClick={onSelect(Chords.all[Chords.all.indexOf(first)+1])},enabled=first!=Chords.all.last(),
+        modifier=Modifier.width(if(large) 64.dp else 48.dp).testTag("next-chord").semantics { contentDescription="下一和弦" },contentPadding=PaddingValues(0.dp)) { Text("›",fontSize=if(large) 32.sp else 24.sp) }
+}
+
 /** Wrapping choices keep every shape/chord discoverable without horizontal clipping. */
 @Composable
 private fun Choices(options: List<String>, selected: Int, color: Color = Lavender, onSelect: (Int)->Unit) {
+    val large=LocalLargePracticeControls.current
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val longest=options.maxOfOrNull { it.length } ?: 1
-        val target=if(longest>8) 158 else if(longest>4) 114 else 76
+        val target=(if(longest>8) 158 else if(longest>4) 114 else 76)*if(large) 1.3f else 1f
         val columns=(maxWidth.value / target).toInt().coerceAtLeast(1)
         Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
             options.indices.chunked(columns).forEach { row ->
                 Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     row.forEach { i ->
                         val checked=selected==i
-                        Surface(onClick={onSelect(i)},modifier=Modifier.weight(1f).heightIn(min=48.dp),
+                        Surface(onClick={onSelect(i)},modifier=Modifier.weight(1f).heightIn(min=if(large) 64.dp else 48.dp),
                             shape=RoundedCornerShape(16.dp), color=Color.Transparent,
                             shadowElevation=if(checked) 3.dp else 0.dp,
                             border=BorderStroke(if(checked) 2.dp else 1.dp,if(checked) candyInk(color).copy(alpha=.4f) else Outline.copy(alpha=.7f))) {
@@ -96,7 +116,7 @@ private fun ViewSwitch(tab: Boolean, onSelect: (Int)->Unit) {
     Row(Modifier.testTag("view-switch"),horizontalArrangement=Arrangement.spacedBy(2.dp)) {
         listOf("指板","六线谱").forEachIndexed { index,title ->
             val checked=tab==(index==1)
-            TextButton(onClick={onSelect(index)},modifier=Modifier.semantics { selected=checked },
+            PracticeTextButton(onClick={onSelect(index)},modifier=Modifier.semantics { selected=checked },
                 colors=ButtonDefaults.textButtonColors(containerColor=if(checked) Sky else Color.Transparent),
                 contentPadding=PaddingValues(horizontal=10.dp)) { Text(title,fontWeight=if(checked) FontWeight.Bold else FontWeight.Normal) }
         }
@@ -105,8 +125,9 @@ private fun ViewSwitch(tab: Boolean, onSelect: (Int)->Unit) {
 
 /** Domain, secondary chord content, and editing have distinct visual roles in every layout. */
 @Composable
-private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
-    onPage: (Int)->Unit, onMode: (Boolean)->Unit, onSettings: ()->Unit, trailing: @Composable ()->Unit = {}) {
+private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean, tablet: Boolean,
+    onPage: (Int)->Unit, onMode: (Boolean)->Unit, onSettings: ()->Unit,
+    chordSteps: @Composable ()->Unit, trailing: @Composable ()->Unit) {
     val domains: @Composable ()->Unit = {
         listOf("音阶","和弦").forEachIndexed { index,title ->
             CandyChip(title,page==index,if(index==0) Mint else Pink,Modifier.testTag("domain-$index")) { onPage(index) }
@@ -115,18 +136,32 @@ private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
     val modes: @Composable ()->Unit = {
         if(page==1) listOf("和弦学习","短句应用").forEachIndexed { index,title ->
             val checked=phrases==(index==1)
-            TextButton(onClick={onMode(index==1)},modifier=Modifier.testTag("chord-mode-$index").semantics { selected=checked },
+            PracticeTextButton(onClick={onMode(index==1)},modifier=Modifier.testTag("chord-mode-$index").semantics { selected=checked },
                 contentPadding=PaddingValues(horizontal=8.dp)) {
                 Text(title,color=if(checked) PurpleInk else Muted,fontWeight=if(checked) FontWeight.Bold else FontWeight.Normal)
             }
         }
     }
     val settings: @Composable ()->Unit = {
-        TextButton(onClick=onSettings,modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(horizontal=8.dp)) {
+        PracticeTextButton(onClick=onSettings,modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(horizontal=8.dp)) {
             Text("练习设置 ›",color=Muted,style=MaterialTheme.typography.labelLarge)
         }
     }
-    Column(Modifier.fillMaxWidth().testTag("practice-navigation")) {
+    Column(Modifier.fillMaxWidth().testTag("practice-navigation"),verticalArrangement=Arrangement.spacedBy(if(tablet) 4.dp else 0.dp)) {
+        if(tablet) {
+            Row(Modifier.fillMaxWidth().testTag("navigation-primary"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                Text("吉他练习",modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
+                domains()
+                settings()
+            }
+            Row(Modifier.fillMaxWidth().testTag("navigation-secondary"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    if(page==1) modes() else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
+                    if(page==1 && !phrases) chordSteps()
+                }
+                trailing()
+            }
+        } else {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             if(compact) {
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -143,6 +178,7 @@ private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
         }
         if(!compact) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             modes(); Spacer(Modifier.weight(1f)); settings()
+        }
         }
     }
 }
@@ -237,7 +273,9 @@ fun PracticeApp(player: Player) {
         else -> "准备好，就开始一轮"
     }
     BackHandler(enabled=settingsPanel==0 && (player.active || progress.phase==Phase.PAUSED)) { player.stop() }
-    PracticeTheme {
+    val windowConfiguration=LocalConfiguration.current
+    val tabletControls=minOf(windowConfiguration.screenWidthDp,windowConfiguration.screenHeightDp)>=600
+    PracticeTheme(largeControls=tabletControls) {
       BoxWithConstraints(Modifier.fillMaxSize().displayCutoutPadding().windowInsetsPadding(WindowInsets.captionBar)
           .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)).practiceBackground()) {
         val tab=viewPreference==1
@@ -249,29 +287,29 @@ fun PracticeApp(player: Player) {
         Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
             Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
                 Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF4FFFC),Color(0xFFE5F6F2)))).navigationBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    if(!tab) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
+                    if(!tab || tabletControls) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        PracticeTextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
                             MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text("$bpm BPM",fontWeight=FontWeight.Bold)
                         }
                         Text("· $beatsPerBar/4",color=Muted,style=MaterialTheme.typography.labelMedium)
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
+                        PracticeTextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                     }
                     Row(Modifier.fillMaxWidth().testTag("transport"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
-                        if(tab) {
-                            TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
-                            TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
+                        if(tab && !tabletControls) {
+                            PracticeTextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
+                            PracticeTextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                         }
                         if(player.active || progress.phase==Phase.PAUSED) {
                             CandyAction(if(player.active) "暂停" else "继续",modifier=Modifier.weight(1f),onClick={if(player.active) player.pause() else player.resume()})
-                            OutlinedButton(onClick={player.restart()},modifier=Modifier.weight(1f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint)) { Text("重来") }
+                            OutlinedButton(onClick={player.restart()},modifier=Modifier.weight(1f).heightIn(min=if(tabletControls) 72.dp else 52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint)) { Text("重来") }
                         } else {
-                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
-                                TransportMotif("speaker",Modifier.size(18.dp),Green);Spacer(Modifier.width(6.dp));Text("听示范")
+                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=if(tabletControls) 72.dp else 52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
+                                TransportMotif("speaker",Modifier.size(if(tabletControls) 24.dp else 18.dp),Green);Spacer(Modifier.width(6.dp));Text("听示范")
                             }
                             CandyAction("开始跟练",modifier=Modifier.weight(1.25f),enabled=sequence!=null,onClick={sequence?.let { note=""; player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }})
                         }
-                        TextButton(onClick={player.stop();note=""},modifier=Modifier.heightIn(min=48.dp),contentPadding=PaddingValues(8.dp)) { Text("结束",color=Muted) }
+                        PracticeTextButton(onClick={player.stop();note=""},modifier=Modifier.widthIn(min=if(tabletControls) 96.dp else 0.dp).heightIn(min=48.dp),contentPadding=PaddingValues(8.dp)) { Text("结束",color=Muted) }
                     }
                 }
             }
@@ -279,14 +317,15 @@ fun PracticeApp(player: Player) {
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
               val navigationCompact=(tab || maxHeight<520.dp) && maxWidth>=600.dp*LocalDensity.current.fontScale
               Column(Modifier.fillMaxSize()) {
-                PracticeNavigation(page,chordPhrases,navigationCompact,
+                PracticeNavigation(page,chordPhrases,navigationCompact,tabletControls,
                     { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1},
-                    { if(tab) ViewSwitch(tab) { viewPreference=it } })
+                    { if(!tab) ChordSteps(first,::firstChange) },
+                    { if(tab || tabletControls) ViewSwitch(tab) { viewPreference=it } })
               BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val availableWidth=maxWidth
                 val availableHeight=maxHeight
                 val wide=maxWidth>=700.dp
-                val compact=maxHeight<520.dp
+                val compact=maxHeight<(if(tabletControls) 360.dp else 520.dp)
                 val fontScale=LocalDensity.current.fontScale
                 // Decide from the complete route, so rests/dead notes never resize the card.
                 val openStringsOnly=melody && displayedSequence!!.route.isNotEmpty() && displayedSequence.route.all { it.fret==0 }
@@ -310,12 +349,11 @@ fun PracticeApp(player: Player) {
                 } else {
                 val content: @Composable () -> Unit = {
                     Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        if(!tabletControls) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                 Box(Modifier.size(7.dp).background(PurpleInk,RoundedCornerShape(4.dp)))
                                 if(page==1 && !chordPhrases) {
-                                    TextButton(onClick={firstChange(Chords.all[Chords.all.indexOf(first)-1])},enabled=first!=Chords.all.first(),modifier=Modifier.width(48.dp).testTag("previous-chord").semantics { contentDescription="上一和弦" },contentPadding=PaddingValues(0.dp)) { Text("‹",fontSize=24.sp) }
-                                    TextButton(onClick={firstChange(Chords.all[Chords.all.indexOf(first)+1])},enabled=first!=Chords.all.last(),modifier=Modifier.width(48.dp).testTag("next-chord").semantics { contentDescription="下一和弦" },contentPadding=PaddingValues(0.dp)) { Text("›",fontSize=24.sp) }
+                                    ChordSteps(first,::firstChange)
                                 } else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
                             }
                             Spacer(Modifier.weight(1f))
@@ -351,8 +389,8 @@ fun PracticeApp(player: Player) {
                                         style=MaterialTheme.typography.bodySmall,color=BlueInk)
                                     if(page==0 && hint==Hint.FULL && nextEvent!=null) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                                 }
-                                if(page==1 && !chordPhrases) TextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
-                                else if(phraseCard) TextButton(onClick={settingsPanel=3},modifier=Modifier.testTag("diagram-help"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("帮助") }
+                                if(page==1 && !chordPhrases) PracticeTextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
+                                else if(phraseCard) PracticeTextButton(onClick={settingsPanel=3},modifier=Modifier.testTag("diagram-help"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("帮助") }
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                                 if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
                             }
@@ -445,7 +483,7 @@ fun PracticeApp(player: Player) {
             Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).padding(bottom=24.dp).testTag(if(settingsPanel==1) "practice-settings" else "tempo-settings"),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                                     Text(when(settingsPanel) { 1 -> "练习设置"; 2 -> "速度与播放"; else -> "指板与演奏提示" },style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
-                    TextButton(onClick={settingsPanel=0}) { Text("完成") }
+                    PracticeTextButton(onClick={settingsPanel=0}) { Text("完成") }
                 }
                 Column(Modifier.weight(1f,fill=false).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                 if(settingsPanel==3) {
@@ -458,9 +496,9 @@ fun PracticeApp(player: Player) {
                     Text("调整速度或循环后，下一次从头开始；声音开关立即生效。",style=MaterialTheme.typography.bodySmall,color=Muted)
                     Label("速度") {
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                            OutlinedButton(onClick={changed();bpm=(bpm-5).coerceAtLeast(30)},enabled=bpm>30,modifier=Modifier.testTag("tempo-slower")) { Text("−5") }
+                            OutlinedButton(onClick={changed();bpm=(bpm-5).coerceAtLeast(30)},enabled=bpm>30,modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier).testTag("tempo-slower")) { Text("−5") }
                             Text("$bpm BPM",modifier=Modifier.weight(1f),fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleLarge)
-                            OutlinedButton(onClick={changed();bpm=(bpm+5).coerceAtMost(180)},enabled=bpm<180,modifier=Modifier.testTag("tempo-faster")) { Text("+5") }
+                            OutlinedButton(onClick={changed();bpm=(bpm+5).coerceAtMost(180)},enabled=bpm<180,modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier).testTag("tempo-faster")) { Text("+5") }
                         }
                         Slider(value=bpm.toFloat(),onValueChange={ value -> val next=value.toInt();if(next!=bpm) { changed();bpm=next } },valueRange=30f..180f,modifier=Modifier.testTag("tempo-slider"))
                     }
@@ -487,7 +525,7 @@ fun PracticeApp(player: Player) {
                     Label("练习方式") {
                         val common=listOf(ScaleExercise.ASCEND,ScaleExercise.THIRDS,ScaleExercise.CONNECTION)
                         Choices(common.map { it.title },common.indexOf(scale.exercise)) { val kind=common[it];scaleChange(scale.copy(exercise=kind,octave=if(kind==ScaleExercise.CONNECTION) false else scale.octave)) }
-                        TextButton(onClick={moreExercisesOpen=!moreExercisesOpen},modifier=Modifier.testTag("more-exercises-toggle")) { Text(if(moreExercisesOpen) "收起更多练法 ▴" else "更多练法 ▾") }
+                        PracticeTextButton(onClick={moreExercisesOpen=!moreExercisesOpen},modifier=Modifier.testTag("more-exercises-toggle")) { Text(if(moreExercisesOpen) "收起更多练法 ▴" else "更多练法 ▾") }
                         if(moreExercisesOpen) {
                             val more=listOf(ScaleExercise.ROOTS,ScaleExercise.THREE,ScaleExercise.CHANGE_START)
                             Choices(more.map { it.title },more.indexOf(scale.exercise)) { scaleChange(scale.copy(exercise=more[it])) }
@@ -513,7 +551,7 @@ fun PracticeApp(player: Player) {
                     }
                     Label("练习小节") {
                         Text("当前范围：${range.first+phrase.sequence.originalBar+1}–${range.last+phrase.sequence.originalBar+1} 小节；完整经过范围一次计一轮。",modifier=Modifier.testTag("phrase-range"))
-                        OutlinedButton(onClick={if(range!=wholeRange) { changed();firstBar=wholeRange.first;lastBar=wholeRange.last }}) { Text("整句") }
+                        OutlinedButton(onClick={if(range!=wholeRange) { changed();firstBar=wholeRange.first;lastBar=wholeRange.last }},modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier)) { Text("整句") }
                         val bars=(0..wholeRange.last).toList()
                         Text("起始小节")
                         Choices(bars.map { "${it+phrase.sequence.originalBar+1}" },range.first,Mint) { if(it!=firstBar) { changed();firstBar=it;if(lastBar<it) lastBar=it } }

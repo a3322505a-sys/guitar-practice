@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,8 @@ val Warm = Color(0xFFFFE39C)
 val Muted = Color(0xFF546979)
 val Outline = Color(0xFFCDD9E7)
 
+internal val LocalLargePracticeControls = staticCompositionLocalOf { false }
+
 /** A consistent candy palette; music diagrams keep their existing semantic colors. */
 fun candyInk(color: Color): Color = when(color) {
     Pink -> RoseInk
@@ -62,7 +66,8 @@ fun Modifier.practiceBackground(): Modifier = drawWithCache {
 }
 
 @Composable
-fun PracticeTheme(content: @Composable () -> Unit) {
+fun PracticeTheme(largeControls: Boolean = false, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalLargePracticeControls provides largeControls) {
     MaterialTheme(
         colorScheme = lightColorScheme(primary=Green, onPrimary=Color.White,
             primaryContainer=Mint, onPrimaryContainer=Ink, secondary=BlueInk, secondaryContainer=Sky,
@@ -71,11 +76,12 @@ fun PracticeTheme(content: @Composable () -> Unit) {
         typography = Typography(
             titleLarge=TextStyle(fontWeight=FontWeight.ExtraBold,fontSize=24.sp,lineHeight=30.sp,letterSpacing=(-.4).sp),
             titleMedium=TextStyle(fontWeight=FontWeight.Bold,fontSize=17.sp,lineHeight=24.sp),
-            labelLarge=TextStyle(fontWeight=FontWeight.SemiBold,fontSize=14.sp,lineHeight=20.sp),
+            labelLarge=TextStyle(fontWeight=FontWeight.SemiBold,fontSize=if(largeControls) 18.sp else 14.sp,lineHeight=if(largeControls) 26.sp else 20.sp),
             bodySmall=TextStyle(fontSize=12.sp,lineHeight=18.sp),
             labelSmall=TextStyle(fontWeight=FontWeight.Medium,fontSize=11.sp,lineHeight=16.sp)),
         shapes=Shapes(small=RoundedCornerShape(12.dp),medium=RoundedCornerShape(18.dp),large=RoundedCornerShape(28.dp)),
         content=content)
+    }
 }
 
 @Composable
@@ -98,7 +104,9 @@ fun CandySectionTitle(title: String, color: Color) {
 
 @Composable
 fun CandyChip(title: String, selected: Boolean, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    FilterChip(selected=selected,onClick=onClick,modifier=modifier.heightIn(min=44.dp),shape=RoundedCornerShape(16.dp),
+    val large=LocalLargePracticeControls.current
+    FilterChip(selected=selected,onClick=onClick,modifier=modifier.heightIn(min=if(large) 64.dp else 44.dp)
+        .widthIn(min=if(large) 100.dp else 0.dp),shape=RoundedCornerShape(16.dp),
         border=BorderStroke(if(selected) 1.5.dp else 1.dp,if(selected) candyInk(color).copy(alpha=.3f) else Color.White),
         colors=FilterChipDefaults.filterChipColors(containerColor=Color.White.copy(alpha=.72f),labelColor=Muted,
             selectedContainerColor=color,selectedLabelColor=candyInk(color)),
@@ -107,13 +115,14 @@ fun CandyChip(title: String, selected: Boolean, color: Color, modifier: Modifier
 
 @Composable
 fun CandyAction(title: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+    val large=LocalLargePracticeControls.current
     val shape=RoundedCornerShape(20.dp)
-    Button(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=52.dp)
+    Button(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=if(large) 72.dp else 52.dp)
         .shadow(if(enabled) 5.dp else 0.dp,shape,ambientColor=Green,spotColor=Green)
         .background(if(enabled) Brush.linearGradient(listOf(Color(0xFF078165),Green,Color(0xFF04765D))) else Brush.linearGradient(listOf(Outline,Outline)),shape),
         shape=shape,border=BorderStroke(1.5.dp,Color.White.copy(alpha=.35f)),contentPadding=PaddingValues(horizontal=12.dp,vertical=12.dp),
         colors=ButtonDefaults.buttonColors(containerColor=Color.Transparent,disabledContainerColor=Color.Transparent)) {
-        TransportMotif(if(title=="暂停") "pause" else "play",Modifier.size(17.dp))
+        TransportMotif(if(title=="暂停") "pause" else "play",Modifier.size(if(large) 22.dp else 17.dp))
         Spacer(Modifier.width(8.dp))
         Text(title,fontWeight=FontWeight.Bold)
     }
