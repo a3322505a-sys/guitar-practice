@@ -33,8 +33,6 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
     val state = rememberLazyListState()
     BoxWithConstraints(modifier.fillMaxSize().testTag("tablature")) {
         val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-        // Short landscape windows trim empty margins, while preserving string and digit sizes.
-        val systemHeight = (maxHeight.value / fontScale).coerceIn(196f,230f)
         val rows = remember(bars, maxWidth, fontScale) { tabSystems(bars, (maxWidth.value / fontScale).toInt()) }
         val target = cursor?.bar?.let { bar -> rows.indexOfFirst { row -> row.any { it.index == bar } } } ?: 0
         LaunchedEffect(sequence, target, following) {
@@ -42,7 +40,7 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
         }
         LazyColumn(state=state, verticalArrangement=Arrangement.spacedBy(12.dp)) {
             itemsIndexed(rows) { index, row ->
-                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,systemHeight,sequence)
+                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,sequence)
             }
         }
     }
@@ -55,8 +53,15 @@ private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Posit
 }
 
 @Composable
-private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, height: Float, sequence: Sequence) {
+private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, sequence: Sequence) {
     val beatsPerBar=sequence.beatsPerBar
+    val segments=bars.flatMap { it.segments }
+    // Reserve lanes for the marks actually present, independent of window height.
+    // Keep full-size strings/digits; small windows scroll complete systems vertically.
+    val staffTop=if(segments.any { it.expression?.expressionLabel()?.isNotBlank()==true }) 54f
+        else if(segments.any { it.chord!=null }) 48f else 32f
+    val rhythmY=staffTop+5*18f+if(sequence.links.any { it.string==6 && segments.any { s -> s.tick==it.sourceTick || s.tick==it.targetTick } }) 46f else 38f
+    val height=rhythmY+if(segments.any { it.tuplet!=null }) 36f else 18f
     val measurer = rememberTextMeasurer()
     val description = buildString {
         append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。$beatsPerBar/4 拍。上方 1 弦，下方 6 弦。")
@@ -75,9 +80,9 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
     Canvas(Modifier.fillMaxWidth().height((height*scale).dp).semantics { contentDescription=description }) {
         val u=1.dp.toPx()*scale
         val left=32*u
-        val top=(62-(230-height)*.7f)*u
+        val top=staffTop*u
         val gap=18*u
-        val rhythm=(height-25)*u
+        val rhythm=rhythmY*u
         val usable=size.width-left-8*u
         val total=bars.sumOf { it.readableWidth() }
         fun rowX(tick: Int): Float? {
@@ -138,10 +143,10 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                     }
                     s.tuplet?.takeIf { s.tick==it.tick }?.let { group ->
                         val right=x+(group.end-group.tick).toFloat()/barTicks*span-4*u
-                        drawLine(PurpleInk,Offset(x,rhythm-46*u),Offset(right,rhythm-46*u),u)
-                        drawLine(PurpleInk,Offset(x,rhythm-46*u),Offset(x,rhythm-42*u),u)
-                        drawLine(PurpleInk,Offset(right,rhythm-46*u),Offset(right,rhythm-42*u),u)
-                        text(measurer,"3",(x+right)/2,rhythm-53*u,PurpleInk,11,true)
+                        drawLine(PurpleInk,Offset(x,rhythm+14*u),Offset(right,rhythm+14*u),u)
+                        drawLine(PurpleInk,Offset(x,rhythm+14*u),Offset(x,rhythm+10*u),u)
+                        drawLine(PurpleInk,Offset(right,rhythm+14*u),Offset(right,rhythm+10*u),u)
+                        text(measurer,"3",(x+right)/2,rhythm+25*u,PurpleInk,11,true)
                     }
                     s.outgoing?.let { link ->
                         val y=top+(link.string-1)*gap+8*u
