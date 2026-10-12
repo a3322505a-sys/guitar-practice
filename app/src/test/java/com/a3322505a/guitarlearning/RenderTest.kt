@@ -45,7 +45,7 @@ class RenderTest {
             } else compose.activity.window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
-            val path=File("../.local/v58/$name.png")
+            val path=File("../.local/v59/$name.png")
             path.parentFile!!.mkdirs()
             path.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
         }
@@ -291,6 +291,44 @@ class RenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("large-text-tab")
+    }
+    private fun assertWholeChordDiagram() {
+        val diagram=compose.onNodeWithTag("chord-diagram").fetchSemanticsNode()
+        val viewport=compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().boundsInRoot
+        // boundsInRoot is clipped: compare it with the actual measured Canvas, not just assertIsDisplayed.
+        assertEquals("The full Canvas must be visible",diagram.layoutInfo.coordinates.size.height.toFloat(),diagram.boundsInRoot.height,.5f)
+        assertTrue(diagram.boundsInRoot.top>=viewport.top-.5f)
+        assertTrue(diagram.boundsInRoot.bottom<=viewport.bottom+.5f)
+        assertFalse("The chord itself must not scroll",compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().config.contains(SemanticsProperties.VerticalScrollAxisRange))
+    }
+    @Test @Config(qualifiers="w360dp-h800dp-port-mdpi") fun representativeChordsFitWithoutDiagramScrolling() {
+        compose.onNodeWithText("和弦").performClick()
+        listOf("D","C","G","D/F♯","Asus4(no5)").forEach { name ->
+            compose.onNodeWithTag("config-summary").performClick()
+            compose.onAllNodesWithText(name)[0].performScrollTo().performClick()
+            compose.onNodeWithText("完成").performClick()
+            assertWholeChordDiagram()
+            compose.onNodeWithText("听和弦").assertIsDisplayed()
+            compose.onNodeWithText("开始跟练").assertIsDisplayed()
+            capture("chord-fit-${Chords.all.indexOf(Chords.named(name))}")
+        }
+    }
+    @Test @Config(qualifiers="w320dp-h640dp-port-mdpi") fun shortLargeTextChordPageScrollsAsAWhole() {
+        compose.activity.resources.configuration.fontScale=1.3f
+        @Suppress("DEPRECATION")
+        compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
+        compose.activityRule.scenario.recreate()
+        compose.waitForIdle()
+        compose.onNodeWithText("和弦").performClick()
+        compose.onNodeWithTag("chord-diagram").performScrollTo()
+        assertWholeChordDiagram()
+        compose.onNodeWithText("开始跟练").assertIsDisplayed()
+        capture("small-large-text-chord-fit")
+        compose.onNodeWithText("六线谱").performScrollTo().performClick()
+        compose.onNodeWithTag("tablature").assertIsDisplayed()
+        compose.onNodeWithText("指板").performClick()
+        compose.onNodeWithTag("chord-diagram").performScrollTo()
+        assertWholeChordDiagram()
     }
     @Test fun activityRecreationKeepsPlayerAndSelectedPractice() {
         val original=ViewModelProvider(compose.activity)[PracticeModel::class.java].player

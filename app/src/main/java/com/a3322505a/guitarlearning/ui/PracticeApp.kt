@@ -187,10 +187,14 @@ fun PracticeApp(player: Player) {
         }) { padding ->
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
                 val availableWidth=maxWidth
+                val availableHeight=maxHeight
                 val wide=maxWidth>=700.dp
                 val compact=maxHeight<520.dp
                 val fontScale=LocalDensity.current.fontScale
                 val narrowHeader=availableWidth<350.dp || fontScale>1.2f
+                // A short window scrolls the whole chord page, never the labels inside its diagram.
+                val chordPageScroll=page==1 && !wide && maxHeight<600.dp*fontScale
+                val chordScrollState=remember(page) { ScrollState(0) }
                 if(tab) {
                     Column(Modifier.fillMaxSize().padding(vertical=4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -252,16 +256,14 @@ fun PracticeApp(player: Player) {
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                                 if(hint==Hint.HIDDEN) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
                             }
-                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
-                                    // Labels remain readable; exceptionally short/large-font windows can scroll the diagram region.
-                                    val minimum=if(compact) 176.dp else if(page==0) 176.dp else 215.dp
-                                    val h=maxOf(minimum*fontScale,maxHeight).coerceAtMost(if(page==0) 300.dp*fontScale else 390.dp*fontScale)
-                                    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
-                                        if(page==0) {
+                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
+                                    if(page==0) {
+                                        val h=maxOf(176.dp*fontScale,maxHeight).coerceAtMost(300.dp*fontScale)
+                                        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
                                             val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
                                             Fretboard(positions,scale.key,hint,false,current,!player.active,h,::tap)
-                                        } else ChordDiagram(shownChord,hint,current,!player.active,h,::tap)
-                                    }
+                                        }
+                                    } else ChordDiagram(shownChord,hint,current,!player.active,maxHeight.coerceAtMost(390.dp*fontScale),::tap)
                                 }
                                 if(!compact) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
                             if(!compact || !wide) Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -281,7 +283,8 @@ fun PracticeApp(player: Player) {
                         }
                     }
                 }
-                Column(Modifier.fillMaxSize().padding(vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.fillMaxSize().then(if(chordPageScroll) Modifier.verticalScroll(chordScrollState) else Modifier)) {
+                Column(Modifier.fillMaxWidth().height(if(chordPageScroll) 600.dp*fontScale else availableHeight).padding(vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Mint.copy(alpha=.8f),Sky.copy(alpha=.6f),Lavender.copy(alpha=.55f))),RoundedCornerShape(24.dp)).padding(horizontal=10.dp,vertical=if(compact) 0.dp else 7.dp),verticalAlignment=Alignment.CenterVertically) {
                         if(!compact) { MusicMotif(Modifier.size(if(narrowHeader) 34.dp else 46.dp)); Spacer(Modifier.width(6.dp)) }
                         Column(Modifier.weight(1f)) {
@@ -337,7 +340,7 @@ fun PracticeApp(player: Player) {
                             Box(Modifier.weight(1f)) { content() }
                         }
                     } else {
-                        if(!compact) summary() else {
+                        if(!compact && page==0) summary() else {
                             if(page==1) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                                 CandyChip("和弦学习",!chordPhrases,Pink) { chordMode(false) }
                                 CandyChip("短句应用",chordPhrases,Sky) { chordMode(true) }
@@ -345,9 +348,11 @@ fun PracticeApp(player: Player) {
                                 TextButton(onClick={settingsPanel=1},modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(0.dp)) { Text("练习 ›") }
                             }
                             else TextButton(onClick={settingsPanel=1},modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(0.dp)) { Text("${scale.exercise.title} · 练习 ›") }
+                            if(page==1 && chordPhrases) Text("${phrase.title} · ${phrase.passage}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         }
                         Box(Modifier.weight(1f)) { content() }
                     }
+                }
                 }
                 }
             }
