@@ -1,0 +1,19 @@
+C_MAJOR mi -> sol
+6s/3f MIDI=43; 5s/0f MIDI=45; 5s/2f MIDI=47; 5s/3f MIDI=48; 5s/5f MIDI=50; 4s/2f MIDI=52; 4s/3f MIDI=53; 
+C_MAJOR sol -> la
+4s/5f MIDI=55; 3s/2f MIDI=57; 3s/4f MIDI=59; 3s/5f MIDI=60; 3s/7f MIDI=62; 2s/5f MIDI=64; 2s/6f MIDI=65; 
+C_MAJOR la -> si
+2s/8f MIDI=67; 1s/5f MIDI=69; 1s/7f MIDI=71; 1s/8f MIDI=72; 1s/10f MIDI=74; 
+C_MAJOR si -> re
+5s/10f MIDI=55; 4s/7f MIDI=57; 4s/9f MIDI=59; 4s/10f MIDI=60; 4s/12f MIDI=62; 3s/9f MIDI=64; 3s/10f MIDI=65; 
+A_MINOR mi -> sol
+4s/2f MIDI=52; 4s/3f MIDI=53; 3s/0f MIDI=55; 3s/2f MIDI=57; 3s/4f MIDI=59; 3s/5f MIDI=60; 2s/3f MIDI=62; 
+A_MINOR sol -> la
+2s/5f MIDI=64; 2s/6f MIDI=65; 1s/3f MIDI=67; 1s/5f MIDI=69; 1s/7f MIDI=71; 1s/8f MIDI=72; 
+A_MINOR la -> si
+5s/7f MIDI=52; 5s/8f MIDI=53; 4s/5f MIDI=55; 4s/7f MIDI=57; 4s/9f MIDI=59; 4s/10f MIDI=60; 3s/7f MIDI=62; 
+A_MINOR si -> re
+3s/9f MIDI=64; 3s/10f MIDI=65; 2s/8f MIDI=67; 2s/10f MIDI=69; 2s/12f MIDI=71; 2s/13f MIDI=72; 1s/10f MIDI=74; 
+S01 events=16 sections=4 length=96
+Empty-section sample: Sequence(events=[Event(tick=0, duration=12, positions=[Position(string=5, fret=3)], chord=null, strum=false, ring=false), Event(tick=12, duration=12, positions=[Position(string=4, fret=0)], chord=null, strum=false, ring=false), Event(tick=24, duration=12, positions=[Position(string=4, fret=2)], chord=null, strum=false, ring=false), Event(tick=36, duration=12, positions=[Position(string=4, fret=3)], chord=null, strum=false, ring=false)], length=48, explanation=P0 monophonic sample, sections=[])
+Sample model is valid; current chord UI still indexes sections[0]. P4 is pending.

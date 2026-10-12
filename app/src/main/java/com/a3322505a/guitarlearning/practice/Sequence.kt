@@ -38,7 +38,7 @@ enum class ScaleExercise(val title: String, val instruction: String) {
     CHANGE_START("换起点", "从所选级数起，循音阶上行再回到起点；不用交答案。"),
     THREE("三音模进", "1–2–3，2–3–4，3–4–5……每组三个相邻音。"),
     THIRDS("三度跳进", "调内 1–3，2–4，3–5……听三度的宽窄变化。"),
-    CONNECTION("指型连接", "经两个指型共享的主音连接一条短句；按路线跨指型弹奏。"),
+    CONNECTION("指型连接", "经共享主音换型，进入下一型后返回；A→B→A 才是一轮。"),
 }
 
 data class ScaleOptions(val pattern: Int = 0, val key: Tonality = Tonality.C_MAJOR, val exercise: ScaleExercise = ScaleExercise.ASCEND,
@@ -73,18 +73,8 @@ object Routes {
             ScaleExercise.THREE -> pool.windowed(3).flatten()
             ScaleExercise.THIRDS -> (0 until pool.size-2).flatMap { listOf(pool[it], pool[it+2]) }
             ScaleExercise.CONNECTION -> {
-                val allowedMidi = pool.map { it.midi }.toSet()
-                val from = first.positions.filter { it.string in o.firstString..o.lastString && it.midi in allowedMidi }.sortedBy { it.midi }.distinctBy { it.midi }
-                val into = next.positions.filter { it.string in o.firstString..o.lastString && it.midi in allowedMidi }.sortedBy { it.midi }.distinctBy { it.midi }
-                val shared = first.positions.intersect(next.positions.toSet()).filter { it.midi in allowedMidi && it.string in o.firstString..o.lastString && o.key.isRoot(it) }
-                    .firstOrNull { p ->
-                        from.filter { it.midi < p.midi }.takeLast(3).any { it !in next.positions } &&
-                            into.filter { it.midi > p.midi }.take(3).any { it !in first.positions }
-                    }
-                    ?: return RouteResult(null, "所选范围没有可跨入下一型的共享主音路线；试用整型音域或扩大弦范围。")
-                val before = from.filter { it.midi < shared.midi }.takeLast(3)
-                val after = into.filter { it.midi > shared.midi }.take(3)
-                before + shared + after
+                connectionPlan(o,pool.map { it.midi }.toSet())?.route
+                    ?: return RouteResult(null, "所选范围没有可经共享主音往返的相邻弦路线；试用整型音域或扩大弦范围。")
             }
         }
         if(route.isEmpty()) return RouteResult(null, "所选范围没有这项练法需要的音；扩大范围后再试。")
@@ -97,11 +87,60 @@ object Routes {
         val tail = if(length > soundEnd) " 尾部留 ${(length-soundEnd)/12.0} 拍，再开始下一轮。" else ""
         val scope = if(o.octave && o.exercise != ScaleExercise.ROOTS) "主音起的一八度" else "整型音域"
         val connection = if(o.exercise == ScaleExercise.CONNECTION) {
-            if(o.reverse) " ${next.solfege} → ${first.solfege}。" else " ${first.solfege} → ${next.solfege}。"
+            " ${first.solfege} → ${next.solfege} → ${first.solfege}；共享主音后调整手型，转折音只弹一次。"
         } else ""
         val stretch = if(o.pattern == 2) " la 指型三弦 4 品 B：可伸指或轻微移位。" else ""
         return RouteResult(Sequence(events, length, "${o.exercise.instruction} $scope，${o.firstString}–${o.lastString} 弦。$connection$tail$stretch"))
     }
+}
+
+data class ConnectionPlan(val outward: List<Position>, val returning: List<Position>, val pivot: Position) {
+    val route get() = outward + returning
+}
+
+/** Choose positions for each direction independently; pitch reversal alone does not choose a fingering. */
+fun connectionPlan(o: ScaleOptions, allowedMidi: Set<Int>? = null): ConnectionPlan? {
+    if(o.pattern !in 0..3) return null
+    val a=Patterns.all[o.pattern].positions
+    val b=Patterns.all[o.pattern+1].positions
+    fun eligible(p: Position)=p.string in o.firstString..o.lastString && (allowedMidi==null || p.midi in allowedMidi)
+    fun paths(slots: List<List<Position>>): List<List<Position>> = slots.fold(listOf(emptyList<Position>())) { paths,slot ->
+        paths.flatMap { path -> slot.filter { p -> path.isEmpty() || kotlin.math.abs(path.last().string-p.string)<=1 }
+            .map { p -> path+p } }
+    }
+    fun cost(path: List<Position>)=path.zipWithNext().sumOf { (p,q) ->
+        3*kotlin.math.abs(p.fret-q.fret)+4*kotlin.math.abs(p.string-q.string)
+    }
+    val plans=mutableListOf<Pair<Int,ConnectionPlan>>()
+    a.intersect(b.toSet()).filter { eligible(it) && o.key.isRoot(it) }.forEach { pivot ->
+        val below=a.filter { eligible(it) && it.midi<pivot.midi }.map { it.midi }.distinct().sorted().takeLast(3)
+        val above=b.filter { eligible(it) && it.midi>pivot.midi }.map { it.midi }.distinct().sorted().take(3)
+        if(below.isEmpty() || above.isEmpty()) return@forEach
+        val pitches=below+ pivot.midi + above
+        val outwardSlots=below.map { pitch -> a.filter { eligible(it) && it.midi==pitch } } +
+            listOf(listOf(pivot)) + above.map { pitch -> b.filter { eligible(it) && it.midi==pitch } }
+        paths(outwardSlots).filter { path -> path.take(below.size).any { it !in b } && path.drop(below.size+1).any { it !in a } }.forEach outwardLoop@ { outward ->
+            val backSlots=pitches.dropLast(1).reversed().mapIndexed { index,pitch ->
+                when {
+                    index==pitches.size-2 -> listOf(outward.first())
+                    pitch==pivot.midi -> listOf(pivot)
+                    pitch>pivot.midi -> b.filter { eligible(it) && it.midi==pitch }
+                    else -> a.filter { eligible(it) && it.midi==pitch }
+                }
+            }
+            // Include the turning position in the return cost, but never repeat its onset.
+            val returning=paths(listOf(listOf(outward.last()))+backSlots).minByOrNull(::cost)?.drop(1) ?: return@outwardLoop
+            val plan=ConnectionPlan(outward,returning,pivot)
+            plans += (cost(outward)+cost(listOf(outward.last())+returning)+(7-outward.size)*40) to plan
+        }
+    }
+    return plans.minByOrNull { it.first }?.second
+}
+
+fun suggestedFinger(position: Position, pattern: Pattern): Int {
+    if(position.fret==0) return 0
+    val base=if(pattern.frets.any { 0 in it }) 1 else pattern.frets[position.string-1].first { it>0 }
+    return (position.fret-base+1).coerceIn(1,4)
 }
 
 enum class ChordExercise(val title: String, val instruction: String) {

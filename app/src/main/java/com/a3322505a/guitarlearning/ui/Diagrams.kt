@@ -31,8 +31,8 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 }
 
 @Composable
-fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit) {
-    val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
+fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit) {
+    val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val low = positions.minOf { it.fret }
     val high = positions.maxOf { it.fret }
     val columns = high-low+1
@@ -66,11 +66,11 @@ fun Fretboard(positions: List<Position>, key: Tonality, hint: Hint, degrees: Boo
                 }
                 for(p in visible) {
                     val center=Offset(left+(p.fret-low+0.5f)*cell,top+(p.string-1)*row)
-                    val root=key.isRoot(p)
+                    val root=key?.isRoot(p)==true
                     val active=p in current
                     drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
                     if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
-                    label(measurer,if(degrees) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
+                    label(measurer,if(degrees && key!=null) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
                 }
                 label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
             }

@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -114,12 +117,16 @@ fun PracticeApp(player: Player) {
     val displayedSequence=if(showingSession) practiceSession!!.sequence else sequence
     val renderCursor=cursor?.takeIf { showingSession }
     val event=if(showingSession && cursor?.pre==false) displayedSequence?.eventAt(cursor.localTick) else null
-    val nextEvent=event?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }
+    val phraseNow=if(showingSession && cursor?.pre==false) event else displayedSequence?.events?.firstOrNull()
+    val nextEvent=phraseNow?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }
     val current=event?.positions ?: emptyList()
     val section=if(showingSession && cursor?.pre==false) displayedSequence!!.sectionAt(cursor.localTick) else -1
-    val shownChord=if(page==1) Chords.named(displayedSequence!!.sections[maxOf(0,section)].chord) else first
-    val nextChord=if(page==1 && chordPhrases) displayedSequence!!.sections[(maxOf(0,section)+1)%displayedSequence.sections.size].chord else ""
-    val chordTones=shownChord.positions.distinctBy { it.midi%12 }.sortedBy { (it.midi-shownChord.root)%12 }
+    val harmony=displayedSequence?.sections.orEmpty()
+    val melody=page==1 && chordPhrases && harmony.isEmpty()
+    val renderHint=if(melody && hint==Hint.ROOTS) Hint.FULL else hint
+    val shownChord=if(page==1) harmony.getOrNull(maxOf(0,section))?.let { Chords.named(it.chord) } else first
+    val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
+    fun eventLabel(value: Event?)=value?.positions?.takeIf { it.isNotEmpty() }?.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(it.midi,true)}" } ?: "留拍"
     fun changed() { player.invalidate(); note="" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
     fun firstChange(value: Chord) { if(firstName!=value.name) { changed();firstName=value.name } }
@@ -127,7 +134,7 @@ fun PracticeApp(player: Player) {
     fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases } }
     fun tap(p: Position) {
         player.audition(listOf(p))
-        note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else " · ${shownChord.role(p)}"
+        note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else shownChord?.let { " · ${it.role(p)}" }.orEmpty()
     }
     fun setHint(index: Int) { hintIndex=index; note=""; preferences.edit().putInt("hint",index).apply() }
     val status=when {
@@ -187,10 +194,14 @@ fun PracticeApp(player: Player) {
         }) { padding ->
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
                 val availableWidth=maxWidth
+                val availableHeight=maxHeight
                 val wide=maxWidth>=700.dp
                 val compact=maxHeight<520.dp
                 val fontScale=LocalDensity.current.fontScale
                 val narrowHeader=availableWidth<350.dp || fontScale>1.2f
+                // A short window scrolls the whole chord page, never the labels inside its diagram.
+                val chordPageScroll=page==1 && !wide && maxHeight<600.dp*fontScale
+                val chordScrollState=remember(page) { ScrollState(0) }
                 if(tab) {
                     Column(Modifier.fillMaxSize().padding(vertical=4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -206,13 +217,13 @@ fun PracticeApp(player: Player) {
                                 CandyChip("短句应用",chordPhrases,Sky) { chordMode(true) }
                             }
                             TextButton(onClick={settingsPanel=1},modifier=Modifier.testTag("config-summary")) {
-                                Text(if(page==0) "${Patterns.all[scale.pattern].solfege} · ${scale.exercise.title} · 练习 ›" else if(!chordPhrases) "${shownChord.name} · 逐弦检查" else "${shownChord.name} · 练习 ›")
+                                Text(if(page==0) "${Patterns.all[scale.pattern].solfege} · ${scale.exercise.title} · 练习 ›" else if(!chordPhrases) "${shownChord?.name} · 逐弦检查" else "${shownChord?.name ?: phrase.title} · 练习 ›")
                             }
-                            if(page==1 && chordPhrases) Text("下一：$nextChord",style=MaterialTheme.typography.labelMedium,color=BlueInk)
+                            if(page==1 && chordPhrases && (!melody || hint!=Hint.HIDDEN)) Text("下一：${if(melody) eventLabel(nextEvent) else nextChord}",style=MaterialTheme.typography.labelMedium,color=BlueInk)
                             Text(status,style=MaterialTheme.typography.labelMedium,color=if(progress.phase==Phase.ERROR) RoseInk else Green)
                             }
                         }
-                        if(displayedSequence!=null) Tablature(displayedSequence,hint,if(page==0) scale.key else null,renderCursor,player.active || progress.phase==Phase.PAUSED,
+                        if(displayedSequence!=null) Tablature(displayedSequence,renderHint,if(page==0) scale.key else null,renderCursor,player.active || progress.phase==Phase.PAUSED,
                             Modifier.weight(1f).background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)).padding(horizontal=8.dp,vertical=4.dp))
                         else Text(scaleResult.reason,color=RoseInk)
                     }
@@ -222,57 +233,65 @@ fun PracticeApp(player: Player) {
                         if(!compact || !wide) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                             Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                 Box(Modifier.size(7.dp).background(PurpleInk,RoundedCornerShape(4.dp)))
-                                Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
+                                if(page==1 && !chordPhrases) {
+                                    TextButton(onClick={firstChange(Chords.all[Chords.all.indexOf(first)-1])},enabled=first!=Chords.all.first(),modifier=Modifier.width(48.dp).testTag("previous-chord").semantics { contentDescription="上一和弦" },contentPadding=PaddingValues(0.dp)) { Text("‹",fontSize=24.sp) }
+                                    TextButton(onClick={firstChange(Chords.all[Chords.all.indexOf(first)+1])},enabled=first!=Chords.all.last(),modifier=Modifier.width(48.dp).testTag("next-chord").semantics { contentDescription="下一和弦" },contentPadding=PaddingValues(0.dp)) { Text("›",fontSize=24.sp) }
+                                } else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
                             }
                             Spacer(Modifier.weight(1f))
                             listOf("指板","六线谱").forEachIndexed { index,title ->
                                 CandyChip(title,tab==(index==1),Sky,Modifier.padding(start=6.dp)) { viewPreference=index }
                             }
                         }
-                        CandyCard(Modifier.weight(1f).fillMaxWidth().testTag("practice-card"),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
+                        val cardContent: @Composable (Chord,Boolean)->Unit = { cardChord,selected ->
+                        val shownChord=cardChord
+                        val chordTones=cardChord.positions.distinctBy { it.midi%12 }.sortedBy { (it.midi-cardChord.root)%12 }
+                        CandyCard(Modifier.fillMaxSize().then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
                             val target=if(page==1) "${shownChord.name} · ${if(!chordPhrases) "逐弦检查" else "下一：$nextChord"}"
                                 else if(hint==Hint.FULL && event!=null) { if(event.positions.isEmpty()) "现在：留拍" else "现在：${event.positions.joinToString { Music.name(it.midi,true) }}" }
                                 else "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} 指型"
                             Row(Modifier.fillMaxWidth().background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     val headline=buildAnnotatedString {
-                                        if(page==1) {
+                                        if(page==1 && !melody) {
                                             withStyle(SpanStyle(color=RoseInk,fontWeight=FontWeight.ExtraBold,fontSize=if(compact || shownChord.name.length>5) 22.sp else 30.sp)) { append(shownChord.name) }
                                             if(!chordPhrases) withStyle(SpanStyle(color=Ink,fontSize=14.sp)) { append(" · 逐弦检查") }
-                                        } else append(target)
+                                        } else append(if(melody) phrase.title else target)
                                     }
                                     Text(headline,style=if(compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=Ink)
-                                    if(page==1 && chordPhrases) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk)
+                                    if(page==1 && chordPhrases && (!melody || hint!=Hint.HIDDEN)) Text(if(melody) "现在：${eventLabel(phraseNow)}\n下一：${eventLabel(nextEvent)}" else "下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk)
                                     if(page==1 && !chordPhrases && hint!=Hint.HIDDEN) Text(
                                         chordTones.filter { hint==Hint.FULL || it.midi%12==shownChord.root }.joinToString(" · ") { "${shownChord.role(it)} ${Music.name(it.midi)}" },
                                         style=MaterialTheme.typography.bodySmall,color=BlueInk)
                                     if(page==0 && hint==Hint.FULL && nextEvent!=null) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                                 }
-                                if(page==1 && !chordPhrases) TextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=!player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
+                                if(page==1 && !chordPhrases) TextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                                 if(hint==Hint.HIDDEN) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
                             }
-                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
-                                    // Labels remain readable; exceptionally short/large-font windows can scroll the diagram region.
-                                    val minimum=if(compact) 176.dp else if(page==0) 176.dp else 215.dp
-                                    val h=maxOf(minimum*fontScale,maxHeight).coerceAtMost(if(page==0) 300.dp*fontScale else 390.dp*fontScale)
-                                    Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
-                                        if(page==0) {
+                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
+                                    if(page==0) {
+                                        val h=maxOf(176.dp*fontScale,maxHeight).coerceAtMost(300.dp*fontScale)
+                                        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
                                             val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
                                             Fretboard(positions,scale.key,hint,false,current,!player.active,h,::tap)
-                                        } else ChordDiagram(shownChord,hint,current,!player.active,h,::tap)
-                                    }
+                                        }
+                                    } else if(melody) Fretboard(displayedSequence!!.route,null,renderHint,false,current,!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap)
+                                    else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale),::tap)
                                 }
-                                if(!compact) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
+                                if(!compact) Text(if(hint==Hint.FULL) { if(melody) "上 1 弦 → 下 6 弦 · 绿色音位 · 粉色当前音" else if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
                             if(!compact || !wide) Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                                Text(status,style=MaterialTheme.typography.labelLarge,color=if(progress.phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f))
+                                Text(if(selected) status else "准备好，就开始一轮",style=MaterialTheme.typography.labelLarge,color=if(progress.phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f))
                                 repeat(4) { i ->
                                     Box(Modifier.padding(start=6.dp).size(if(i==cursor?.beat && showingSession) 11.dp else 8.dp).background(if(i==cursor?.beat && showingSession) Green else Lavender,RoundedCornerShape(8.dp)))
                                 }
                             }
-                            if(showingSession && cursor?.pre==false && !compact) LinearProgressIndicator(progress={ (cursor.localTick / displayedSequence!!.length).toFloat() },modifier=Modifier.fillMaxWidth(),color=Green,trackColor=Mint)
-                            if(note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
+                            if(selected && showingSession && cursor?.pre==false && !compact) LinearProgressIndicator(progress={ (cursor.localTick / displayedSequence!!.length).toFloat() },modifier=Modifier.fillMaxWidth(),color=Green,trackColor=Mint)
+                            if(selected && note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
                         }
+                        }
+                        if(page==1 && !chordPhrases) ChordDeck(Chords.all.indexOf(first),Chords.all.size,{firstChange(Chords.all[it])},Modifier.weight(1f).fillMaxWidth()) { index,selected -> cardContent(Chords.all[index],selected) }
+                        else Box(Modifier.weight(1f).fillMaxWidth()) { cardContent(shownChord ?: first,true) }
                         if(!compact && !wide && !player.active && page==0) Surface(color=Color.Transparent,shape=RoundedCornerShape(18.dp),border=BorderStroke(1.dp,Color.White)) {
                             Row(Modifier.background(candyBrush(Warm)).padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                                 MusicMotif(Modifier.size(24.dp),"pick",Color(0xFFD3961B))
@@ -281,7 +300,8 @@ fun PracticeApp(player: Player) {
                         }
                     }
                 }
-                Column(Modifier.fillMaxSize().padding(vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.fillMaxSize().testTag("chord-page").then(if(chordPageScroll) Modifier.verticalScroll(chordScrollState) else Modifier)) {
+                Column(Modifier.fillMaxWidth().height(if(chordPageScroll) 600.dp*fontScale else availableHeight).padding(vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Mint.copy(alpha=.8f),Sky.copy(alpha=.6f),Lavender.copy(alpha=.55f))),RoundedCornerShape(24.dp)).padding(horizontal=10.dp,vertical=if(compact) 0.dp else 7.dp),verticalAlignment=Alignment.CenterVertically) {
                         if(!compact) { MusicMotif(Modifier.size(if(narrowHeader) 34.dp else 46.dp)); Spacer(Modifier.width(6.dp)) }
                         Column(Modifier.weight(1f)) {
@@ -306,7 +326,7 @@ fun PracticeApp(player: Player) {
                                 MusicMotif(Modifier.size(30.dp),"pick",PurpleInk);Spacer(Modifier.width(10.dp))
                                 Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                     Text(if(page==0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} / ${Patterns.all[scale.pattern].caged}" else if(!chordPhrases) firstName else phrase.title,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
-                                    Text(if(page==0) "${scale.exercise.title} · 每拍${if(scale.eighth) 2 else 1}音" else if(!chordPhrases) "和弦学习 · 认音、听音、逐弦跟练" else "伴奏 · ${phrase.passage} · 无变调夹",style=MaterialTheme.typography.bodySmall,color=Muted)
+                                    Text(if(page==0) "${scale.exercise.title} · 每拍${if(scale.eighth) 2 else 1}音" else if(!chordPhrases) "和弦学习 · 认音、听音、逐弦跟练" else "${phrase.category} · ${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
                                 }
                                 Text("练习 ›",color=PurpleInk,fontWeight=FontWeight.Bold,modifier=Modifier.background(Color.White.copy(alpha=.65f),RoundedCornerShape(12.dp)).padding(horizontal=10.dp,vertical=8.dp))
                             }
@@ -337,7 +357,7 @@ fun PracticeApp(player: Player) {
                             Box(Modifier.weight(1f)) { content() }
                         }
                     } else {
-                        if(!compact) summary() else {
+                        if(!compact && page==0) summary() else {
                             if(page==1) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                                 CandyChip("和弦学习",!chordPhrases,Pink) { chordMode(false) }
                                 CandyChip("短句应用",chordPhrases,Sky) { chordMode(true) }
@@ -345,9 +365,11 @@ fun PracticeApp(player: Player) {
                                 TextButton(onClick={settingsPanel=1},modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(0.dp)) { Text("练习 ›") }
                             }
                             else TextButton(onClick={settingsPanel=1},modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(0.dp)) { Text("${scale.exercise.title} · 练习 ›") }
+                            if(page==1 && chordPhrases) Text("${phrase.title} · ${phrase.passage}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         }
                         Box(Modifier.weight(1f)) { content() }
                     }
+                }
                 }
                 }
             }
@@ -405,12 +427,12 @@ fun PracticeApp(player: Player) {
                         }
                     }
                 } else if(chordPhrases) {
-                    Label("伴奏短句") {
+                    Label("选择短句") {
                         Choices(Phrases.all.map { it.title },Phrases.all.indexOf(phrase),Pink) { phraseChange(Phrases.all[it]) }
                         Text("${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("${phrase.technique} · 原速 ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)
-                        Text("改编练习；no5 表示省略五音，只弹指法图标出的有效弦。",style=MaterialTheme.typography.bodySmall,color=Muted)
-                        Text("八分音符低音与高音交替；同弦再拨、换指法或句尾时收音。",style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text("${phrase.category} · ${phrase.source}",style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text(phrase.sequence.explanation,style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
                 } else {
                     Label("选择和弦") {
