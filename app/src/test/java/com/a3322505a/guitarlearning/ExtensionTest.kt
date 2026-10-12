@@ -28,7 +28,7 @@ class ExtensionTest {
             val arrival=plan.outward.indexOfFirst { it in b.positions && it !in a.positions }*12
             assertTrue("First arrival in B is not the end",sequence.length>arrival+12)
             assertEquals(0,sequence.length%BAR)
-            assertEquals(route,Routes.scale(options.copy(eighth=true)).sequence!!.events.flatMap { it.positions })
+            assertEquals(route,Routes.scale(options.copy(notesPerBeat=2)).sequence!!.events.flatMap { it.positions })
             assertEquals(route.reversed(),Routes.scale(options.copy(reverse=true)).sequence!!.events.flatMap { it.positions })
             route.forEachIndexed { at,p ->
                 val outward=at<plan.outward.size

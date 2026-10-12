@@ -6,6 +6,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class NotationTest {
+    @Test fun scaleTripletsKeepExplicitTailRestsAndCursorEventIdentity() {
+        listOf(ScaleOptions(exercise=ScaleExercise.THIRDS),ScaleOptions(exercise=ScaleExercise.ROOTS),ScaleOptions(pattern=1,octave=false)).forEach { o ->
+            val seq=Routes.scale(o.copy(notesPerBeat=3)).sequence!!
+            val bars=seq.tabBars()
+            val segments=bars.flatMap { it.segments }
+            assertTrue(bars.all { it.segments.sumOf { s -> s.value.ticks }==48 })
+            assertEquals(seq.tuplets,segments.filter { s -> s.tuplet?.tick==s.tick }.map { it.tuplet })
+            seq.tuplets.forEach { group ->
+                val members=segments.filter { it.tuplet==group }
+                assertEquals(3,members.size)
+                assertTrue(members.all { it.value==RhythmValue.TRIPLET_EIGHTH })
+                assertEquals(seq.events.filter { it.tick in group.tick until group.end }.map { it.rest },members.map { it.rest })
+            }
+            val session=Session(seq,60,true,2)
+            for(tick in 0 until seq.length) {
+                val cursor=session.cursor((48+tick).toDouble())
+                val segment=segments.single { tick>=it.tick && tick<it.end }
+                assertEquals(seq.eventAt(cursor.localTick)!!.id,segment.eventId)
+                assertEquals(seq.eventAt(cursor.localTick)!!.positions,segment.positions)
+            }
+        }
+    }
     @Test fun samePitchKeepsItsStringAndChordGrouping() {
         val a=Position(2,0); val b=Position(3,4)
         assertEquals(59,a.midi); assertEquals(a.midi,b.midi)
@@ -30,7 +52,7 @@ class NotationTest {
         assertTrue(segments.first().rest); assertTrue(segments.last().rest)
     }
     @Test fun allExistingPracticesHaveExactNotationTimeAndNoImplicitMute() {
-        val sequences=ScaleExercise.entries.mapNotNull { Routes.scale(ScaleOptions(exercise=it,octave=false,eighth=true)).sequence } +
+        val sequences=ScaleExercise.entries.mapNotNull { Routes.scale(ScaleOptions(exercise=it,octave=false,notesPerBeat=2)).sequence } +
             ChordExercise.entries.flatMap { kind -> listOf(1,2,4,8).map { chordSequence(Chords.named("C"),Chords.named("Dm"),kind,it) } }
         sequences.forEach { seq ->
             val bars=seq.tabBars()
@@ -43,7 +65,7 @@ class NotationTest {
         }
     }
     @Test fun layoutUsesReadableDynamicSystemsAndCursorKeepsLoopPosition() {
-        val bars=Routes.scale(ScaleOptions(exercise=ScaleExercise.THREE,eighth=true)).sequence!!.tabBars()
+        val bars=Routes.scale(ScaleOptions(exercise=ScaleExercise.THREE,notesPerBeat=2)).sequence!!.tabBars()
         assertTrue(tabSystems(bars,360).all { it.size==1 })
         assertTrue(tabSystems(bars,1200).any { it.size>1 })
         val session=Session(Routes.scale(ScaleOptions()).sequence!!,60,true,4)
