@@ -99,7 +99,7 @@ private fun ViewSwitch(tab: Boolean, onSelect: (Int)->Unit) {
 /** Domain, secondary chord content, and editing have distinct visual roles in every layout. */
 @Composable
 private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
-    onPage: (Int)->Unit, onMode: (Boolean)->Unit, onSettings: ()->Unit) {
+    onPage: (Int)->Unit, onMode: (Boolean)->Unit, onSettings: ()->Unit, trailing: @Composable ()->Unit = {}) {
     val domains: @Composable ()->Unit = {
         listOf("音阶","和弦").forEachIndexed { index,title ->
             CandyChip(title,page==index,if(index==0) Mint else Pink,Modifier.testTag("domain-$index")) { onPage(index) }
@@ -127,9 +127,11 @@ private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
                     if(page==1) { Box(Modifier.width(1.dp).height(20.dp).background(Outline)); modes() }
                 }
                 settings()
+                trailing()
             } else {
-                Text("吉他练习",modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+                Text("吉他练习",modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
                 domains()
+                trailing()
             }
         }
         if(!compact) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -266,10 +268,11 @@ fun PracticeApp(player: Player) {
             }
         }) { padding ->
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
-              val navigationCompact=tab || maxHeight<520.dp
+              val navigationCompact=(tab || maxHeight<520.dp) && maxWidth>=600.dp*LocalDensity.current.fontScale
               Column(Modifier.fillMaxSize()) {
                 PracticeNavigation(page,chordPhrases,navigationCompact,
-                    { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1})
+                    { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1},
+                    { if(tab) ViewSwitch(tab) { viewPreference=it } })
               BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val availableWidth=maxWidth
                 val availableHeight=maxHeight
@@ -288,7 +291,6 @@ fun PracticeApp(player: Player) {
                                     maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
                                 Text(status,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=if(progress.phase==Phase.ERROR) RoseInk else Green)
                             }
-                            ViewSwitch(tab) { viewPreference=it }
                         }
                         if(displayedSequence!=null) Tablature(displayedSequence,renderHint,if(page==0) scale.key else null,renderCursor,player.active || progress.phase==Phase.PAUSED,
                             Modifier.weight(1f).background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)).padding(horizontal=8.dp,vertical=4.dp))
