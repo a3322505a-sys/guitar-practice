@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
@@ -26,8 +27,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.window.DialogWindowProvider
+import com.a3322505a.guitarlearning.immersiveStatusBar
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
@@ -160,20 +161,15 @@ fun PracticeApp(player: Player) {
     }
     BackHandler(enabled=settingsPanel==0 && (player.active || progress.phase==Phase.PAUSED)) { player.stop() }
     PracticeTheme {
-      BoxWithConstraints(Modifier.fillMaxSize().displayCutoutPadding().practiceBackground()) {
+      BoxWithConstraints(Modifier.fillMaxSize().displayCutoutPadding().windowInsetsPadding(WindowInsets.captionBar)
+          .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)).practiceBackground()) {
         val shortWindow=maxHeight<520.dp
         val narrowWindow=maxWidth<700.dp
         val tab=viewPreference==1
-        DisposableEffect(activity,tab) {
+        LaunchedEffect(activity,tab) {
             activity.requestedOrientation=if(tab) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            val bars=WindowCompat.getInsetsController(activity.window,activity.window.decorView)
-            if(tab) bars.hide(WindowInsetsCompat.Type.statusBars())
-            onDispose {
-                activity.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                if(tab) bars.show(WindowInsetsCompat.Type.statusBars())
-            }
         }
-        Scaffold(containerColor=Color.Transparent,bottomBar={
+        Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
             Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
                 Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF4FFFC),Color(0xFFE5F6F2)))).navigationBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                     if(!tab && (!shortWindow || narrowWindow)) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
@@ -388,6 +384,11 @@ fun PracticeApp(player: Player) {
         }
       }
         if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={settingsPanel=0},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=Paper) {
+            val dialogWindow=(LocalView.current.parent as? DialogWindowProvider)?.window
+            DisposableEffect(dialogWindow) {
+                dialogWindow?.let(::immersiveStatusBar)
+                onDispose { }
+            }
             Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).padding(bottom=24.dp).testTag(if(settingsPanel==1) "practice-settings" else "tempo-settings"),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Text(if(settingsPanel==1) "练习设置" else "速度与播放",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
