@@ -43,7 +43,16 @@ object Phrases {
     )
     val mozart = MozartK265.phrases
     val all=(listOf(usotsuki,singleNote)+mozart).also(::validatePhrases)
-    fun named(id: String) = all.first { it.id==id }
+    fun named(id: String): Phrase {
+        // Activity saved state from v61 can still contain any of the six former IDs.
+        val current=when(id) {
+            "K265-1","K265-2" -> "K265-A"
+            "K265-3","K265-4" -> "K265-B"
+            "K265-5","K265-6" -> "K265-C"
+            else -> id
+        }
+        return all.first { it.id==current }
+    }
 }
 
 /** Content registration is the boundary: no new player or notation path per phrase. */

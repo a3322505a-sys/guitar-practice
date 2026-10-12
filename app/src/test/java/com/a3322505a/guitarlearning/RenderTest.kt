@@ -533,7 +533,7 @@ class RenderTest {
             }
             compose.onNodeWithText("六线谱").performClick()
             compose.onNodeWithTag("tablature").assertIsDisplayed()
-            capture("mozart-ending-tab","v61")
+            capture("mozart-ending-tab","v62")
             compose.onNodeWithText("开始跟练").performClick()
             val session=player.session!!
             assertEquals(24,session.preTicks)
@@ -547,10 +547,10 @@ class RenderTest {
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi")
     fun mozartDottedCadenceRendersWithOriginalFingering() {
-        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[3].sequence,Hint.FULL,null,null,false) } }
+        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[1].sequence,Hint.FULL,null,null,false) } }
         compose.onNodeWithContentDescription("第 1 至 4 小节",substring=true).assertIsDisplayed()
         compose.onNodeWithContentDescription("2 弦 8 品；2 弦 5 品；3 弦 7 品；",substring=true).assertIsDisplayed()
-        capture("mozart-dotted-eighth-tab","v61")
+        capture("mozart-dotted-eighth-tab","v62")
     }
     @Test fun activeViewSwitchKeepsSessionAndMutedPlaybackAdvances() {
         val sinks=mutableListOf<ManualSink>()
