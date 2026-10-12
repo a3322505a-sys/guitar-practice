@@ -312,46 +312,51 @@ class RenderTest {
         compose.onNodeWithText("听示范").assertIsDisplayed()
         capture("tablet-portrait-tab")
     }
-    private fun assertTabletControlsVisible() {
+    private fun assertTabletControlsVisible(tab: Boolean = false) {
         val first=compose.onNodeWithTag("navigation-primary").fetchSemanticsNode().boundsInRoot
         val second=compose.onNodeWithTag("navigation-secondary").fetchSemanticsNode().boundsInRoot
         assertTrue("The navigation uses two separate rows",second.top>=first.bottom)
-        listOf("domain-0","domain-1","config-summary","tempo-button").forEach { tag ->
+        listOf("domain-0","domain-1","config-summary").forEach { tag ->
             val node=compose.onNodeWithTag(tag).assertIsDisplayed().fetchSemanticsNode()
             assertTrue("$tag has a visible 64dp target",node.boundsInRoot.height>=63.5f)
             assertEquals("$tag is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
         }
-        listOf("指板","六线谱","结束").forEach { text ->
+        listOf("指板","六线谱").forEach { text ->
             val node=compose.onNodeWithText(text).assertIsDisplayed().fetchSemanticsNode()
             assertTrue("$text has a visible 64dp target",node.boundsInRoot.height>=63.5f)
             assertEquals("$text is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
         }
         listOf("听示范","开始跟练").forEach { text ->
             val node=compose.onNodeWithText(text).assertIsDisplayed().fetchSemanticsNode()
-            assertTrue("$text has a visible 72dp target",node.boundsInRoot.height>=71.5f)
+            assertEquals("$text retains the original 52dp height",52f,node.boundsInRoot.height,.5f)
         }
+        val transport=compose.onNodeWithTag("transport").fetchSemanticsNode().boundsInRoot
+        val tempo=compose.onNodeWithTag("tempo-button").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        if(tab) assertTrue("TAB keeps tempo inside the original single footer row",tempo.top>=transport.top && tempo.bottom<=transport.bottom)
+        else assertTrue("The board keeps tempo above the original transport row",tempo.bottom<=transport.top)
+        compose.onNodeWithText("结束").assertHeightIsEqualTo(48.dp)
         compose.onAllNodesWithTag("view-switch").assertCountEquals(1)
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletControlsUseTwoRowsAcrossBoardChordAndTab() {
         assertTabletControlsVisible()
         compose.onNodeWithTag("playback-status").assertIsDisplayed()
         val navigation=compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot
-        capture("tablet-scale-board","v66")
+        capture("tablet-scale-board","v67")
         compose.onNodeWithText("和弦").performClick()
         assertTabletControlsVisible()
         compose.onNodeWithTag("playback-status").assertIsDisplayed()
         assertWholeChordDiagram()
         compose.onNodeWithTag("next-chord").performClick()
         compose.onNodeWithText("Am · 逐弦检查").assertIsDisplayed()
-        capture("tablet-chord-board","v66")
+        capture("tablet-chord-board","v67")
         compose.onNodeWithText("短句应用").performClick()
         assertTabletControlsVisible()
-        capture("tablet-phrase-board","v66")
+        capture("tablet-phrase-board","v67")
         compose.onNodeWithText("六线谱").performClick()
-        assertTabletControlsVisible()
+        assertTabletControlsVisible(tab=true)
         assertEquals("View changes preserve the navigation bounds",navigation,compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot)
         compose.onNodeWithTag("tablature").assertIsDisplayed()
-        capture("tablet-phrase-tab","v66")
+        capture("tablet-phrase-tab","v67")
         compose.onNodeWithText("指板").performClick()
         assertTabletControlsVisible()
     }
@@ -364,18 +369,18 @@ class RenderTest {
         assertTabletControlsVisible()
         compose.onNodeWithText("短句应用").performClick()
         assertTabletControlsVisible()
-        capture("tablet-portrait-large-text","v66")
+        capture("tablet-portrait-large-text","v67")
         compose.onNodeWithTag("config-summary").performClick()
         compose.onNodeWithText(Phrases.named("PM01").title).performScrollTo().performClick()
-        capture("tablet-portrait-practice-settings","v66")
+        capture("tablet-portrait-practice-settings","v67")
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("tempo-button").performClick()
         compose.onNodeWithTag("tempo-faster").performClick()
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithText("65 BPM").assertIsDisplayed()
         compose.onNodeWithText("六线谱").performClick()
-        assertTabletControlsVisible()
-        capture("tablet-portrait-large-tab","v66")
+        assertTabletControlsVisible(tab=true)
+        capture("tablet-portrait-large-tab","v67")
     }
     @Test fun openStringPracticeUsesCompactTargetsAndPreservesAuditionAndHints() {
         compose.onNodeWithText("和弦").performClick()

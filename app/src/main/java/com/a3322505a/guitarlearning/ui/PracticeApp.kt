@@ -285,33 +285,36 @@ fun PracticeApp(player: Player) {
             if(activity.requestedOrientation!=orientation) activity.requestedOrientation=orientation
         }
         Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
+            // Keep the original footer typography, control sizes and TAB row layout.
+            PracticeTheme {
             Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
                 Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF4FFFC),Color(0xFFE5F6F2)))).navigationBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    if(!tab || tabletControls) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        PracticeTextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
+                    if(!tab) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
                             MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text("$bpm BPM",fontWeight=FontWeight.Bold)
                         }
                         Text("· $beatsPerBar/4",color=Muted,style=MaterialTheme.typography.labelMedium)
                         Spacer(Modifier.weight(1f))
-                        PracticeTextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
+                        TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                     }
                     Row(Modifier.fillMaxWidth().testTag("transport"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
-                        if(tab && !tabletControls) {
-                            PracticeTextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
-                            PracticeTextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
+                        if(tab) {
+                            TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
+                            TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                         }
                         if(player.active || progress.phase==Phase.PAUSED) {
                             CandyAction(if(player.active) "暂停" else "继续",modifier=Modifier.weight(1f),onClick={if(player.active) player.pause() else player.resume()})
-                            OutlinedButton(onClick={player.restart()},modifier=Modifier.weight(1f).heightIn(min=if(tabletControls) 72.dp else 52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint)) { Text("重来") }
+                            OutlinedButton(onClick={player.restart()},modifier=Modifier.weight(1f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint)) { Text("重来") }
                         } else {
-                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=if(tabletControls) 72.dp else 52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
-                                TransportMotif("speaker",Modifier.size(if(tabletControls) 24.dp else 18.dp),Green);Spacer(Modifier.width(6.dp));Text("听示范")
+                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
+                                TransportMotif("speaker",Modifier.size(18.dp),Green);Spacer(Modifier.width(6.dp));Text("听示范")
                             }
                             CandyAction("开始跟练",modifier=Modifier.weight(1.25f),enabled=sequence!=null,onClick={sequence?.let { note=""; player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }})
                         }
-                        PracticeTextButton(onClick={player.stop();note=""},modifier=Modifier.widthIn(min=if(tabletControls) 96.dp else 0.dp).heightIn(min=48.dp),contentPadding=PaddingValues(8.dp)) { Text("结束",color=Muted) }
+                        TextButton(onClick={player.stop();note=""},modifier=Modifier.heightIn(min=48.dp),contentPadding=PaddingValues(8.dp)) { Text("结束",color=Muted) }
                     }
                 }
+            }
             }
         }) { padding ->
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
