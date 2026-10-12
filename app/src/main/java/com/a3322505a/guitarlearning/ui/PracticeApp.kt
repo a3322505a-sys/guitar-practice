@@ -86,13 +86,16 @@ private fun Label(title: String, content: @Composable ColumnScope.()->Unit) {
 fun PracticeApp(player: Player) {
     val context=LocalContext.current
     val preferences=remember { context.getSharedPreferences("practice-settings",0) }
+    val phraseStore=remember { PhraseSettingsStore(preferences) }
     var page by rememberSaveable { mutableIntStateOf(0) }
     var scale by rememberSaveable(stateSaver=ScaleSaver) { mutableStateOf(ScaleOptions()) }
     var firstName by rememberSaveable { mutableStateOf("C") }
-    var phraseId by rememberSaveable { mutableStateOf("S01") }
+    var phraseId by rememberSaveable { mutableStateOf(phraseStore.selected().id) }
     var chordPhrases by rememberSaveable { mutableStateOf(false) }
     var bpm by rememberSaveable { mutableIntStateOf(60) }
     var repeats by rememberSaveable { mutableIntStateOf(4) }
+    var firstBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.first) }
+    var lastBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.last) }
     var hintIndex by rememberSaveable { mutableIntStateOf(preferences.getInt("hint",0).coerceIn(0,2)) }
     var guitar by rememberSaveable { mutableStateOf(preferences.getBoolean("guitar",true)) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click",true)) }
@@ -105,6 +108,11 @@ fun PracticeApp(player: Player) {
     val hint=Hint.entries[hintIndex]
     val first=Chords.named(firstName)
     val phrase=Phrases.named(phraseId)
+    val wholeRange=BarRange(0,phrase.sequence.length/phrase.sequence.barTicks-1)
+    val range=BarRange(firstBar,lastBar).takeIf { it.valid(phrase.sequence) } ?: wholeRange
+    LaunchedEffect(page,chordPhrases,phrase.id,bpm,repeats,firstBar,lastBar) {
+        if(page==1 && chordPhrases) phraseStore.save(phrase,bpm,repeats,range)
+    }
     player.guitar=guitar; player.click=click
     val scaleResult=remember(scale) { Routes.scale(scale) }
     val checkSequence=remember(first) { chordSequence(first,first,ChordExercise.CHECK,4) }
@@ -120,6 +128,7 @@ fun PracticeApp(player: Player) {
     val event=if(showingSession && cursor?.pre==false) displayedSequence?.eventAt(cursor.localTick) else null
     val phraseNow=if(showingSession && cursor?.pre==false) event else displayedSequence?.events?.firstOrNull()
     val nextEvent=phraseNow?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }
+    val moving=if(showingSession && cursor?.pre==false) displayedSequence?.movingAt(cursor.localTick) else null
     val current=event?.positions ?: emptyList()
     val section=if(showingSession && cursor?.pre==false) displayedSequence!!.sectionAt(cursor.localTick) else -1
     val harmony=displayedSequence?.sections.orEmpty()
@@ -127,12 +136,13 @@ fun PracticeApp(player: Player) {
     val renderHint=if(melody && hint==Hint.ROOTS) Hint.FULL else hint
     val shownChord=if(page==1) harmony.getOrNull(maxOf(0,section))?.let { Chords.named(it.chord) } else first
     val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
-    fun eventLabel(value: Event?)=value?.positions?.takeIf { it.isNotEmpty() }?.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(it.midi,true)}" } ?: "留拍"
+    fun eventLabel(value: Event?)=if(value==null || value.rest) "留拍" else listOf(value.positions.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(it.midi,true)}" },value.expressionLabel()).filter { it.isNotBlank() }.joinToString(" ")
     fun changed() { player.invalidate(); note="" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
     fun firstChange(value: Chord) { if(firstName!=value.name) { changed();firstName=value.name } }
-    fun phraseChange(value: Phrase) { if(phraseId!=value.id) { changed();phraseId=value.id } }
-    fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases } }
+    fun loadPhrase(value: Phrase) { val saved=phraseStore.load(value,bpm,repeats);bpm=saved.bpm;repeats=saved.repeats;firstBar=saved.range.first;lastBar=saved.range.last }
+    fun phraseChange(value: Phrase) { if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
+    fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases;if(phrases) loadPhrase(phrase) } }
     fun tap(p: Position) {
         player.audition(listOf(p))
         note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else shownChord?.let { " · ${it.role(p)}" }.orEmpty()
@@ -141,8 +151,8 @@ fun PracticeApp(player: Player) {
     val status=when {
         session?.preview==true && player.active -> if(session.sequence.events.single().positions.size>1) "整和弦试听" else "点音试听"
         player.active && cursor?.pre==true -> "预备拍 ${cursor.beat+1} / ${session!!.sequence.beatsPerBar}"
-        progress.phase==Phase.PLAYING -> "第 ${cursor!!.loop+1}${if(session!!.repeats>0) "/${session.repeats}" else ""} 轮 · 第 ${cursor.bar+1} 小节"
-        progress.phase==Phase.PAUSED -> "已暂停 · 从${if(cursor?.pre==true) "预备" else "第 ${(cursor?.bar ?: 0)+1}"}小节继续"
+        progress.phase==Phase.PLAYING -> "第 ${cursor!!.loop+1}${if(session!!.repeats>0) "/${session.repeats}" else ""} 轮 · 第 ${cursor.bar+session!!.sequence.originalBar+1} 小节"
+        progress.phase==Phase.PAUSED -> "已暂停 · 从${if(cursor?.pre==true) "预备" else "第 ${(cursor?.bar ?: 0)+(session?.sequence?.originalBar ?: 0)+1}"}小节继续"
         progress.phase==Phase.PREPARING -> "准备声音…"
         progress.phase==Phase.ENDED -> progress.message
         progress.phase==Phase.ERROR -> progress.message
@@ -183,10 +193,10 @@ fun PracticeApp(player: Player) {
                             CandyAction(if(player.active) "暂停" else "继续",modifier=Modifier.weight(1f),onClick={if(player.active) player.pause() else player.resume()})
                             OutlinedButton(onClick={player.restart()},modifier=Modifier.weight(1f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint)) { Text("重来") }
                         } else {
-                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
+                            OutlinedButton(onClick={sequence?.let { note=""; player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }},enabled=sequence!=null,modifier=Modifier.weight(.85f).heightIn(min=52.dp),shape=RoundedCornerShape(20.dp),colors=ButtonDefaults.outlinedButtonColors(containerColor=Color.White),border=BorderStroke(1.5.dp,Mint),contentPadding=PaddingValues(8.dp)) {
                                 TransportMotif("speaker",Modifier.size(18.dp),Green);Spacer(Modifier.width(6.dp));Text("听示范")
                             }
-                            CandyAction("开始跟练",modifier=Modifier.weight(1.25f),enabled=sequence!=null,onClick={sequence?.let { note=""; player.start(it,bpm,true,repeats) }})
+                            CandyAction("开始跟练",modifier=Modifier.weight(1.25f),enabled=sequence!=null,onClick={sequence?.let { note=""; player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.length/it.barTicks-1)) }})
                         }
                         TextButton(onClick={player.stop();note=""},modifier=Modifier.heightIn(min=48.dp),contentPadding=PaddingValues(8.dp)) { Text("结束",color=Muted) }
                     }
@@ -249,7 +259,7 @@ fun PracticeApp(player: Player) {
                         val chordTones=cardChord.positions.distinctBy { it.midi%12 }.sortedBy { (it.midi-cardChord.root)%12 }
                         CandyCard(Modifier.fillMaxSize().then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
                             val target=if(page==1) "${shownChord.name} · ${if(!chordPhrases) "逐弦检查" else "下一：$nextChord"}"
-                                else if(hint==Hint.FULL && event!=null) { if(event.positions.isEmpty()) "现在：留拍" else "现在：${event.positions.joinToString { Music.name(it.midi,true) }}" }
+                                else if(hint==Hint.FULL && event!=null) { if(event.rest) "现在：留拍" else "现在：${eventLabel(event)}" }
                                 else "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} 指型"
                             Row(Modifier.fillMaxWidth().background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
@@ -277,7 +287,8 @@ fun PracticeApp(player: Player) {
                                             val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
                                             Fretboard(positions,scale.key,hint,false,current,!player.active,h,::tap)
                                         }
-                                    } else if(melody) Fretboard(displayedSequence!!.route,null,renderHint,false,current,!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap)
+                                    } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,current,!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap,moving)
+                                    else if(melody) Text("${event?.expressionLabel().orEmpty()} · 死音节奏",color=PurpleInk)
                                     else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale),::tap)
                                 }
                                 if(!compact) Text(if(hint==Hint.FULL) { if(melody) "上 1 弦 → 下 6 弦 · 绿色音位 · 粉色当前音" else if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
@@ -429,11 +440,26 @@ fun PracticeApp(player: Player) {
                     }
                 } else if(chordPhrases) {
                     Label("选择短句") {
-                        Choices(Phrases.all.map { it.title },Phrases.all.indexOf(phrase),Pink) { phraseChange(Phrases.all[it]) }
+                        Phrases.all.groupBy { it.use }.forEach { (use,items) ->
+                            Text(use,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
+                            Choices(items.map { it.title },items.indexOf(phrase),Pink) { phraseChange(items[it]) }
+                        }
                         Text("${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("${phrase.technique} · ${phrase.tempoLabel} ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("${phrase.category} · ${phrase.source}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text(phrase.sequence.explanation,style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text("目标：${phrase.goal} 建议起步 ${phrase.suggestedBpm} BPM。",style=MaterialTheme.typography.bodySmall,color=BlueInk)
+                        phrase.relatedId?.let { Text("基础素材：${Phrases.named(it).title}",style=MaterialTheme.typography.bodySmall,color=Muted) }
+                    }
+                    Label("练习小节") {
+                        Text("当前范围：${range.first+phrase.sequence.originalBar+1}–${range.last+phrase.sequence.originalBar+1} 小节；完整经过范围一次计一轮。",modifier=Modifier.testTag("phrase-range"))
+                        OutlinedButton(onClick={if(range!=wholeRange) { changed();firstBar=wholeRange.first;lastBar=wholeRange.last }}) { Text("整句") }
+                        val bars=(0..wholeRange.last).toList()
+                        Text("起始小节")
+                        Choices(bars.map { "${it+phrase.sequence.originalBar+1}" },range.first,Mint) { if(it!=firstBar) { changed();firstBar=it;if(lastBar<it) lastBar=it } }
+                        Text("结束小节")
+                        val endings=(range.first..wholeRange.last).toList()
+                        Choices(endings.map { "${it+phrase.sequence.originalBar+1}" },endings.indexOf(range.last),Sky) { if(endings[it]!=lastBar) { changed();lastBar=endings[it] } }
                     }
                 } else {
                     Label("选择和弦") {

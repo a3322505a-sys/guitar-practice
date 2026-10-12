@@ -548,9 +548,47 @@ class RenderTest {
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi")
     fun mozartDottedCadenceRendersWithOriginalFingering() {
         compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[1].sequence,Hint.FULL,null,null,false) } }
-        compose.onNodeWithContentDescription("第 1 至 4 小节",substring=true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("第 9 至 12 小节",substring=true).assertIsDisplayed()
         compose.onNodeWithContentDescription("2 弦 8 品；2 弦 5 品；3 弦 7 品；",substring=true).assertIsDisplayed()
         capture("mozart-dotted-eighth-tab","v62")
+    }
+    @Test @Config(qualifiers="w891dp-h411dp-mdpi")
+    fun tripletDeadMuteAndSlideNotationRenderFromRegisteredContent() {
+        listOf("T01","R02","PM01","SL01").forEach { id ->
+            val seq=Phrases.named(id).sequence
+            compose.activity.setContent { PracticeTheme { Tablature(seq,Hint.FULL,null,null,false) } }
+            compose.onNodeWithTag("tablature").assertIsDisplayed()
+            if(id=="T01") compose.onNodeWithContentDescription("三连音 3",substring=true).assertIsDisplayed()
+            if(id=="R02") compose.onNodeWithContentDescription("弦 x",substring=true).assertIsDisplayed()
+            if(id=="PM01") compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
+            if(id=="SL01") compose.onNodeWithContentDescription("5/7",substring=true).assertIsDisplayed()
+            capture("$id-tab","v63")
+        }
+    }
+    @Test @Config(qualifiers="w411dp-h891dp-mdpi")
+    fun phraseRangeAndTempoRestoreInUiWithoutStartingPlayback() {
+        val prefs=compose.activity.getSharedPreferences("practice-settings",0)
+        val phrase=Phrases.mozart[1]
+        PhraseSettingsStore(prefs).save(phrase,73,8,BarRange(2,3))
+        val player=Player(compose.activity) { ManualSink() }
+        try {
+            compose.activity.setContent { PracticeApp(player) }
+            compose.onNodeWithText("和弦").performClick()
+            compose.onNodeWithText("短句应用").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNodeWithTag("phrase-range").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("当前范围：11–12 小节；完整经过范围一次计一轮。").assertIsDisplayed()
+            capture("range-settings","v63")
+            compose.onNodeWithText("完成").performClick()
+            assertNull(player.session)
+            compose.onNodeWithTag("tempo-button").performClick()
+            compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
+            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithText("听示范").performClick()
+            assertEquals(BarRange(2,3),player.session!!.range)
+            assertEquals(73,player.session!!.bpm)
+            compose.onNodeWithText("结束").performClick()
+        } finally { player.release() }
     }
     @Test fun activeViewSwitchKeepsSessionAndMutedPlaybackAdvances() {
         val sinks=mutableListOf<ManualSink>()

@@ -8,6 +8,8 @@ data class Phrase(
     val source: String, val sourceBpm: Int, val difficulty: String, val technique: String,
     val conditions: String, val sequence: Sequence,
     val tempoLabel: String = "原速",
+    val goal: String = "保持拍点，按谱面完整弹奏一轮。", val suggestedBpm: Int = 60,
+    val use: String = "单音", val relatedId: String? = null,
 )
 
 object Phrases {
@@ -42,7 +44,7 @@ object Phrases {
         },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
     )
     val mozart = MozartK265.phrases
-    val all=(listOf(usotsuki,singleNote)+mozart).also(::validatePhrases)
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all).also(::validatePhrases)
     fun named(id: String): Phrase {
         // Activity saved state from v61 can still contain any of the six former IDs.
         val current=when(id) {
@@ -51,7 +53,7 @@ object Phrases {
             "K265-5","K265-6" -> "K265-C"
             else -> id
         }
-        return all.first { it.id==current }
+        return all.firstOrNull { it.id==current } ?: all.first()
     }
 }
 
@@ -66,21 +68,23 @@ fun validatePhrases(phrases: List<Phrase>) {
         // Current Position/audio model is standard tuning with no capo. Other conditions need real pitch support.
         valid(phrase.conditions=="标准调弦 · 无变调夹","unsupported tuning/capo conditions")
         val seq=phrase.sequence
+        valid(phrase.goal.isNotBlank() && phrase.suggestedBpm in 30..180,"missing goal or invalid starting BPM")
+        val expression=runCatching { seq.validateExpression() }
+        valid(expression.isSuccess,expression.exceptionOrNull()?.message ?: "invalid expression")
         valid(seq.length%seq.barTicks==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
-        valid(seq.events.any { it.positions.isNotEmpty() },"no sounding notes")
+        valid(seq.events.any { !it.rest },"no sounding notes")
         var end=0
         seq.events.forEachIndexed { index,event ->
             valid(event.tick==end,"event[$index] must start at tick $end (use explicit rests)")
-            valid(event.tick%3==0 && event.duration%3==0,"event[$index] unsupported TAB subdivision")
             valid(event.positions.all { it.string in 1..6 && it.fret in 0..24 },"event[$index] invalid string/fret")
             valid(event.positions.distinctBy { it.string }.size==event.positions.size,"event[$index] duplicate string")
             valid(event.chord==null || Chords.all.any { it.name==event.chord },"event[$index] unknown chord ${event.chord}")
-            if(event.strum) valid(event.positions.size>1 && event.positions.zipWithNext().all { (a,b)->a.string>b.string },"event[$index] strum must run low to high strings")
+            if(event.strum) valid(event.strings.size>1,"event[$index] strum needs multiple strings")
             end=event.tick+event.duration
         }
         valid(end==seq.length,"events must cover the whole phrase")
         seq.sections.forEachIndexed { index,section ->
-            valid(section.tick in 0 until seq.length && section.tick%3==0,"section[$index] invalid tick")
+            valid(section.tick in 0 until seq.length,"section[$index] invalid tick")
             valid(seq.events.any { it.tick==section.tick },"section[$index] must begin at an event onset")
             valid(Chords.all.any { it.name==section.chord },"section[$index] unknown chord ${section.chord}")
             valid(if(index==0) section.tick==0 else section.tick>seq.sections[index-1].tick,"section[$index] order/start")
