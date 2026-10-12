@@ -355,7 +355,7 @@ fun PracticeApp(player: Player) {
                                     } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,phraseNow?.positions.orEmpty(),!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap,moving,
                                         nextEvent?.positions.orEmpty(),showLegend=false)
                                     else if(melody) Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "死音节奏",color=PurpleInk)
-                                    else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale),::tap)
+                                    else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),::tap)
                                 }
                                 if(!compact && !phraseCard) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
                             if(!compact || !wide || phraseCard) Row(Modifier.fillMaxWidth().height(56.dp*fontScale).testTag("playback-status")
