@@ -231,8 +231,6 @@ fun PracticeApp(player: Player) {
     PracticeTheme {
       BoxWithConstraints(Modifier.fillMaxSize().displayCutoutPadding().windowInsetsPadding(WindowInsets.captionBar)
           .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)).practiceBackground()) {
-        val shortWindow=maxHeight<520.dp
-        val narrowWindow=maxWidth<700.dp
         val tab=viewPreference==1
         LaunchedEffect(activity,tab) {
             activity.requestedOrientation=if(tab) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -240,7 +238,7 @@ fun PracticeApp(player: Player) {
         Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
             Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
                 Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF4FFFC),Color(0xFFE5F6F2)))).navigationBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    if(!tab && (!shortWindow || narrowWindow)) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                    if(!tab) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
                             MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text("$bpm BPM",fontWeight=FontWeight.Bold)
                         }
@@ -248,7 +246,7 @@ fun PracticeApp(player: Player) {
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                     }
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().testTag("transport"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                         if(tab) {
                             TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
                             TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
@@ -268,8 +266,9 @@ fun PracticeApp(player: Player) {
             }
         }) { padding ->
             BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
+              val navigationCompact=tab || maxHeight<520.dp
               Column(Modifier.fillMaxSize()) {
-                PracticeNavigation(page,chordPhrases,tab || maxHeight<520.dp,
+                PracticeNavigation(page,chordPhrases,navigationCompact,
                     { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1})
               BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val availableWidth=maxWidth
@@ -277,16 +276,18 @@ fun PracticeApp(player: Player) {
                 val wide=maxWidth>=700.dp
                 val compact=maxHeight<520.dp
                 val fontScale=LocalDensity.current.fontScale
-                val narrowHeader=availableWidth<350.dp || fontScale>1.2f
                 // A short window scrolls the whole chord page, never the labels inside its diagram.
                 val chordPageScroll=page==1 && !wide && maxHeight<600.dp*fontScale
                 val chordScrollState=remember(page) { ScrollState(0) }
                 if(tab) {
                     Column(Modifier.fillMaxSize().padding(vertical=4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
-                            Text(if(page==0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} · ${scale.exercise.title}"
-                                else if(chordPhrases) phrase.title else "${first.name} · 逐弦检查",
-                                modifier=Modifier.weight(1f),maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
+                            Column(Modifier.weight(1f)) {
+                                Text(if(page==0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} · ${scale.exercise.title}"
+                                    else if(chordPhrases) phrase.title else "${first.name} · 逐弦检查",
+                                    maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
+                                Text(status,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=if(progress.phase==Phase.ERROR) RoseInk else Green)
+                            }
                             ViewSwitch(tab) { viewPreference=it }
                         }
                         if(displayedSequence!=null) Tablature(displayedSequence,renderHint,if(page==0) scale.key else null,renderCursor,player.active || progress.phase==Phase.PAUSED,
@@ -391,16 +392,6 @@ fun PracticeApp(player: Player) {
                         Row(Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                             Column(Modifier.width(240.dp).fillMaxHeight().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                                 summary()
-                                if(compact && !(page==1 && chordPhrases)) {
-                                    Text(status,color=Green,style=MaterialTheme.typography.labelLarge)
-                                    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                        repeat(beatsPerBar) { i -> Box(Modifier.size(9.dp).background(if(i==cursor?.beat && showingSession) Green else Outline,RoundedCornerShape(9.dp))) }
-                                    }
-                                    Row(verticalAlignment=Alignment.CenterVertically) {
-                                        TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button")) { Text("$bpm BPM") }
-                                        TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)}) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
-                                    }
-                                }
                                 CandyCard(Modifier.fillMaxWidth(),Warm) {
                                     CandySectionTitle("练习小提示",Warm)
                                     Text(sequence?.explanation ?: scaleResult.reason,style=MaterialTheme.typography.bodySmall)
