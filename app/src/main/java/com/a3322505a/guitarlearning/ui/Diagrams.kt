@@ -153,23 +153,28 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
 fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 300.dp, onTap: (Position)->Unit) {
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
-    val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter { it.midi%12==chord.root }; Hint.HIDDEN -> emptyList() }
-    Canvas(Modifier.fillMaxWidth().height(diagramHeight).testTag("chord-diagram").pointerInput(chord,hint,enabled,onTap) {
+    val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter(chord::isRoot); Hint.HIDDEN -> emptyList() }
+    Canvas(Modifier.fillMaxWidth().height(diagramHeight).testTag("chord-diagram").semantics {
+        contentDescription=if(hint==Hint.HIDDEN) "和弦图，提示已隐藏" else buildString {
+            append("${chord.name}，${chord.conditions}，起始相对品位${chord.baseFret}。")
+            visible.forEach { append("${it.string} 弦 ${it.fret} 品，${chord.noteName(it,true)} ${chord.role(it)}；") }
+        }
+    }.pointerInput(chord,hint,enabled,onTap) {
         if(enabled) detectTapGestures { tap ->
-            val geometry=ChordGeometry(size.width.toFloat(),size.height.toFloat())
+            val geometry=ChordGeometry(size.width.toFloat(),size.height.toFloat(),chord.baseFret)
             val stringIndex=(0..5).minBy { kotlin.math.abs(tap.x-(geometry.left+it*geometry.stringStep)) }
             visible.firstOrNull { it.string==6-stringIndex }?.let { p ->
                 if((tap-geometry.position(p)).getDistance() <= maxOf(22.dp.toPx(),geometry.unit*20)) onTap(p)
             }
         }
     }) {
-        val geometry=ChordGeometry(size.width,size.height)
+        val geometry=ChordGeometry(size.width,size.height,chord.baseFret)
         val left=geometry.left; val step=geometry.stringStep
         val top=geometry.top; val fretStep=geometry.fretStep
         val right=left+5*step
         // One scale for both axes: the grid stays square, even inside a wide card.
         drawRoundRect(Color(0xFFF4F8F3),Offset(left,top),androidx.compose.ui.geometry.Size(5*step,4*fretStep),androidx.compose.ui.geometry.CornerRadius(5*geometry.unit))
-        for(i in 0..4) drawLine(if(i==0) Ink else Color(0xFFB7B9AF),Offset(left,top+i*fretStep),Offset(right,top+i*fretStep),if(i==0) 4.dp.toPx() else 1.dp.toPx())
+        for(i in 0..4) drawLine(if(i==0 && chord.baseFret==1) Ink else Color(0xFFB7B9AF),Offset(left,top+i*fretStep),Offset(right,top+i*fretStep),if(i==0 && chord.baseFret==1) 4.dp.toPx() else 1.dp.toPx())
         for(i in 0..5) {
             val x=left+i*step
             drawLine(Color(0xFF8B998E),Offset(x,top),Offset(x,top+4*fretStep),(1.1-i*0.11).dp.toPx())
@@ -181,17 +186,17 @@ fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boo
         }
         for(p in visible) {
             val center=geometry.position(p)
-            val root=p.midi%12==chord.root
+            val root=chord.isRoot(p)
             val active=p in current
             drawCircle(if(active) Pink else if(root) Gold else Green,13*geometry.unit,center)
             label(measurer,if(hint==Hint.ROOTS) "根" else if(p.fret==0) "O" else chord.fingers[6-p.string].toString(),center.x,center.y,if(root||active) Ink else Color.White)
             if(active) drawCircle(Ink,17*geometry.unit,center,style=Stroke(2.dp.toPx()))
         }
-        for(i in 1..4) label(measurer,"$i",left-23*geometry.unit,top+(i-0.5f)*fretStep,size=12)
+        for(i in 1..4) label(measurer,"${chord.baseFret+i-1}",left-23*geometry.unit,top+(i-0.5f)*fretStep,size=12)
     }
 }
 
-private class ChordGeometry(width: Float, height: Float) {
+internal class ChordGeometry(width: Float, height: Float, private val baseFret: Int = 1) {
     val unit=minOf(width/260f,height/300f)
     val stringStep=36*unit
     val fretStep=45*unit
@@ -200,5 +205,5 @@ private class ChordGeometry(width: Float, height: Float) {
     val openY=top-26*unit
     val noteY=top+207*unit
     val stringY=top+236*unit
-    fun position(p: Position)=Offset(left+(6-p.string)*stringStep,if(p.fret==0) openY else top+(p.fret-.5f)*fretStep)
+    fun position(p: Position)=Offset(left+(6-p.string)*stringStep,if(p.fret==0) openY else top+(p.fret-baseFret+.5f)*fretStep)
 }

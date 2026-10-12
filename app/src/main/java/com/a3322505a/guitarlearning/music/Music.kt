@@ -34,14 +34,21 @@ object Patterns {
     val s1 = listOf(Position(5,3), Position(4,0), Position(4,2), Position(4,3), Position(3,0), Position(3,2), Position(2,0), Position(2,1))
 }
 
-data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>) {
+data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>,
+    val capoFret: Int = 0, val soundingName: String = name, val group: String = "基础和弦", val source: String = "",
+    val intervalRoles: Map<Int,String> = emptyMap(), val toneNames: Map<Int,String> = emptyMap()) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
+    val baseFret get() = if(positions.maxOf { it.fret }<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
+    val conditions get() = if(capoFret==0) "标准调弦 · 无变调夹" else "变调夹${capoFret}品 · 实音 $soundingName"
+    fun midi(p: Position) = p.midi + capoFret
+    fun isRoot(p: Position) = midi(p)%12==root
+    fun noteName(p: Position, octave: Boolean = false) = (toneNames[midi(p)%12] ?: Music.name(midi(p))) + if(octave) (midi(p)/12-1) else ""
     val arpeggio get() = listOf(positions.first()) + positions.filter { it.string <= 3 }
-    fun role(p: Position) = when (p.midi % 12) {
+    fun role(p: Position) = when (midi(p) % 12) {
         root -> "根音"
         third -> "三音"
-        else -> when ((p.midi - root) % 12) {
+        else -> intervalRoles[(midi(p)-root)%12] ?: when ((midi(p) - root) % 12) {
             2 -> "二音（挂留）"
             5 -> "四音（挂留）"
             7 -> "五音"
@@ -50,7 +57,7 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
             else -> "非和弦音"
         }
     }
-    fun label(index: Int) = frets[index]?.let { Music.name(Music.openMidi[5-index] + it) } ?: "X"
+    fun label(index: Int) = frets[index]?.let { noteName(Position(6-index,it)) } ?: "X"
 }
 
 object Chords {
@@ -68,6 +75,6 @@ object Chords {
         Chord("Asus4(no5)", 9, null, listOf(null,0,0,2,null,null), listOf(0,0,0,2,0,0)),
         Chord("Bm7(no5)", 11, 2, listOf(null,2,0,2,null,null), listOf(0,1,0,2,0,0)),
         Chord("D/F♯", 2, 6, listOf(2,null,0,2,null,null), listOf(1,0,0,2,0,0)),
-    )
+    ) + ShayouChords.all
     fun named(name: String) = all.first { it.name == name }
 }

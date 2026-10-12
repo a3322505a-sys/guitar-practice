@@ -55,7 +55,7 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
 private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Position> = when (hint) {
     Hint.FULL -> segment.positions
     Hint.HIDDEN -> emptyList()
-    Hint.ROOTS -> segment.positions.filter { p -> key?.isRoot(p) ?: (segment.chord?.let { Chords.named(it).root == p.midi % 12 } == true) }
+    Hint.ROOTS -> segment.positions.filter { p -> key?.isRoot(p) ?: (segment.chord?.let { Chords.named(it).isRoot(p) } == true) }
 }
 
 @Composable

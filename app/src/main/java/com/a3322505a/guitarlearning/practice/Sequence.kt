@@ -168,6 +168,7 @@ enum class ChordExercise(val title: String, val instruction: String) {
 
 fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int): Sequence {
     val chords = if(kind == ChordExercise.CHECK) listOf(first) else listOf(first, second)
+    require(chords.map { it.capoFret }.distinct().size==1) { "chords must share the same capo" }
     val events = mutableListOf<Event>()
     val sections = mutableListOf<Section>()
     var tick = 0
@@ -183,7 +184,7 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
     val length = ((tick+BAR-1)/BAR)*BAR
     if(length > tick) events += Event(tick, length-tick, emptyList(), chords.last().name)
     val extra = if(length>tick) " 尾部留 ${(length-tick)/12.0} 拍。" else ""
-    return Sequence(events, length, kind.instruction + extra, sections)
+    return Sequence(events, length, kind.instruction + extra, sections,capoFret=first.capoFret)
 }
 
 data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false,

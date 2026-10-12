@@ -655,7 +655,7 @@ class RenderTest {
             }
             compose.onNodeWithTag("next-chord").assertIsNotEnabled()
             compose.onNodeWithTag("chord-deck").performTouchInput { swipeLeft() }
-            compose.onNodeWithText("D/F♯ · 逐弦检查").assertIsDisplayed()
+            compose.onNodeWithText("${Chords.all.last().name} · 逐弦检查").assertIsDisplayed()
             capture("deck-last")
             for(chord in Chords.all.dropLast(1).reversed()) {
                 compose.onNodeWithTag("chord-deck").performTouchInput { swipeRight() }

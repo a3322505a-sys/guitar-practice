@@ -259,9 +259,10 @@ fun PracticeApp(player: Player) {
     fun phraseChange(value: Phrase) { if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
     fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases;if(phrases) loadPhrase(phrase) } }
     fun tap(p: Position) {
-        val capo=if(page==1 && chordPhrases) displayedSequence?.capoFret ?: 0 else 0
+        val capo=if(page==1) displayedSequence?.capoFret ?: 0 else 0
         player.audition(listOf(p),capoFret=capo)
-        note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi+capo,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else shownChord?.let { " · ${it.role(p)}" }.orEmpty()
+        val name=if(page==1 && !chordPhrases) first.noteName(p,true) else Music.name(p.midi+capo,true)
+        note="${p.string} 弦 ${p.fret} 品 · $name" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else if(!chordPhrases || harmony.isNotEmpty()) shownChord?.let { " · ${it.role(p)}" }.orEmpty() else ""
     }
     fun setHint(index: Int) { hintIndex=index; note=""; preferences.edit().putInt("hint",index).apply() }
     val status=when {
@@ -366,7 +367,7 @@ fun PracticeApp(player: Player) {
                         }
                         val cardContent: @Composable (Chord,Boolean)->Unit = { cardChord,selected ->
                         val shownChord=cardChord
-                        val chordTones=cardChord.positions.distinctBy { it.midi%12 }.sortedBy { (it.midi-cardChord.root)%12 }
+                        val chordTones=cardChord.positions.distinctBy { cardChord.midi(it)%12 }.sortedBy { (cardChord.midi(it)-cardChord.root)%12 }
                         CandyCard((if(openStringsOnly) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
                             val target=if(page==1) "${shownChord.name} · ${if(!chordPhrases) "逐弦检查" else "下一：$nextChord"}"
                                 else if(hint==Hint.FULL && event!=null) { if(event.rest) "现在：留拍" else "现在：${eventLabel(event)}" }
@@ -389,12 +390,13 @@ fun PracticeApp(player: Player) {
                                         Text(cue,modifier=Modifier.testTag("phrase-cue"),style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=2,overflow=TextOverflow.Ellipsis)
                                         if(!melody) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=1)
                                     }
+                                    if(page==1 && !chordPhrases && shownChord.capoFret>0) Text(shownChord.conditions,style=MaterialTheme.typography.bodySmall,color=PurpleInk,modifier=Modifier.testTag("chord-conditions"))
                                     if(page==1 && !chordPhrases && hint!=Hint.HIDDEN) Text(
-                                        chordTones.filter { hint==Hint.FULL || it.midi%12==shownChord.root }.joinToString(" · ") { "${shownChord.role(it)} ${Music.name(it.midi)}" },
+                                        chordTones.filter { hint==Hint.FULL || shownChord.isRoot(it) }.joinToString(" · ") { "${shownChord.role(it)} ${shownChord.noteName(it)}" },
                                         style=MaterialTheme.typography.bodySmall,color=BlueInk)
                                     if(page==0 && hint==Hint.FULL && nextEvent!=null) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                                 }
-                                if(page==1 && !chordPhrases) PracticeTextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
+                                if(page==1 && !chordPhrases) PracticeTextButton(onClick={player.audition(shownChord.positions,capoFret=shownChord.capoFret);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
                                 else if(phraseCard) PracticeTextButton(onClick={settingsPanel=3},modifier=Modifier.testTag("diagram-help"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("帮助") }
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                                 if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
@@ -566,10 +568,14 @@ fun PracticeApp(player: Player) {
                     }
                 } else {
                     Label("选择和弦") {
-                        Choices(Chords.all.map { it.name },Chords.all.indexOf(first),Pink) { firstChange(Chords.all[it]) }
+                        Chords.all.groupBy { it.group }.forEach { (group,items) ->
+                            Text(group,fontWeight=FontWeight.Bold,color=PurpleInk)
+                            Choices(items.map { it.name },items.indexOf(first),Pink) { firstChange(items[it]) }
+                        }
+                        if(first.capoFret>0) Text("${first.conditions}。${first.source}",style=MaterialTheme.typography.bodySmall,color=BlueInk)
                         Text("先看根音和组成音，点图中的音位试听，再听整和弦。",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("听示范和跟练按有效弦逐根弹，每弦一拍；数字 1—4 表示手指，O 为空弦，X 弦不弹。",style=MaterialTheme.typography.bodySmall,color=Muted)
-                        Text("no5 表示省略五音；斜杠后的音是最低音。所有指法均为标准调弦、无变调夹。",style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text("no5 表示省略五音；斜杠后的音是最低音；5 表示根音与五音构成的力量和弦，双音 riff 按两根有效弦演奏。斜阳指法用变调夹3品，数字相对变调夹；基础和弦无夹。",style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
                 }
                 if(sequence==null) Text(scaleResult.reason,color=RoseInk,style=MaterialTheme.typography.bodySmall)
