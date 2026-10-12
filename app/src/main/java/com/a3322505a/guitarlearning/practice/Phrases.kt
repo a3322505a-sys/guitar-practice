@@ -1,6 +1,7 @@
 package com.a3322505a.guitarlearning.practice
 
 import com.a3322505a.guitarlearning.music.Position
+import com.a3322505a.guitarlearning.music.Chords
 
 data class Phrase(
     val id: String, val title: String, val category: String, val passage: String,
@@ -31,6 +32,53 @@ object Phrases {
             sections=listOf(Section(0,"Gsus2"),Section(24,"Asus4(no5)"),Section(48,"Bm7(no5)"),Section(72,"D/F♯")),
         ),
     )
-    val all=listOf(usotsuki)
+    val singleNote = Phrase(
+        id="M01",title="单音短句 · C 大调小句",category="单音旋律",passage="1 小节",
+        source="原创入门练习",sourceBpm=60,difficulty="入门",technique="单音拨弦",
+        conditions="标准调弦 · 无变调夹",
+        sequence=Sequence(listOf(Position(5,3),Position(4,0),Position(4,2),Position(5,3)).mapIndexed { i,p ->
+            Event(i*12,12,listOf(p))
+        },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
+    )
+    val all=listOf(usotsuki,singleNote).also(::validatePhrases)
     fun named(id: String) = all.first { it.id==id }
+}
+
+/** Content registration is the boundary: no new player or notation path per phrase. */
+fun validatePhrases(phrases: List<Phrase>) {
+    val ids=mutableSetOf<String>()
+    phrases.forEach { phrase ->
+        fun valid(condition: Boolean, detail: String) { require(condition) { "${phrase.id}: $detail" } }
+        valid(phrase.id.isNotBlank() && ids.add(phrase.id),"duplicate or blank ID")
+        valid(phrase.title.isNotBlank() && phrase.category.isNotBlank() && phrase.source.isNotBlank(),"missing title/category/source")
+        valid(phrase.sourceBpm>0,"invalid source BPM")
+        // Current Position/audio model is standard tuning with no capo. Other conditions need real pitch support.
+        valid(phrase.conditions=="标准调弦 · 无变调夹","unsupported tuning/capo conditions")
+        val seq=phrase.sequence
+        valid(seq.length%BAR==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
+        valid(seq.events.any { it.positions.isNotEmpty() },"no sounding notes")
+        var end=0
+        seq.events.forEachIndexed { index,event ->
+            valid(event.tick==end,"event[$index] must start at tick $end (use explicit rests)")
+            valid(event.tick%6==0 && event.duration%6==0,"event[$index] unsupported TAB subdivision")
+            valid(event.positions.all { it.string in 1..6 && it.fret in 0..24 },"event[$index] invalid string/fret")
+            valid(event.positions.distinctBy { it.string }.size==event.positions.size,"event[$index] duplicate string")
+            valid(event.chord==null || Chords.all.any { it.name==event.chord },"event[$index] unknown chord ${event.chord}")
+            if(event.strum) valid(event.positions.size>1 && event.positions.zipWithNext().all { (a,b)->a.string>b.string },"event[$index] strum must run low to high strings")
+            end=event.tick+event.duration
+        }
+        valid(end==seq.length,"events must cover the whole phrase")
+        seq.sections.forEachIndexed { index,section ->
+            valid(section.tick in 0 until seq.length && section.tick%6==0,"section[$index] invalid tick")
+            valid(seq.events.any { it.tick==section.tick },"section[$index] must begin at an event onset")
+            valid(Chords.all.any { it.name==section.chord },"section[$index] unknown chord ${section.chord}")
+            valid(if(index==0) section.tick==0 else section.tick>seq.sections[index-1].tick,"section[$index] order/start")
+        }
+        seq.events.forEachIndexed { index,event ->
+            val section=seq.sections.getOrNull(seq.sectionAt(event.tick.toDouble()))
+            valid(if(section==null) event.chord==null else event.chord==section.chord,"event[$index] harmony does not match its section")
+            if(section!=null) valid(event.positions.all { it in Chords.named(section.chord).positions },"event[$index] note outside displayed chord")
+        }
+        valid(runCatching { seq.tabBars() }.isSuccess,"unsupported TAB rhythm")
+    }
 }

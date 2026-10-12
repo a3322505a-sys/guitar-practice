@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import com.a3322505a.guitarlearning.audio.*
@@ -45,7 +46,7 @@ class RenderTest {
             } else compose.activity.window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
-            val path=File("../.local/v59/$name.png")
+            val path=File("../.local/v60/$name.png")
             path.parentFile!!.mkdirs()
             path.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
         }
@@ -118,7 +119,7 @@ class RenderTest {
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithText("短句应用").performClick()
         compose.onNodeWithTag("config-summary").performClick()
-        compose.onNodeWithText("伴奏短句").assertIsDisplayed()
+        compose.onNodeWithText("选择短句").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("两和弦转换").assertDoesNotExist()
         compose.onNodeWithText("规则下拨").assertDoesNotExist()
         compose.onNodeWithText("简单分解").assertDoesNotExist()
@@ -301,6 +302,15 @@ class RenderTest {
         assertTrue(diagram.boundsInRoot.bottom<=viewport.bottom+.5f)
         assertFalse("The chord itself must not scroll",compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().config.contains(SemanticsProperties.VerticalScrollAxisRange))
     }
+    private fun scrollChordDiagramIntoView() {
+        val diagram=compose.onNodeWithTag("chord-diagram").fetchSemanticsNode()
+        val page=compose.onNodeWithTag("chord-page").fetchSemanticsNode().boundsInRoot
+        val top=diagram.layoutInfo.coordinates.localToRoot(Offset.Zero).y
+        val bottom=top+diagram.layoutInfo.coordinates.size.height
+        val delta=if(bottom>page.bottom) bottom-page.bottom else if(top<page.top) top-page.top else 0f
+        // HorizontalPager is the closest scroll ancestor; explicitly scroll the vertical page.
+        compose.onNodeWithTag("chord-page").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f,delta) }
+    }
     @Test @Config(qualifiers="w360dp-h800dp-port-mdpi") fun representativeChordsFitWithoutDiagramScrolling() {
         compose.onNodeWithText("和弦").performClick()
         listOf("D","C","G","D/F♯","Asus4(no5)").forEach { name ->
@@ -320,14 +330,14 @@ class RenderTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithTag("chord-diagram").performScrollTo()
+        scrollChordDiagramIntoView()
         assertWholeChordDiagram()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("small-large-text-chord-fit")
         compose.onNodeWithText("六线谱").performScrollTo().performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         compose.onNodeWithText("指板").performClick()
-        compose.onNodeWithTag("chord-diagram").performScrollTo()
+        scrollChordDiagramIntoView()
         assertWholeChordDiagram()
     }
     @Test fun activityRecreationKeepsPlayerAndSelectedPractice() {
@@ -399,6 +409,109 @@ class RenderTest {
             assertTrue(tapped.isEmpty())
             compose.onNodeWithTag("chord-diagram").performTouchInput { click(Offset(68.32f,16.43f)) }
             assertEquals(listOf(Position(5,0)),tapped)
+        } finally { player.release() }
+    }
+    @Test fun wholeChordCardsSwipeOneAtATimeAndKeepBoundaries() {
+        val player=Player(compose.activity) { ManualSink() }
+        try {
+            org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+            compose.activity.setContent { PracticeApp(player) }
+            compose.onNodeWithText("和弦").performClick()
+            compose.onNodeWithTag("previous-chord").assertIsNotEnabled()
+            compose.onNodeWithText("开始跟练").performClick()
+            val old=player.session
+            compose.onNodeWithTag("chord-deck").performTouchInput { swipeRight() }
+            assertSame("Boundary gesture keeps the old playback",old,player.session)
+            compose.onNodeWithTag("chord-deck").performTouchInput { swipeLeft() }
+            compose.onNodeWithText("Am · 逐弦检查").assertIsDisplayed()
+            compose.onNodeWithText("根音 A · 三音 C · 五音 E").assertIsDisplayed()
+            assertNull("Settling on a different whole card ends the old session",player.session)
+            assertWholeChordDiagram()
+            val card=compose.onNodeWithTag("practice-card").fetchSemanticsNode().boundsInRoot
+            val deck=compose.onNodeWithTag("chord-deck").fetchSemanticsNode().boundsInRoot
+            assertEquals("Neighbors do not reduce the main card width",deck.width,card.width,.5f)
+            compose.onNodeWithText("听和弦").performClick()
+            assertEquals(Chords.named("Am").positions,player.session!!.sequence.events.single().positions)
+            compose.onNodeWithText("结束").performClick()
+            for(chord in Chords.all.drop(2)) {
+                compose.onNodeWithTag("chord-deck").performTouchInput { swipeLeft() }
+                compose.onNodeWithText("${chord.name} · 逐弦检查").assertIsDisplayed()
+                assertWholeChordDiagram()
+            }
+            compose.onNodeWithTag("next-chord").assertIsNotEnabled()
+            compose.onNodeWithTag("chord-deck").performTouchInput { swipeLeft() }
+            compose.onNodeWithText("D/F♯ · 逐弦检查").assertIsDisplayed()
+            capture("deck-last")
+            for(chord in Chords.all.dropLast(1).reversed()) {
+                compose.onNodeWithTag("chord-deck").performTouchInput { swipeRight() }
+                compose.onNodeWithText("${chord.name} · 逐弦检查").assertIsDisplayed()
+            }
+            compose.onNodeWithTag("next-chord").performClick()
+            capture("deck-quick-next")
+            compose.onNodeWithText("Am · 逐弦检查").assertIsDisplayed()
+            compose.onNodeWithText("六线谱").performClick()
+            compose.onNodeWithText("指板").performClick()
+            compose.onNodeWithText("Am · 逐弦检查").assertIsDisplayed()
+            capture("deck-am")
+        } finally { player.release() }
+    }
+    @Test fun selectedWholeCardSurvivesRealActivityRecreation() {
+        // Use MainActivity's real saved-state tree, rather than replacing it with an injected player.
+        compose.onNodeWithText("和弦").performClick()
+        repeat(3) { compose.onNodeWithTag("next-chord").performClick() }
+        compose.onNodeWithText("Em · 逐弦检查").assertIsDisplayed()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("Em · 逐弦检查").assertIsDisplayed()
+        assertWholeChordDiagram()
+    }
+    @Test fun emptyHarmonyPhraseUsesNotesAndOriginalPlaybackAcrossLoopsAndViews() {
+        val sinks=mutableListOf<ManualSink>()
+        val player=Player(compose.activity) { ManualSink().also { sinks+=it } }
+        try {
+            org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+            compose.activity.setContent { PracticeApp(player) }
+            compose.onNodeWithText("和弦").performClick()
+            compose.onNodeWithText("短句应用").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNodeWithText(Phrases.singleNote.title).performScrollTo().performClick()
+            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
+            compose.onNodeWithText("下一：Asus4(no5)").assertDoesNotExist()
+            compose.onNodeWithText("听和弦").assertDoesNotExist()
+            compose.onNodeWithText("现在：5 弦 3 品 C3\n下一：4 弦 0 品 D3").assertIsDisplayed()
+            capture("single-note-board")
+            compose.onNodeWithText("撤提示").performClick()
+            compose.onNodeWithText("现在：5 弦 3 品 C3\n下一：4 弦 0 品 D3").assertDoesNotExist()
+            compose.onNodeWithText("恢复提示").performClick()
+            compose.onNodeWithText("听示范").performClick()
+            assertEquals(Phrases.singleNote.sequence,player.session!!.sequence)
+            compose.onNodeWithText("结束").performClick()
+            compose.onNodeWithText("开始跟练").performClick()
+            val session=player.session!!
+            compose.waitUntil(8000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
+            val sink=sinks.last()
+            val tick=120.0 // pre-bar + full first loop + third note in the second loop.
+            compose.waitUntil(8000) { sink.written.get()>=session.frame(tick) }
+            sink.head.set(session.frame(tick))
+            compose.waitUntil(8000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();player.progress.tick>=tick-.1 }
+            assertEquals(1,session.cursor(player.progress.tick).loop)
+            compose.onNodeWithText("六线谱").performClick()
+            assertSame(session,player.session)
+            compose.onNodeWithTag("tablature").assertIsDisplayed()
+            capture("single-note-playing-tab")
+            compose.onNodeWithText("暂停").performClick()
+            assertEquals(Phase.PAUSED,player.progress.phase)
+            compose.onNodeWithText("指板").performClick()
+            assertSame(session,player.session)
+            compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
+            compose.onNodeWithText("继续").performClick()
+            assertSame(session,player.session)
+            compose.onNodeWithText("结束").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNodeWithText(Phrases.usotsuki.title).performScrollTo().performClick()
+            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
+            compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
         } finally { player.release() }
     }
     @Test fun activeViewSwitchKeepsSessionAndMutedPlaybackAdvances() {
