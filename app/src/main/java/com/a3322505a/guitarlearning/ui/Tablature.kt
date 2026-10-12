@@ -1,6 +1,8 @@
 package com.a3322505a.guitarlearning.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -40,7 +42,11 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
         }
         LazyColumn(state=state, verticalArrangement=Arrangement.spacedBy(12.dp)) {
             itemsIndexed(rows) { index, row ->
-                TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,sequence)
+                // A dense single bar keeps its readable width even in split-screen/large text.
+                val width=maxOf(maxWidth,((40+row.sumOf { it.readableWidth() })*fontScale).dp)
+                Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    TabSystem(row, hint, key, cursor, index == rows.lastIndex, fontScale,sequence,Modifier.width(width))
+                }
             }
         }
     }
@@ -53,15 +59,17 @@ private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Posit
 }
 
 @Composable
-private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, sequence: Sequence) {
+private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cursor?, last: Boolean, scale: Float, sequence: Sequence, modifier: Modifier) {
     val beatsPerBar=sequence.beatsPerBar
     val segments=bars.flatMap { it.segments }
     // Reserve lanes for the marks actually present, independent of window height.
     // Keep full-size strings/digits; small windows scroll complete systems vertically.
     val staffTop=if(segments.any { it.expression?.expressionLabel()?.isNotBlank()==true }) 54f
         else if(segments.any { it.chord!=null }) 48f else 32f
-    val rhythmY=staffTop+5*18f+if(sequence.links.any { it.string==6 && segments.any { s -> s.tick==it.sourceTick || s.tick==it.targetTick } }) 46f else 38f
-    val height=rhythmY+if(segments.any { it.tuplet!=null }) 36f else 18f
+    // Rhythmic TAB: fret digits are the noteheads. Stems descend from the lowest
+    // sounding digit to shared beams below string 6; there is no second note staff.
+    val beamY=staffTop+5*18f+if(sequence.links.any { it.string==6 && segments.any { s -> s.tick==it.sourceTick || s.tick==it.targetTick } }) 34f else 24f
+    val height=beamY+if(segments.any { it.tuplet!=null }) 32f else 14f
     val measurer = rememberTextMeasurer()
     val description = buildString {
         append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。$beatsPerBar/4 拍。上方 1 弦，下方 6 弦。")
@@ -77,12 +85,12 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                 s.outgoing?.let { append("${sequence.position(it.sourceTick,it.string).fret}${s.linkMark}${sequence.position(it.targetTick,it.string).fret}；") }
         } }
     }
-    Canvas(Modifier.fillMaxWidth().height((height*scale).dp).semantics { contentDescription=description }) {
+    Canvas(modifier.height((height*scale).dp).semantics { contentDescription=description }) {
         val u=1.dp.toPx()*scale
         val left=32*u
         val top=staffTop*u
         val gap=18*u
-        val rhythm=rhythmY*u
+        val beam=beamY*u
         val usable=size.width-left-8*u
         val total=bars.sumOf { it.readableWidth() }
         fun rowX(tick: Int): Float? {
@@ -114,8 +122,21 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                 if(hint != Hint.HIDDEN) {
                     val previous=bar.segments.getOrNull(i-1)
                     if(s.chord!=null && (previous?.chord != s.chord || i==0) && !s.tieIn) text(measurer,s.chord,x,top-26*u,PurpleInk,13)
-                    if(s.rest) rest(s.value, x,rhythm-10*u,u)
+                    if(s.rest) {
+                        val restY=top+2.5f*gap
+                        drawRect(if(current) Mint else Color.White,Offset(x-11*u,restY-17*u),Size(22*u,34*u))
+                        rest(s.value,x,restY,u)
+                    }
                     else {
+                        val strings=notes.map { it.string } + if(hint==Hint.FULL) s.expression?.deadStrings.orEmpty() else emptySet()
+                        val digitY=top+((strings.maxOrNull() ?: 6)-1)*gap
+                        val color=if(active) RoseInk else Ink
+                        if(s.value!=RhythmValue.WHOLE) {
+                            drawLine(color,Offset(x,digitY+7*u),Offset(x,beam),1.2f*u)
+                            // Full rhythmic tablature uses a double stem for a half note.
+                            if(s.value==RhythmValue.HALF) drawLine(color,Offset(x+3*u,digitY+7*u),Offset(x+3*u,beam),1.2f*u)
+                        }
+                        if(s.value==RhythmValue.DOTTED_EIGHTH) drawCircle(color,1.6f*u,Offset(x+13*u,digitY+5*u))
                         if(hint==Hint.FULL) s.expression?.deadStrings?.forEach { string ->
                             text(measurer,"x",x,top+(string-1)*gap,if(active) RoseInk else Ink,15,true)
                         }
@@ -132,7 +153,6 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                             }
                             if(s.tieIn && i==0 && bar==bars.first()) tie(x0+3*u,x-9*u,y+6*u,u)
                         }
-                        rhythm(s.value,x,rhythm,u,active)
                     }
                     if(s.tick==s.eventId) {
                         val expression=s.expression
@@ -142,11 +162,14 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                         if(marks.isNotEmpty()) text(measurer,marks,x,top-43*u,PurpleInk,10)
                     }
                     s.tuplet?.takeIf { s.tick==it.tick }?.let { group ->
-                        val right=x+(group.end-group.tick).toFloat()/barTicks*span-4*u
-                        drawLine(PurpleInk,Offset(x,rhythm+14*u),Offset(right,rhythm+14*u),u)
-                        drawLine(PurpleInk,Offset(x,rhythm+14*u),Offset(x,rhythm+10*u),u)
-                        drawLine(PurpleInk,Offset(right,rhythm+14*u),Offset(right,rhythm+10*u),u)
-                        text(measurer,"3",(x+right)/2,rhythm+25*u,PurpleInk,11,true)
+                        val right=rowX(group.end-group.unit) ?: x
+                        val mid=(x+right)/2
+                        val bracketY=beam+11*u
+                        drawLine(PurpleInk,Offset(x,bracketY),Offset(mid-7*u,bracketY),u)
+                        drawLine(PurpleInk,Offset(mid+7*u,bracketY),Offset(right,bracketY),u)
+                        drawLine(PurpleInk,Offset(x,bracketY),Offset(x,bracketY-4*u),u)
+                        drawLine(PurpleInk,Offset(right,bracketY),Offset(right,bracketY-4*u),u)
+                        text(measurer,"3",mid,bracketY,PurpleInk,11,true)
                     }
                     s.outgoing?.let { link ->
                         val y=top+(link.string-1)*gap+8*u
@@ -177,14 +200,14 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                         val before=beamCount(previous,s)
                         val after=beamCount(s,next)
                         repeat(s.value.flags) { level ->
-                            val y=rhythm-(29-6*level)*u
-                            if(after>level) drawLine(Ink,Offset(x+5*u,y),Offset(at(next!!)+5*u,y),3*u)
+                            val y=beam-6*level*u
+                            if(after>level) drawLine(Ink,Offset(x,y),Offset(at(next!!),y),3*u)
                             else if(before<=level) {
                                 if(level>0 && (before>0 || after>0)) {
                                     val direction=if(before>0) -1 else 1
-                                    drawLine(Ink,Offset(x+5*u,y),Offset(x+(5+8*direction)*u,y),3*u)
+                                    drawLine(Ink,Offset(x,y),Offset(x+8*direction*u,y),3*u)
                                 } else {
-                                    val flag=Path().apply { moveTo(x+5*u,y); cubicTo(x+18*u,y+9*u,x+15*u,y+14*u,x+12*u,y+19*u) }
+                                    val flag=Path().apply { moveTo(x,y); cubicTo(x+13*u,y-9*u,x+10*u,y-14*u,x+7*u,y-19*u) }
                                     drawPath(flag,Ink,style=Stroke(2*u))
                                 }
                             }
@@ -211,14 +234,6 @@ private fun DrawScope.tie(x1: Float,x2: Float,y: Float,u: Float) {
     if(x2<=x1) return
     val p=Path().apply { moveTo(x1,y); cubicTo(x1+(x2-x1)*.25f,y+9*u,x1+(x2-x1)*.75f,y+9*u,x2,y) }
     drawPath(p,Ink,style=Stroke(u))
-}
-private fun DrawScope.rhythm(v: RhythmValue,x: Float,y: Float,u: Float,active: Boolean) {
-    val color=if(active) RoseInk else Ink
-    val head=Offset(x-5*u,y-3*u)
-    if(v==RhythmValue.WHOLE || v==RhythmValue.HALF) drawOval(color,head,Size(11*u,7*u),style=Stroke(1.5f*u))
-    else drawOval(color,head,Size(11*u,7*u))
-    if(v==RhythmValue.DOTTED_EIGHTH) drawCircle(color,1.6f*u,Offset(x+13*u,y))
-    if(v!=RhythmValue.WHOLE) drawLine(color,Offset(x+5*u,y),Offset(x+5*u,y-29*u),1.2f*u)
 }
 private fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
     when(v) {

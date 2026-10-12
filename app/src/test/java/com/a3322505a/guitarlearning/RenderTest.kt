@@ -281,10 +281,11 @@ class RenderTest {
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletStartsWithBoardAndOnlyButtonEnablesTab() {
         compose.waitForIdle()
-        assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,compose.activity.requestedOrientation)
+        assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,compose.activity.requestedOrientation)
         compose.onNodeWithTag("tablature").assertDoesNotExist()
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
+        assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,compose.activity.requestedOrientation)
         capture("tablet-scale-tab")
         compose.onNodeWithTag("config-summary").performClick()
         compose.onNodeWithTag("more-exercises-toggle").performScrollTo().performClick()
@@ -299,6 +300,7 @@ class RenderTest {
         compose.onNodeWithText("完成").performClick()
         capture("tablet-check-tab")
         compose.onNodeWithText("指板").performClick()
+        assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,compose.activity.requestedOrientation)
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("tablet-chord-diagram")
         compose.onNodeWithText("短句应用").performClick()
@@ -309,6 +311,45 @@ class RenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithText("听示范").assertIsDisplayed()
         capture("tablet-portrait-tab")
+    }
+    @Test fun openStringPracticeUsesCompactTargetsAndPreservesAuditionAndHints() {
+        compose.onNodeWithText("和弦").performClick()
+        compose.onNodeWithText("短句应用").performClick()
+        compose.onNodeWithTag("config-summary").performClick()
+        compose.onNodeWithText(Phrases.named("PM01").title).performScrollTo().performClick()
+        compose.onNodeWithText("完成").performClick()
+        val viewport=compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().boundsInRoot
+        val card=compose.onNodeWithTag("practice-card").fetchSemanticsNode().boundsInRoot
+        assertTrue("Open strings should not allocate a full fret grid",viewport.height<150)
+        assertTrue("The empty fret area must not stretch the card",card.height<380)
+        compose.onNodeWithTag("open-string-board").assertIsDisplayed()
+        compose.onNodeWithTag("open-string-6").performClick()
+        compose.onNodeWithText("6 弦 0 品",substring=true).assertIsDisplayed()
+        compose.onNodeWithTag("open-string-5").assertIsNotEnabled()
+        capture("pm-compact-open-strings","v65")
+        compose.onNodeWithText("撤提示").performClick()
+        compose.onNodeWithContentDescription("指板，提示已隐藏").assertIsDisplayed()
+        compose.onNodeWithTag("open-string-6").assertIsNotEnabled()
+        assertEquals(viewport,compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("恢复提示").performClick()
+        compose.onNodeWithText("六线谱").performClick()
+        compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
+        capture("pm-rhythmic-tab","v65")
+    }
+    @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun rhythmicTabAttachesDurationsAcrossStringsAndKeepsLongValuesAndRests() {
+        val seq=Sequence(listOf(
+            Event(0,6,listOf(Position(6,5))),Event(6,6,listOf(Position(5,6))),
+            Event(12,3,listOf(Position(4,7))),Event(15,3,listOf(Position(3,8))),
+            Event(18,3,listOf(Position(2,10))),Event(21,3,listOf(Position(1,12))),
+            Event(24,24,Chords.named("C").positions)),48,"",beatsPerBar=4)
+        compose.activity.setContent { PracticeTheme { Tablature(seq,Hint.FULL,null,null,false) } }
+        capture("all-strings-eighths-sixteenths-half","v65")
+        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[1].sequence,Hint.FULL,null,null,false) } }
+        capture("dotted-eighths-and-rests","v65")
+        val tri=Routes.scale(ScaleOptions(exercise=ScaleExercise.THIRDS,notesPerBeat=3)).sequence!!
+        compose.activity.setContent { PracticeTheme { Tablature(tri,Hint.FULL,Tonality.C_MAJOR,Session(tri,60,true,2).cursor(68.0),true) } }
+        compose.onAllNodesWithContentDescription("三连音 3",substring=true)[0].assertIsDisplayed()
+        capture("triplets-active","v65")
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun notationShowsEighthBeamsRestsAndAcrossBarTies() {
         compose.onNodeWithText("六线谱").performClick()

@@ -1,12 +1,18 @@
 package com.a3322505a.guitarlearning.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -36,14 +42,19 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 @Composable
 fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit, moving: MovingPosition? = null,
     upcoming: List<Position> = emptyList(), showLegend: Boolean = true) {
+    if(positions.isNotEmpty() && positions.all { it.fret==0 }) {
+        OpenStringBoard(positions,key,hint,current,upcoming,enabled,onTap)
+        return
+    }
     val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
-    val low = positions.minOf { it.fret }
+    val hasOpen=positions.any { it.fret==0 }
+    val low = positions.filter { it.fret>0 }.minOf { it.fret }.let { if(hasOpen) 1 else it }
     val high = positions.maxOf { it.fret }
     val columns = high-low+1
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val width=maxOf(maxWidth, (columns*36+56).dp)
+        val width=maxOf(maxWidth, (columns*36+56+if(hasOpen) 36 else 0).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
             Canvas(Modifier.width(width).height(diagramHeight).testTag("fretboard").semantics {
                 contentDescription=if(hint==Hint.HIDDEN) "指板，提示已隐藏" else buildString {
@@ -53,29 +64,36 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                 }
             }.pointerInput(visible, enabled, onTap) {
                 if(enabled) detectTapGestures { tap ->
-                    val left=46.dp.toPx(); val cell=(size.width-left-10.dp.toPx())/columns
+                    val left=46.dp.toPx(); val gridLeft=left+if(hasOpen) 36.dp.toPx() else 0f
+                    val cell=(size.width-gridLeft-10.dp.toPx())/columns
+                    fun x(fret: Int)=if(fret==0) left+18.dp.toPx() else gridLeft+(fret-low+.5f)*cell
                     val vertical=size.height/238.dp.toPx()
                     val top=40.dp.toPx()*vertical; val row=32.dp.toPx()*vertical
-                    visible.minByOrNull { p -> hypot((tap.x-(left+(p.fret-low+0.5f)*cell)).toDouble(), (tap.y-(top+(p.string-1)*row)).toDouble()) }
+                    visible.minByOrNull { p -> hypot((tap.x-x(p.fret)).toDouble(), (tap.y-(top+(p.string-1)*row)).toDouble()) }
                         ?.let { p ->
-                            if(hypot((tap.x-(left+(p.fret-low+0.5f)*cell)).toDouble(),(tap.y-(top+(p.string-1)*row)).toDouble()) < 23.dp.toPx()) onTap(p)
+                            if(hypot((tap.x-x(p.fret)).toDouble(),(tap.y-(top+(p.string-1)*row)).toDouble()) < 23.dp.toPx()) onTap(p)
                         }
                 }
             }) {
-                val left=46.dp.toPx(); val cell=(size.width-left-10.dp.toPx())/columns
+                val left=46.dp.toPx(); val gridLeft=left+if(hasOpen) 36.dp.toPx() else 0f
+                val cell=(size.width-gridLeft-10.dp.toPx())/columns
+                fun x(fret: Float)=if(fret==0f) left+18.dp.toPx() else gridLeft+(fret-low+.5f)*cell
                 val vertical=size.height/238.dp.toPx()
                 val top=40.dp.toPx()*vertical; val row=32.dp.toPx()*vertical
                 drawRoundRect(Color(0xFFEDF7F0), Offset(left,top-12.dp.toPx()*vertical), androidx.compose.ui.geometry.Size(size.width-left,5*row+24.dp.toPx()*vertical), androidx.compose.ui.geometry.CornerRadius(8.dp.toPx()))
-                for(i in 0..columns) drawLine(Color(0xFFB9AA94),Offset(left+i*cell,top-12.dp.toPx()*vertical),Offset(left+i*cell,top+5*row+12.dp.toPx()*vertical),1.2.dp.toPx())
-                for(i in 0 until columns) label(measurer, if(low+i==0) "0 / O" else "${low+i}",left+(i+0.5f)*cell,16.dp.toPx()*vertical)
-                if(low==0) drawLine(Ink,Offset(left+cell,top-12.dp.toPx()*vertical),Offset(left+cell,top+5*row+12.dp.toPx()*vertical),3.dp.toPx())
+                for(i in 0..columns) drawLine(Color(0xFFB9AA94),Offset(gridLeft+i*cell,top-12.dp.toPx()*vertical),Offset(gridLeft+i*cell,top+5*row+12.dp.toPx()*vertical),1.2.dp.toPx())
+                for(i in 0 until columns) label(measurer,"${low+i}",gridLeft+(i+0.5f)*cell,16.dp.toPx()*vertical)
+                if(hasOpen) {
+                    label(measurer,"O",x(0f),16.dp.toPx()*vertical)
+                    drawLine(Ink,Offset(gridLeft,top-12.dp.toPx()*vertical),Offset(gridLeft,top+5*row+12.dp.toPx()*vertical),3.dp.toPx())
+                }
                 for(s in 1..6) {
                     val y=top+(s-1)*row
                     drawLine(Color(0xFF9E9688),Offset(left,y),Offset(size.width-10.dp.toPx(),y),(0.45+s*0.12).dp.toPx())
                     label(measurer,"$s ${Music.name(Music.openMidi[s-1])}",21.dp.toPx(),y,size=12)
                 }
                 for(p in visible) {
-                    val center=Offset(left+(p.fret-low+0.5f)*cell,top+(p.string-1)*row)
+                    val center=Offset(x(p.fret.toFloat()),top+(p.string-1)*row)
                     val root=key?.isRoot(p)==true
                     val active=p in current
                     drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
@@ -85,12 +103,46 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                 }
                 if(moving!=null && hint!=Hint.HIDDEN) {
                     val y=top+(moving.source.string-1)*row
-                    val a=left+(moving.source.fret-low+.5f)*cell;val b=left+(moving.target.fret-low+.5f)*cell
+                    val a=x(moving.source.fret.toFloat());val b=x(moving.target.fret.toFloat())
                     drawLine(PurpleInk,Offset(a,y),Offset(b,y),3.dp.toPx())
-                    drawCircle(Pink,9.dp.toPx(),Offset(left+(moving.fret-low+.5f)*cell,y))
+                    val movingX=if(hasOpen && moving.fret<1) x(0f)+(x(1f)-x(0f))*moving.fret else x(moving.fret.toFloat())
+                    drawCircle(Pink,9.dp.toPx(),Offset(movingX,y))
                     label(measurer,"${moving.source.fret}${moving.mark}${moving.target.fret}",size.width/2,205.dp.toPx()*vertical,color=PurpleInk)
                 }
                 if(showLegend) label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
+            }
+        }
+    }
+}
+
+/** Open strings have no fret grid. Reserve six compact, labeled audition targets. */
+@Composable
+private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hint, current: List<Position>, upcoming: List<Position>, enabled: Boolean, onTap: (Position)->Unit) {
+    val visible=when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
+    val fontScale=androidx.compose.ui.platform.LocalDensity.current.fontScale
+    Column(Modifier.fillMaxWidth().testTag("fretboard").semantics {
+        contentDescription=if(hint==Hint.HIDDEN) "指板，提示已隐藏" else buildString {
+            append("空弦指板，0 品，无需按品。左为 6 弦，右为 1 弦。")
+            current.filter { it in visible }.forEach { append("当前 ${it.string} 弦 0 品；") }
+            upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 0 品；") }
+        }
+    }.padding(8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "空弦 · 无需按品",style=MaterialTheme.typography.labelLarge,color=Muted)
+        Row(Modifier.widthIn(max=600.dp).fillMaxWidth().testTag("open-string-board"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+            for(string in 6 downTo 1) {
+                val position=Position(string,0)
+                val shown=position in visible
+                val active=shown && position in current
+                val next=shown && position in upcoming
+                Surface(onClick={onTap(position)},enabled=enabled && shown,modifier=Modifier.weight(1f).height(76.dp*fontScale).testTag("open-string-$string"),shape=RoundedCornerShape(12.dp),
+                    color=if(active) Pink else if(shown) Mint else Color(0xFFF1F4F5),
+                    border=BorderStroke(if(active || next) 2.dp else 1.dp,if(active) RoseInk else if(next) BlueInk else Outline)) {
+                    Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+                        Text("$string 弦",style=MaterialTheme.typography.labelSmall,color=Muted)
+                        Text(if(shown) Music.name(position.midi,true) else "—",style=MaterialTheme.typography.labelLarge,color=if(shown) Ink else Muted)
+                        Text(if(shown) "0" else "",style=MaterialTheme.typography.labelSmall,color=Green)
+                    }
+                }
             }
         }
     }

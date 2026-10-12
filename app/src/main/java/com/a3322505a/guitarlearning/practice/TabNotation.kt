@@ -20,11 +20,11 @@ data class TabBar(val index: Int, val segments: List<TabSegment>)
 fun TabBar.readableWidth() = 68 + maxOf(4, segments.size) * 28
 fun tabSystems(bars: List<TabBar>, width: Int): List<List<TabBar>> {
     val rows = mutableListOf<MutableList<TabBar>>()
-    var used = 32
+    var used = 40
     for (bar in bars) {
         if (rows.isEmpty() || used + bar.readableWidth() > width && rows.last().isNotEmpty()) {
             rows.add(mutableListOf())
-            used = 32
+            used = 40
         }
         rows.last() += bar
         used += bar.readableWidth()

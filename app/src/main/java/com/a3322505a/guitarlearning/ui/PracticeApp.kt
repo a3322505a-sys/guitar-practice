@@ -1,6 +1,5 @@
 package com.a3322505a.guitarlearning.ui
 
-import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindowProvider
 import com.a3322505a.guitarlearning.immersiveStatusBar
+import com.a3322505a.guitarlearning.practiceOrientation
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
@@ -240,8 +241,10 @@ fun PracticeApp(player: Player) {
       BoxWithConstraints(Modifier.fillMaxSize().displayCutoutPadding().windowInsetsPadding(WindowInsets.captionBar)
           .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)).practiceBackground()) {
         val tab=viewPreference==1
-        LaunchedEffect(activity,tab) {
-            activity.requestedOrientation=if(tab) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        val configuration=LocalConfiguration.current
+        LaunchedEffect(activity,tab,configuration) {
+            val orientation=practiceOrientation(activity,tab)
+            if(activity.requestedOrientation!=orientation) activity.requestedOrientation=orientation
         }
         Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
             Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
@@ -285,6 +288,8 @@ fun PracticeApp(player: Player) {
                 val wide=maxWidth>=700.dp
                 val compact=maxHeight<520.dp
                 val fontScale=LocalDensity.current.fontScale
+                // Decide from the complete route, so rests/dead notes never resize the card.
+                val openStringsOnly=melody && displayedSequence!!.route.isNotEmpty() && displayedSequence.route.all { it.fret==0 }
                 // A short window scrolls the whole chord page, never the labels inside its diagram.
                 val chordPageScroll=page==1 && !wide && maxHeight<600.dp*fontScale
                 val chordScrollState=remember(page) { ScrollState(0) }
@@ -319,12 +324,12 @@ fun PracticeApp(player: Player) {
                         val cardContent: @Composable (Chord,Boolean)->Unit = { cardChord,selected ->
                         val shownChord=cardChord
                         val chordTones=cardChord.positions.distinctBy { it.midi%12 }.sortedBy { (it.midi-cardChord.root)%12 }
-                        CandyCard(Modifier.fillMaxSize().then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
+                        CandyCard((if(openStringsOnly) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
                             val target=if(page==1) "${shownChord.name} · ${if(!chordPhrases) "逐弦检查" else "下一：$nextChord"}"
                                 else if(hint==Hint.FULL && event!=null) { if(event.rest) "现在：留拍" else "现在：${eventLabel(event)}" }
                                 else "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} 指型"
                             val phraseCard=page==1 && chordPhrases
-                            Row(Modifier.fillMaxWidth().then(if(phraseCard) Modifier.height((if(compact) 96.dp else 120.dp)*fontScale) else Modifier)
+                            Row(Modifier.fillMaxWidth().then(if(phraseCard) Modifier.height((if(openStringsOnly) 80.dp else if(compact) 96.dp else 120.dp)*fontScale) else Modifier)
                                 .background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     val headline=buildAnnotatedString {
@@ -351,7 +356,7 @@ fun PracticeApp(player: Player) {
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                                 if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
                             }
-                                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
+                                BoxWithConstraints((if(openStringsOnly) Modifier.height(128.dp*fontScale) else Modifier.weight(1f)).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
                                     if(page==0) {
                                         val h=maxOf(176.dp*fontScale,maxHeight).coerceAtMost(300.dp*fontScale)
                                         Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
