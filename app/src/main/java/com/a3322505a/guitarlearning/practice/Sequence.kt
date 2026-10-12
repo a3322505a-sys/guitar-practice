@@ -49,8 +49,10 @@ enum class ScaleExercise(val title: String, val instruction: String) {
 }
 
 data class ScaleOptions(val pattern: Int = 0, val key: Tonality = Tonality.C_MAJOR, val exercise: ScaleExercise = ScaleExercise.ASCEND,
-    val firstString: Int = 1, val lastString: Int = 6, val octave: Boolean = true, val eighth: Boolean = false,
-    val startDegree: Int = 1, val reverse: Boolean = false)
+    val firstString: Int = 1, val lastString: Int = 6, val octave: Boolean = true, val notesPerBeat: Int = 1,
+    val startDegree: Int = 1, val reverse: Boolean = false) {
+    init { require(notesPerBeat in 1..3) }
+}
 data class RouteResult(val sequence: Sequence?, val reason: String = "")
 
 object Routes {
@@ -86,18 +88,23 @@ object Routes {
         }
         if(route.isEmpty()) return RouteResult(null, "所选范围没有这项练法需要的音；扩大范围后再试。")
         if(o.reverse && o.exercise != ScaleExercise.ASCEND) route = route.reversed()
-        val step = if(o.eighth) 6 else 12
+        val step = QUARTER / o.notesPerBeat
         val soundEnd = route.size * step
         val length = ((soundEnd + BAR - 1) / BAR) * BAR
         val events = route.mapIndexed { index, p -> Event(index * step, step, listOf(p)) }.toMutableList()
-        if(length > soundEnd) events += Event(soundEnd, length-soundEnd, emptyList())
+        // Finish a partial triplet with explicit members, then retain the existing
+        // whole-bar loop boundary. Remaining whole beats use ordinary rests.
+        val groupEnd=if(o.notesPerBeat==3) ((soundEnd+QUARTER-1)/QUARTER)*QUARTER else soundEnd
+        if(groupEnd>soundEnd) for(tick in soundEnd until groupEnd step step) events += Event(tick,step,emptyList())
+        if(length > groupEnd) events += Event(groupEnd, length-groupEnd, emptyList())
+        val tuplets=if(o.notesPerBeat==3) (0 until groupEnd step QUARTER).map { Tuplet(it,4) } else emptyList()
         val tail = if(length > soundEnd) " 尾部留 ${(length-soundEnd)/12.0} 拍，再开始下一轮。" else ""
         val scope = if(o.octave && o.exercise != ScaleExercise.ROOTS) "主音起的一八度" else "整型音域"
         val connection = if(o.exercise == ScaleExercise.CONNECTION) {
             " ${first.solfege} → ${next.solfege} → ${first.solfege}；共享主音后调整手型，转折音只弹一次。"
         } else ""
         val stretch = if(o.pattern == 2) " la 指型三弦 4 品 B：可伸指或轻微移位。" else ""
-        return RouteResult(Sequence(events, length, "${o.exercise.instruction} $scope，${o.firstString}–${o.lastString} 弦。$connection$tail$stretch"))
+        return RouteResult(Sequence(events, length, "${o.exercise.instruction} $scope，${o.firstString}–${o.lastString} 弦。$connection$tail$stretch",tuplets=tuplets).also { it.validateExpression() })
     }
 }
 

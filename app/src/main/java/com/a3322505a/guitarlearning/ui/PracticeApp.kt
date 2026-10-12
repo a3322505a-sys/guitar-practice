@@ -36,9 +36,15 @@ import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 
 internal val ScaleSaver = listSaver<ScaleOptions, Any>(
-    save={ listOf(it.pattern,it.key.ordinal,it.exercise.ordinal,it.firstString,it.lastString,it.octave,it.eighth,it.startDegree,it.reverse) },
+    save={ listOf(it.pattern,it.key.ordinal,it.exercise.ordinal,it.firstString,it.lastString,it.octave,it.notesPerBeat,it.startDegree,it.reverse) },
     // Removed controls use fixed defaults, so old hidden limits cannot restrict practice.
-    restore={ ScaleOptions(pattern=it[0] as Int,key=Tonality.entries[it[1] as Int],exercise=ScaleExercise.entries[it[2] as Int],octave=it[5] as Boolean,eighth=it[6] as Boolean,startDegree=it[7] as Int) })
+    restore={ values -> ScaleOptions(
+        pattern=(values.getOrNull(0) as? Int)?.takeIf { it in Patterns.all.indices } ?: 0,
+        key=(values.getOrNull(1) as? Int)?.let { Tonality.entries.getOrNull(it) } ?: Tonality.C_MAJOR,
+        exercise=(values.getOrNull(2) as? Int)?.let { ScaleExercise.entries.getOrNull(it) } ?: ScaleExercise.ASCEND,
+        octave=values.getOrNull(5) as? Boolean ?: true,
+        notesPerBeat=when(val rhythm=values.getOrNull(6)) { is Boolean -> if(rhythm) 2 else 1; is Int -> rhythm.takeIf { it in 1..3 } ?: 1; else -> 1 },
+        startDegree=(values.getOrNull(7) as? Int)?.takeIf { it in 1..7 } ?: 1) })
 
 /** Wrapping choices keep every shape/chord discoverable without horizontal clipping. */
 @Composable
@@ -386,7 +392,7 @@ fun PracticeApp(player: Player) {
                 Box(Modifier.fillMaxSize().testTag("chord-page").then(if(chordPageScroll) Modifier.verticalScroll(chordScrollState) else Modifier)) {
                 Column(Modifier.fillMaxWidth().height(if(chordPageScroll) 600.dp*fontScale else availableHeight).padding(vertical=8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                     val summary: @Composable () -> Unit = {
-                        Text(if(page==0) "${scale.exercise.title} · 每拍${if(scale.eighth) 2 else 1}音"
+                        Text(if(page==0) "${scale.exercise.title} · 每拍${scale.notesPerBeat}音"
                             else if(!chordPhrases) "认音、听音、逐弦跟练" else "${phrase.passage} · ${phrase.conditions}",
                             style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
@@ -482,7 +488,7 @@ fun PracticeApp(player: Player) {
                             Choices(more.map { it.title },more.indexOf(scale.exercise)) { scaleChange(scale.copy(exercise=more[it])) }
                         }
                         if(scale.exercise!=ScaleExercise.ROOTS && scale.exercise!=ScaleExercise.CONNECTION) Choices(listOf("一八度","整型音域"),if(scale.octave) 0 else 1,Mint) { scaleChange(scale.copy(octave=it==0)) }
-                        Choices(listOf("每拍1音","每拍2音"),if(scale.eighth) 1 else 0) { scaleChange(scale.copy(eighth=it==1)) }
+                        Choices(listOf("每拍1音","每拍2音","每拍3音"),scale.notesPerBeat-1) { scaleChange(scale.copy(notesPerBeat=it+1)) }
                         if(scale.exercise==ScaleExercise.CHANGE_START) {
                             Text("起点级数"); Choices((1..7).map(Int::toString),scale.startDegree-1) { scaleChange(scale.copy(startDegree=it+1)) }
                         }
