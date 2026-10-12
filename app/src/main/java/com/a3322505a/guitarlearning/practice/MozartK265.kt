@@ -49,11 +49,12 @@ internal object MozartK265 {
             id=ids[index],title="莫扎特 K265 · ${index+1} ${names[index]}",
             category="古典单音短句",passage="$first–${first+7} 小节",
             source="莫扎特 K265 变奏一 · 中把位 v2 播放修复.gp",
-            sourceBpm=120,tempoLabel="参考速度",difficulty="进阶（暂定）",technique="逐音拨弦",
+            sourceBpm=120,tempoLabel="参考速度",difficulty="进阶（暂定）",technique="逐音拨弦",suggestedBpm=40,
+            goal="均匀弹奏每拍四音，保持八小节乐句连续。",
             conditions="标准调弦 · 无变调夹",
             sequence=Sequence(events,tick,
                 "变奏一 · ${names[index]}，原谱 $first–${first+7} 小节。前后半句连续弹奏，共 8 小节。2/4 拍，十六分音符每拍 4 音；保留句尾长音与休止。1–3 弦、4–12 品，实际发声比钢琴高音声部低八度。逐音拨弦，按当前速度与循环次数练习；120 BPM 仅为 GP 参考速度。",
-                beatsPerBar=2),
+                beatsPerBar=2,originalBar=first-1),
         )
     }
 }

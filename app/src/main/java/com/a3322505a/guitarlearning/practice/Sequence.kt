@@ -7,12 +7,16 @@ const val QUARTER = 12
 const val BAR = 48
 const val SAMPLE_RATE = 44100
 
-data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false, val ring: Boolean = false) {
+data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false, val ring: Boolean = false,
+    val velocity: Float = 1f, val accent: Boolean = false, val palmMute: Boolean = false,
+    val deadStrings: Set<Int> = emptySet(), val pick: Pick = Pick.DEFAULT, val short: Boolean = false,
+    val stringExpression: Map<Int,StringExpression> = emptyMap()) {
     // An onset is unique within a finite sequence. All its chord tones share this identity.
     val id get() = tick
 }
 data class Section(val tick: Int, val chord: String)
-data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4) {
+data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4,
+    val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0) {
     init {
         require(length > 0)
         require(beatsPerBar in listOf(2,4))
@@ -26,10 +30,11 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     // Let-ring audio lasts until the same string is picked or the grip changes.
     // Engraved duration stays the original rhythmic value; this is not a tied onset.
     fun soundDuration(event: Event, position: Position): Int {
-        if(!event.ring) return event.duration
-        val stringEnd = events.firstOrNull { it.tick > event.tick && it.positions.any { p -> p.string == position.string } }?.tick ?: length
+        val stringEnd = events.firstOrNull { it.tick > event.tick && position.string in it.strings }?.tick ?: length
         val gripEnd = sections.firstOrNull { it.tick > event.tick }?.tick ?: length
-        return minOf(stringEnd, gripEnd) - event.tick
+        val end=if(event.ring) minOf(stringEnd,gripEnd) else minOf(event.tick+event.duration,stringEnd,gripEnd)
+        val duration=end-event.tick
+        return if(event.short) minOf(duration,3) else duration
     }
 }
 
@@ -172,16 +177,21 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
     return Sequence(events, length, kind.instruction + extra, sections)
 }
 
-data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false) {
+data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false,
+    val range: BarRange = BarRange(0,sequence.length/sequence.barTicks-1)) {
+    init { require(bpm>0 && repeats>=0); require(preview || range.valid(sequence)) }
+    val startTick = if(preview) 0 else range.first*sequence.barTicks
+    val endTick = if(preview) sequence.length else (range.last+1)*sequence.barTicks
+    val practiceLength = endTick-startTick
     val preTicks = if(follow) sequence.barTicks else 0
-    val totalTicks: Long? = if(repeats == 0) null else preTicks.toLong() + sequence.length.toLong()*repeats
+    val totalTicks: Long? = if(repeats == 0) null else preTicks.toLong() + practiceLength.toLong()*repeats
     fun frame(tick: Double) = (tick * SAMPLE_RATE * 60 / (bpm * QUARTER)).roundToLong()
     fun tick(frame: Long) = frame.toDouble() * bpm * QUARTER / (SAMPLE_RATE * 60)
-    fun loopAt(tick: Double) = if(tick<preTicks) -1 else ((tick-preTicks)/sequence.length).toInt()
-    fun localTick(tick: Double) = if(tick<preTicks) tick else (tick-preTicks)%sequence.length
+    fun loopAt(tick: Double) = if(tick<preTicks) -1 else ((tick-preTicks)/practiceLength).toInt()
+    fun localTick(tick: Double) = if(tick<preTicks) tick else startTick+(tick-preTicks)%practiceLength
     fun resumeTick(tick: Double): Double {
         if(tick < preTicks) return 0.0
         val loop = loopAt(tick)
-        return preTicks + loop.toDouble()*sequence.length + (localTick(tick).toInt()/sequence.barTicks)*sequence.barTicks
+        return preTicks + loop.toDouble()*practiceLength + (localTick(tick).toInt()/sequence.barTicks)*sequence.barTicks-startTick
     }
 }

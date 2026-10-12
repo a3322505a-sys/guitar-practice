@@ -3,15 +3,16 @@ package com.a3322505a.guitarlearning.practice
 import com.a3322505a.guitarlearning.music.Position
 
 enum class RhythmValue(val ticks: Int, val flags: Int = 0) {
-    WHOLE(48), HALF(24), QUARTER(12), DOTTED_EIGHTH(9,1), EIGHTH(6,1), SIXTEENTH(3,2)
+    WHOLE(48), HALF(24), QUARTER(12), DOTTED_EIGHTH(9,1), EIGHTH(6,1), SIXTEENTH(3,2), TRIPLET_EIGHTH(4,1), TRIPLET_SIXTEENTH(2,2)
 }
 
 /** Engraving segments reference the original event; they never create audio onsets. */
 data class TabSegment(
     val eventId: Int, val tick: Int, val value: RhythmValue, val positions: List<Position>,
     val chord: String?, val strum: Boolean, val tieIn: Boolean, val tieOut: Boolean,
+    val expression: Event? = null, val tuplet: Tuplet? = null, val outgoing: Legato? = null, val linkMark: String? = null,
 ) {
-    val rest get() = positions.isEmpty()
+    val rest get() = expression?.rest ?: positions.isEmpty()
     val end get() = tick + value.ticks
 }
 data class TabBar(val index: Int, val segments: List<TabSegment>)
@@ -32,6 +33,7 @@ fun tabSystems(bars: List<TabBar>, width: Int): List<List<TabBar>> {
 }
 
 fun Sequence.tabBars(): List<TabBar> {
+    validateExpression()
     require(length % barTicks == 0)
     val result = List(length / barTicks) { mutableListOf<TabSegment>() }
     for (event in events) {
@@ -41,13 +43,16 @@ fun Sequence.tabBars(): List<TabBar> {
             val room = minOf(end - at, barTicks - at % barTicks)
             // Start long values on their natural metric boundary. Eighths on weak beats
             // tie into the next beat rather than disguising syncopation as a long value.
-            val value = RhythmValue.entries.firstOrNull {
-                it.ticks <= room && at % (if(it==RhythmValue.DOTTED_EIGHTH) QUARTER else it.ticks) == 0
+            val group=tuplets.firstOrNull { at>=it.tick && at<it.end }
+            val value = if(group!=null) (if(group.unit==4) RhythmValue.TRIPLET_EIGHTH else RhythmValue.TRIPLET_SIXTEENTH) else RhythmValue.entries.firstOrNull {
+                it!=RhythmValue.TRIPLET_EIGHTH && it!=RhythmValue.TRIPLET_SIXTEENTH && it.ticks <= room && at % (if(it==RhythmValue.DOTTED_EIGHTH) QUARTER else it.ticks) == 0
             }
                 ?: error("Unsupported subdivision at tick $at")
             result[at / barTicks] += TabSegment(event.id, at, value, event.positions, event.chord,
                 event.strum && at == event.tick, event.positions.isNotEmpty() && at > event.tick,
-                event.positions.isNotEmpty() && at + value.ticks < end)
+                event.positions.isNotEmpty() && at + value.ticks < end,event,group,
+                links.firstOrNull { it.sourceTick==event.tick }.takeIf { at==event.tick },
+                links.firstOrNull { it.sourceTick==event.tick }?.let(::linkMark).takeIf { at==event.tick })
             at += value.ticks
         }
     }
@@ -64,5 +69,5 @@ fun Session.cursor(tick: Double): Cursor {
 
 /** Beam adjacent short notes within the beat; rests and beat boundaries break groups. */
 fun beamCount(left: TabSegment?, right: TabSegment?): Int =
-    if(left==null || right==null || left.rest || right.rest || left.end!=right.tick || left.tick/QUARTER!=right.tick/QUARTER) 0
+    if(left==null || right==null || left.rest || right.rest || left.end!=right.tick || left.tick/QUARTER!=right.tick/QUARTER || left.tuplet!=right.tuplet) 0
     else minOf(left.value.flags,right.value.flags)

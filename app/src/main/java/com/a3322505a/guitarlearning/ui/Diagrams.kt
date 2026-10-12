@@ -21,6 +21,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.a3322505a.guitarlearning.music.*
+import com.a3322505a.guitarlearning.practice.MovingPosition
 import kotlin.math.hypot
 
 enum class Hint(val title: String) { FULL("完整提示"), ROOTS("仅主音／根音"), HIDDEN("隐藏音位／指法") }
@@ -31,7 +32,7 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 }
 
 @Composable
-fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit) {
+fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit, moving: MovingPosition? = null) {
     val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val low = positions.minOf { it.fret }
     val high = positions.maxOf { it.fret }
@@ -71,6 +72,13 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                     drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
                     if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
                     label(measurer,if(degrees && key!=null) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
+                }
+                if(moving!=null && hint!=Hint.HIDDEN) {
+                    val y=top+(moving.source.string-1)*row
+                    val a=left+(moving.source.fret-low+.5f)*cell;val b=left+(moving.target.fret-low+.5f)*cell
+                    drawLine(PurpleInk,Offset(a,y),Offset(b,y),3.dp.toPx())
+                    drawCircle(Pink,9.dp.toPx(),Offset(left+(moving.fret-low+.5f)*cell,y))
+                    label(measurer,"${moving.source.fret}${moving.mark}${moving.target.fret}",size.width/2,205.dp.toPx()*vertical,color=PurpleInk)
                 }
                 label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
             }
