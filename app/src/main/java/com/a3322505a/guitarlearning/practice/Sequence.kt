@@ -10,21 +10,23 @@ const val SAMPLE_RATE = 44100
 data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false, val ring: Boolean = false,
     val velocity: Float = 1f, val accent: Boolean = false, val palmMute: Boolean = false,
     val deadStrings: Set<Int> = emptySet(), val pick: Pick = Pick.DEFAULT, val short: Boolean = false,
-    val stringExpression: Map<Int,StringExpression> = emptyMap()) {
+    val stringExpression: Map<Int,StringExpression> = emptyMap(), val vibrato: Boolean = false) {
     // An onset is unique within a finite sequence. All its chord tones share this identity.
     val id get() = tick
 }
 data class Section(val tick: Int, val chord: String)
 data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4,
-    val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0) {
+    val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0, val capoFret: Int = 0) {
     init {
         require(length > 0)
         require(beatsPerBar in listOf(2,4))
+        require(capoFret in 0..12)
         require(events.map { it.id }.distinct().size == events.size)
         require(events.all { it.tick >= 0 && it.duration > 0 && it.tick + it.duration <= length })
     }
     val barTicks get() = beatsPerBar * QUARTER
     val route get() = events.flatMap { it.positions }.distinct()
+    fun midi(position: Position) = position.midi + capoFret
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
     fun sectionAt(tick: Double) = sections.indexOfLast { it.tick <= tick }
     // Let-ring audio lasts until the same string is picked or the grip changes.

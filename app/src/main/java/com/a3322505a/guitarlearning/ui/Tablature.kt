@@ -73,6 +73,7 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
     val measurer = rememberTextMeasurer()
     val description = buildString {
         append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。$beatsPerBar/4 拍。上方 1 弦，下方 6 弦。")
+        if(sequence.capoFret>0) append("变调夹${sequence.capoFret}品，数字为相对品位。")
         if(hint != Hint.HIDDEN) bars.forEach { bar -> bar.segments.forEach { s ->
                 if(s.rest) append("休止 ${s.value.ticks/12.0} 拍；")
                 else visible(s,hint,key).forEach { append("${it.string} 弦 ${it.fret} 品；") }
@@ -154,10 +155,12 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                             if(s.tieIn && i==0 && bar==bars.first()) tie(x0+3*u,x-9*u,y+6*u,u)
                         }
                     }
-                    if(s.tick==s.eventId) {
+                    if(s.tick==s.eventId && !s.rest) {
                         val expression=s.expression
-                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,if(expression?.velocity!=null && expression.velocity<1f) "弱" else null,
+                        val previousVelocity=sequence.events.lastOrNull { it.tick<s.eventId && !it.rest }?.velocity ?: 1f
+                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,if(expression?.velocity!=null && expression.velocity<1f && expression.velocity!=previousVelocity) "弱" else null,
                             expression?.positions?.filter { expression.muted(it.string) }?.takeIf { it.isNotEmpty() }?.let { "P.M." },if(expression?.short==true) "·" else null,
+                            if(expression?.vibrato==true) "~" else null,
                             if(expression?.stroke==Pick.UP) "↑" else if(expression?.stroke==Pick.DOWN && !s.strum) "↓" else null).joinToString(" ")
                         if(marks.isNotEmpty()) text(measurer,marks,x,top-43*u,PurpleInk,10)
                     }
@@ -171,13 +174,13 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                         drawLine(PurpleInk,Offset(right,bracketY),Offset(right,bracketY-4*u),u)
                         text(measurer,"3",mid,bracketY,PurpleInk,11,true)
                     }
-                    s.outgoing?.let { link ->
+                    sequence.links.filter { it.sourceTick==s.tick }.forEach { link ->
                         val y=top+(link.string-1)*gap+8*u
                         val right=rowX(link.targetTick)?.minus(9*u) ?: x0+width-3*u
                         tie(x+9*u,right,y,u)
-                        text(measurer,s.linkMark.orEmpty(),(x+right)/2,y+9*u,PurpleInk,11,true)
+                        text(measurer,sequence.linkMark(link),(x+right)/2,y+9*u,PurpleInk,11,true)
                     }
-                    sequence.links.firstOrNull { it.targetTick==s.tick && rowX(it.sourceTick)==null }?.let { link ->
+                    sequence.links.filter { it.targetTick==s.tick && rowX(it.sourceTick)==null }.forEach { link ->
                         val y=top+(link.string-1)*gap+8*u
                         tie(x0+3*u,x-9*u,y,u);text(measurer,sequence.linkMark(link),x-15*u,y+9*u,PurpleInk,11,true)
                     }

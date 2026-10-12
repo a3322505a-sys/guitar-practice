@@ -41,9 +41,9 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 
 @Composable
 fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit, moving: MovingPosition? = null,
-    upcoming: List<Position> = emptyList(), showLegend: Boolean = true) {
+    upcoming: List<Position> = emptyList(), showLegend: Boolean = true, capoFret: Int = 0) {
     if(positions.isNotEmpty() && positions.all { it.fret==0 }) {
-        OpenStringBoard(positions,key,hint,current,upcoming,enabled,onTap)
+        OpenStringBoard(positions,key,hint,current,upcoming,enabled,onTap,capoFret)
         return
     }
     val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
@@ -59,6 +59,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
             Canvas(Modifier.width(width).height(diagramHeight).testTag("fretboard").semantics {
                 contentDescription=if(hint==Hint.HIDDEN) "指板，提示已隐藏" else buildString {
                     append("指板，上为 1 弦，下为 6 弦。")
+                    if(capoFret>0) append("变调夹${capoFret}品，品位相对变调夹，音名为实际发声。")
                     current.filter { it in visible }.forEach { append("当前 ${it.string} 弦 ${it.fret} 品；") }
                     upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 ${it.fret} 品；") }
                 }
@@ -90,7 +91,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                 for(s in 1..6) {
                     val y=top+(s-1)*row
                     drawLine(Color(0xFF9E9688),Offset(left,y),Offset(size.width-10.dp.toPx(),y),(0.45+s*0.12).dp.toPx())
-                    label(measurer,"$s ${Music.name(Music.openMidi[s-1])}",21.dp.toPx(),y,size=12)
+                    label(measurer,"$s ${Music.name(Music.openMidi[s-1]+capoFret)}",21.dp.toPx(),y,size=12)
                 }
                 for(p in visible) {
                     val center=Offset(x(p.fret.toFloat()),top+(p.string-1)*row)
@@ -99,7 +100,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                     drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
                     if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
                     if(p in upcoming) drawCircle(BlueInk,19.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
-                    label(measurer,if(degrees && key!=null) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
+                    label(measurer,if(degrees && key!=null) key.degree(p.midi+capoFret).toString() else Music.name(p.midi+capoFret),center.x,center.y,if(root||active) Ink else Color.White)
                 }
                 if(moving!=null && hint!=Hint.HIDDEN) {
                     val y=top+(moving.source.string-1)*row
@@ -117,7 +118,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
 
 /** Open strings have no fret grid. Reserve six compact, labeled audition targets. */
 @Composable
-private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hint, current: List<Position>, upcoming: List<Position>, enabled: Boolean, onTap: (Position)->Unit) {
+private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hint, current: List<Position>, upcoming: List<Position>, enabled: Boolean, onTap: (Position)->Unit, capoFret: Int = 0) {
     val visible=when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val fontScale=androidx.compose.ui.platform.LocalDensity.current.fontScale
     Column(Modifier.fillMaxWidth().testTag("fretboard").semantics {
@@ -139,7 +140,7 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
                     border=BorderStroke(if(active || next) 2.dp else 1.dp,if(active) RoseInk else if(next) BlueInk else Outline)) {
                     Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                         Text("$string 弦",style=MaterialTheme.typography.labelSmall,color=Muted)
-                        Text(if(shown) Music.name(position.midi,true) else "—",style=MaterialTheme.typography.labelLarge,color=if(shown) Ink else Muted)
+                        Text(if(shown) Music.name(position.midi+capoFret,true) else "—",style=MaterialTheme.typography.labelLarge,color=if(shown) Ink else Muted)
                         Text(if(shown) "0" else "",style=MaterialTheme.typography.labelSmall,color=Green)
                     }
                 }

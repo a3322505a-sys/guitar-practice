@@ -187,6 +187,7 @@ private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean, ta
 internal fun phraseCue(event: Event?, sequence: Sequence): String {
     if(event==null || event.rest) return "休止 · 留拍"
     return buildList {
+        if(sequence.capoFret>0) add("夹${sequence.capoFret}品")
         if(event.positions.isEmpty()) add("死音")
         event.expressionLabel().takeIf { it.isNotBlank() }?.let(::add)
         sequence.links.firstOrNull { it.sourceTick==event.tick }?.let {
@@ -250,7 +251,7 @@ fun PracticeApp(player: Player) {
     val renderHint=if(melody && hint==Hint.ROOTS) Hint.FULL else hint
     val shownChord=if(page==1) harmony.getOrNull(maxOf(0,section))?.let { Chords.named(it.chord) } else first
     val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
-    fun eventLabel(value: Event?)=if(value==null || value.rest) "留拍" else listOf(value.positions.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(it.midi,true)}" },value.expressionLabel()).filter { it.isNotBlank() }.joinToString(" ")
+    fun eventLabel(value: Event?)=if(value==null || value.rest) "留拍" else listOf(value.positions.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(displayedSequence!!.midi(it),true)}" },value.expressionLabel()).filter { it.isNotBlank() }.joinToString(" ")
     fun changed() { player.invalidate(); note="" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
     fun firstChange(value: Chord) { if(firstName!=value.name) { changed();firstName=value.name } }
@@ -258,8 +259,9 @@ fun PracticeApp(player: Player) {
     fun phraseChange(value: Phrase) { if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
     fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases;if(phrases) loadPhrase(phrase) } }
     fun tap(p: Position) {
-        player.audition(listOf(p))
-        note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else shownChord?.let { " · ${it.role(p)}" }.orEmpty()
+        val capo=if(page==1 && chordPhrases) displayedSequence?.capoFret ?: 0 else 0
+        player.audition(listOf(p),capoFret=capo)
+        note="${p.string} 弦 ${p.fret} 品 · ${Music.name(p.midi+capo,true)}" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else shownChord?.let { " · ${it.role(p)}" }.orEmpty()
     }
     fun setHint(index: Int) { hintIndex=index; note=""; preferences.edit().putInt("hint",index).apply() }
     val status=when {
@@ -405,7 +407,7 @@ fun PracticeApp(player: Player) {
                                             Fretboard(positions,scale.key,hint,false,current,!player.active,h,::tap)
                                         }
                                     } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,phraseNow?.positions.orEmpty(),!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap,moving,
-                                        nextEvent?.positions.orEmpty(),showLegend=false)
+                                        nextEvent?.positions.orEmpty(),showLegend=false,capoFret=displayedSequence.capoFret)
                                     else if(melody) Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "死音节奏",color=PurpleInk)
                                     else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),::tap)
                                 }

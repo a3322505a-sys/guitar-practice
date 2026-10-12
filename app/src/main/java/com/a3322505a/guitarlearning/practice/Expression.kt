@@ -28,6 +28,7 @@ fun Event.expressionLabel()=buildList {
     if(velocity<1f) add("弱")
     if(positions.any { muted(it.string) }) add("P.M.")
     if(short) add("短促")
+    if(vibrato) add("~ 揉弦")
     when(stroke) { Pick.DOWN -> add("↓"); Pick.UP -> add("↑"); Pick.NONE -> add("连奏"); else -> {} }
     if(deadStrings.isNotEmpty()) add(deadStrings.sorted().joinToString { "$it 弦 x" })
 }.joinToString(" ")
@@ -51,7 +52,7 @@ fun Sequence.validateExpression() {
         require(e.stroke!=Pick.NONE || e.positions.isNotEmpty() && e.deadStrings.isEmpty() && e.positions.all { p->links.any { it.targetTick==e.tick && it.string==p.string } }) { "unpicked note needs a legato source" }
     }
     require(links.map { it.targetTick to it.string }.distinct().size==links.size) { "duplicate legato target" }
-    require(links.map { it.sourceTick }.distinct().size==links.size) { "only one legato relation per source event is supported" }
+    require(links.map { it.sourceTick to it.string }.distinct().size==links.size) { "duplicate legato source string" }
     links.forEach { link ->
         require(link.sourceTick<link.targetTick) { "invalid legato time" }
         val source=events.firstOrNull { it.tick==link.sourceTick } ?: error("missing legato source")
