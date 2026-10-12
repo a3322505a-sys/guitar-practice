@@ -7,6 +7,7 @@ data class Phrase(
     val id: String, val title: String, val category: String, val passage: String,
     val source: String, val sourceBpm: Int, val difficulty: String, val technique: String,
     val conditions: String, val sequence: Sequence,
+    val tempoLabel: String = "原速",
 )
 
 object Phrases {
@@ -40,7 +41,8 @@ object Phrases {
             Event(i*12,12,listOf(p))
         },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
     )
-    val all=listOf(usotsuki,singleNote).also(::validatePhrases)
+    val mozart = MozartK265.phrases
+    val all=(listOf(usotsuki,singleNote)+mozart).also(::validatePhrases)
     fun named(id: String) = all.first { it.id==id }
 }
 
@@ -55,12 +57,12 @@ fun validatePhrases(phrases: List<Phrase>) {
         // Current Position/audio model is standard tuning with no capo. Other conditions need real pitch support.
         valid(phrase.conditions=="标准调弦 · 无变调夹","unsupported tuning/capo conditions")
         val seq=phrase.sequence
-        valid(seq.length%BAR==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
+        valid(seq.length%seq.barTicks==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
         valid(seq.events.any { it.positions.isNotEmpty() },"no sounding notes")
         var end=0
         seq.events.forEachIndexed { index,event ->
             valid(event.tick==end,"event[$index] must start at tick $end (use explicit rests)")
-            valid(event.tick%6==0 && event.duration%6==0,"event[$index] unsupported TAB subdivision")
+            valid(event.tick%3==0 && event.duration%3==0,"event[$index] unsupported TAB subdivision")
             valid(event.positions.all { it.string in 1..6 && it.fret in 0..24 },"event[$index] invalid string/fret")
             valid(event.positions.distinctBy { it.string }.size==event.positions.size,"event[$index] duplicate string")
             valid(event.chord==null || Chords.all.any { it.name==event.chord },"event[$index] unknown chord ${event.chord}")
@@ -69,7 +71,7 @@ fun validatePhrases(phrases: List<Phrase>) {
         }
         valid(end==seq.length,"events must cover the whole phrase")
         seq.sections.forEachIndexed { index,section ->
-            valid(section.tick in 0 until seq.length && section.tick%6==0,"section[$index] invalid tick")
+            valid(section.tick in 0 until seq.length && section.tick%3==0,"section[$index] invalid tick")
             valid(seq.events.any { it.tick==section.tick },"section[$index] must begin at an event onset")
             valid(Chords.all.any { it.name==section.chord },"section[$index] unknown chord ${section.chord}")
             valid(if(index==0) section.tick==0 else section.tick>seq.sections[index-1].tick,"section[$index] order/start")

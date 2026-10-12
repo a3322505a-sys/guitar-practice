@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
-    private fun capture(name: String) {
+    private fun capture(name: String, directory: String = "v60") {
         compose.waitForIdle()
         compose.runOnIdle {
             // Bottom sheets live in a dialog window; capture that window instead of the obscured activity.
@@ -46,7 +46,7 @@ class RenderTest {
             } else compose.activity.window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
-            val path=File("../.local/v60/$name.png")
+            val path=File("../.local/$directory/$name.png")
             path.parentFile!!.mkdirs()
             path.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
         }
@@ -513,6 +513,44 @@ class RenderTest {
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
         } finally { player.release() }
+    }
+    @Test @Config(qualifiers="w891dp-h411dp-mdpi")
+    fun mozartPhrasesAreSelectableAndUseTwoBeatPlaybackAndSixteenthTab() {
+        val player=Player(compose.activity) { ManualSink() }
+        try {
+            org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+            compose.activity.setContent { PracticeApp(player) }
+            compose.onNodeWithText("和弦").performClick()
+            compose.onNodeWithText("短句应用").performClick()
+            Phrases.mozart.forEach { phrase ->
+                compose.onNodeWithTag("config-summary").performClick()
+                compose.onNodeWithText(phrase.title).performScrollTo().performClick()
+                compose.onNodeWithText("完成").performClick()
+                compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
+                compose.onNodeWithText("听示范").performClick()
+                assertEquals(phrase.sequence,player.session!!.sequence)
+                compose.onNodeWithText("结束").performClick()
+            }
+            compose.onNodeWithText("六线谱").performClick()
+            compose.onNodeWithTag("tablature").assertIsDisplayed()
+            capture("mozart-ending-tab","v61")
+            compose.onNodeWithText("开始跟练").performClick()
+            val session=player.session!!
+            assertEquals(24,session.preTicks)
+            compose.waitUntil(8000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
+            compose.onNodeWithText("预备拍 1 / 2").assertIsDisplayed()
+            compose.onNodeWithText("暂停").performClick()
+            compose.onNodeWithText("指板").performClick()
+            assertSame(session,player.session)
+            compose.onNodeWithText("结束").performClick()
+        } finally { player.release() }
+    }
+    @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi")
+    fun mozartDottedCadenceRendersWithOriginalFingering() {
+        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[3].sequence,Hint.FULL,null,null,false) } }
+        compose.onNodeWithContentDescription("第 1 至 4 小节",substring=true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("2 弦 8 品；2 弦 5 品；3 弦 7 品；",substring=true).assertIsDisplayed()
+        capture("mozart-dotted-eighth-tab","v61")
     }
     @Test fun activeViewSwitchKeepsSessionAndMutedPlaybackAdvances() {
         val sinks=mutableListOf<ManualSink>()

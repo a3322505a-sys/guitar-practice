@@ -12,12 +12,14 @@ data class Event(val tick: Int, val duration: Int, val positions: List<Position>
     val id get() = tick
 }
 data class Section(val tick: Int, val chord: String)
-data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList()) {
+data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4) {
     init {
         require(length > 0)
+        require(beatsPerBar in listOf(2,4))
         require(events.map { it.id }.distinct().size == events.size)
         require(events.all { it.tick >= 0 && it.duration > 0 && it.tick + it.duration <= length })
     }
+    val barTicks get() = beatsPerBar * QUARTER
     val route get() = events.flatMap { it.positions }.distinct()
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
     fun sectionAt(tick: Double) = sections.indexOfLast { it.tick <= tick }
@@ -171,7 +173,7 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
 }
 
 data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false) {
-    val preTicks = if(follow) BAR else 0
+    val preTicks = if(follow) sequence.barTicks else 0
     val totalTicks: Long? = if(repeats == 0) null else preTicks.toLong() + sequence.length.toLong()*repeats
     fun frame(tick: Double) = (tick * SAMPLE_RATE * 60 / (bpm * QUARTER)).roundToLong()
     fun tick(frame: Long) = frame.toDouble() * bpm * QUARTER / (SAMPLE_RATE * 60)
@@ -180,6 +182,6 @@ data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, va
     fun resumeTick(tick: Double): Double {
         if(tick < preTicks) return 0.0
         val loop = loopAt(tick)
-        return preTicks + loop.toDouble()*sequence.length + (localTick(tick).toInt()/BAR)*BAR
+        return preTicks + loop.toDouble()*sequence.length + (localTick(tick).toInt()/sequence.barTicks)*sequence.barTicks
     }
 }

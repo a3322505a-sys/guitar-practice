@@ -115,6 +115,7 @@ fun PracticeApp(player: Player) {
     val practiceSession=session?.takeUnless { it.preview }
     val showingSession=practiceSession!=null && progress.phase!=Phase.IDLE
     val displayedSequence=if(showingSession) practiceSession!!.sequence else sequence
+    val beatsPerBar=displayedSequence?.beatsPerBar ?: 4
     val renderCursor=cursor?.takeIf { showingSession }
     val event=if(showingSession && cursor?.pre==false) displayedSequence?.eventAt(cursor.localTick) else null
     val phraseNow=if(showingSession && cursor?.pre==false) event else displayedSequence?.events?.firstOrNull()
@@ -139,7 +140,7 @@ fun PracticeApp(player: Player) {
     fun setHint(index: Int) { hintIndex=index; note=""; preferences.edit().putInt("hint",index).apply() }
     val status=when {
         session?.preview==true && player.active -> if(session.sequence.events.single().positions.size>1) "整和弦试听" else "点音试听"
-        player.active && cursor?.pre==true -> "预备拍 ${cursor.beat+1} / 4"
+        player.active && cursor?.pre==true -> "预备拍 ${cursor.beat+1} / ${session!!.sequence.beatsPerBar}"
         progress.phase==Phase.PLAYING -> "第 ${cursor!!.loop+1}${if(session!!.repeats>0) "/${session.repeats}" else ""} 轮 · 第 ${cursor.bar+1} 小节"
         progress.phase==Phase.PAUSED -> "已暂停 · 从${if(cursor?.pre==true) "预备" else "第 ${(cursor?.bar ?: 0)+1}"}小节继续"
         progress.phase==Phase.PREPARING -> "准备声音…"
@@ -169,7 +170,7 @@ fun PracticeApp(player: Player) {
                         TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
                             MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text("$bpm BPM",fontWeight=FontWeight.Bold)
                         }
-                        Text("· 4/4",color=Muted,style=MaterialTheme.typography.labelMedium)
+                        Text("· $beatsPerBar/4",color=Muted,style=MaterialTheme.typography.labelMedium)
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick={setHint(if(hint==Hint.HIDDEN) 0 else 2)},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
                     }
@@ -282,7 +283,7 @@ fun PracticeApp(player: Player) {
                                 if(!compact) Text(if(hint==Hint.FULL) { if(melody) "上 1 弦 → 下 6 弦 · 绿色音位 · 粉色当前音" else if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
                             if(!compact || !wide) Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
                                 Text(if(selected) status else "准备好，就开始一轮",style=MaterialTheme.typography.labelLarge,color=if(progress.phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f))
-                                repeat(4) { i ->
+                                repeat(beatsPerBar) { i ->
                                     Box(Modifier.padding(start=6.dp).size(if(i==cursor?.beat && showingSession) 11.dp else 8.dp).background(if(i==cursor?.beat && showingSession) Green else Lavender,RoundedCornerShape(8.dp)))
                                 }
                             }
@@ -340,7 +341,7 @@ fun PracticeApp(player: Player) {
                                 if(compact) {
                                     Text(status,color=Green,style=MaterialTheme.typography.labelLarge)
                                     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                        repeat(4) { i -> Box(Modifier.size(9.dp).background(if(i==cursor?.beat && showingSession) Green else Outline,RoundedCornerShape(9.dp))) }
+                                        repeat(beatsPerBar) { i -> Box(Modifier.size(9.dp).background(if(i==cursor?.beat && showingSession) Green else Outline,RoundedCornerShape(9.dp))) }
                                     }
                                     Row(verticalAlignment=Alignment.CenterVertically) {
                                         TextButton(onClick={settingsPanel=2},modifier=Modifier.testTag("tempo-button")) { Text("$bpm BPM") }
@@ -402,7 +403,7 @@ fun PracticeApp(player: Player) {
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                             Text("节拍声",modifier=Modifier.weight(1f));Switch(click,onCheckedChange={click=it;player.click=it;preferences.edit().putBoolean("click",it).apply()},modifier=Modifier.testTag("click-switch"))
                         }
-                        Text("4/4 · 跟练预备 1 小节 · 示范只播 1 遍",style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text("$beatsPerBar/4 · 跟练预备 1 小节 · 示范只播 1 遍",style=MaterialTheme.typography.bodySmall,color=Muted)
                     }
                 } else {
                 Text("选择要练的内容；更改后，下一次从头开始。",style=MaterialTheme.typography.bodySmall,color=Muted)
@@ -430,7 +431,7 @@ fun PracticeApp(player: Player) {
                     Label("选择短句") {
                         Choices(Phrases.all.map { it.title },Phrases.all.indexOf(phrase),Pink) { phraseChange(Phrases.all[it]) }
                         Text("${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
-                        Text("${phrase.technique} · 原速 ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)
+                        Text("${phrase.technique} · ${phrase.tempoLabel} ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("${phrase.category} · ${phrase.source}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text(phrase.sequence.explanation,style=MaterialTheme.typography.bodySmall,color=Muted)
                     }

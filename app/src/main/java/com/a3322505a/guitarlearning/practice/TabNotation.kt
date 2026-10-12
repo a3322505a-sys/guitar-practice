@@ -2,7 +2,9 @@ package com.a3322505a.guitarlearning.practice
 
 import com.a3322505a.guitarlearning.music.Position
 
-enum class RhythmValue(val ticks: Int) { WHOLE(48), HALF(24), QUARTER(12), EIGHTH(6) }
+enum class RhythmValue(val ticks: Int, val flags: Int = 0) {
+    WHOLE(48), HALF(24), QUARTER(12), DOTTED_EIGHTH(9,1), EIGHTH(6,1), SIXTEENTH(3,2)
+}
 
 /** Engraving segments reference the original event; they never create audio onsets. */
 data class TabSegment(
@@ -30,18 +32,20 @@ fun tabSystems(bars: List<TabBar>, width: Int): List<List<TabBar>> {
 }
 
 fun Sequence.tabBars(): List<TabBar> {
-    require(length % BAR == 0)
-    val result = List(length / BAR) { mutableListOf<TabSegment>() }
+    require(length % barTicks == 0)
+    val result = List(length / barTicks) { mutableListOf<TabSegment>() }
     for (event in events) {
         var at = event.tick
         val end = event.tick + event.duration
         while (at < end) {
-            val room = minOf(end - at, BAR - at % BAR)
+            val room = minOf(end - at, barTicks - at % barTicks)
             // Start long values on their natural metric boundary. Eighths on weak beats
             // tie into the next beat rather than disguising syncopation as a long value.
-            val value = RhythmValue.entries.firstOrNull { it.ticks <= room && at % it.ticks == 0 }
+            val value = RhythmValue.entries.firstOrNull {
+                it.ticks <= room && at % (if(it==RhythmValue.DOTTED_EIGHTH) QUARTER else it.ticks) == 0
+            }
                 ?: error("Unsupported subdivision at tick $at")
-            result[at / BAR] += TabSegment(event.id, at, value, event.positions, event.chord,
+            result[at / barTicks] += TabSegment(event.id, at, value, event.positions, event.chord,
                 event.strum && at == event.tick, event.positions.isNotEmpty() && at > event.tick,
                 event.positions.isNotEmpty() && at + value.ticks < end)
             at += value.ticks
@@ -55,5 +59,10 @@ data class Cursor(val pre: Boolean, val loop: Int, val localTick: Double, val ba
 fun Session.cursor(tick: Double): Cursor {
     val bounded = totalTicks?.let { tick.coerceIn(0.0, (it - 0.00001).coerceAtLeast(0.0)) } ?: tick.coerceAtLeast(0.0)
     val local = localTick(bounded)
-    return Cursor(bounded < preTicks, loopAt(bounded), local, local.toInt() / BAR, local.toInt() % BAR / QUARTER)
+    return Cursor(bounded < preTicks, loopAt(bounded), local, local.toInt() / sequence.barTicks, local.toInt() % sequence.barTicks / QUARTER)
 }
+
+/** Beam adjacent short notes within the beat; rests and beat boundaries break groups. */
+fun beamCount(left: TabSegment?, right: TabSegment?): Int =
+    if(left==null || right==null || left.rest || right.rest || left.end!=right.tick || left.tick/QUARTER!=right.tick/QUARTER) 0
+    else minOf(left.value.flags,right.value.flags)

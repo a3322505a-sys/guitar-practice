@@ -71,7 +71,7 @@ class Pcm(val session: Session, sampler: Sampler) {
             val lastBeat = floor(endTick/QUARTER).toLong()
             for(beat in firstBeat..lastBeat) {
                 if(session.totalTicks != null && beat*QUARTER >= session.totalTicks!!) break
-                add(mix, start, session.frame((beat*QUARTER).toDouble()), clicks[if(beat%4==0L) 0 else 1], 1f)
+                add(mix, start, session.frame((beat*QUARTER).toDouble()), clicks[if(beat%session.sequence.beatsPerBar==0L) 0 else 1], 1f)
             }
         }
         return ShortArray(count) { (mix[it].coerceIn(-0.96f,0.96f)*32767).roundToInt().toShort() }

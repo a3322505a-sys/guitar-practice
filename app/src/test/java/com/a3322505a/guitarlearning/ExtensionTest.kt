@@ -49,7 +49,7 @@ class ExtensionTest {
         rejects(listOf(phrase,phrase),"M01: duplicate")
         rejects(listOf(phrase.copy(sequence=phrase.sequence.copy(events=phrase.sequence.events.mapIndexed { i,e -> if(i==2) e.copy(positions=listOf(Position(7,2))) else e }))),"M01: event[2]")
         rejects(listOf(phrase.copy(sequence=phrase.sequence.copy(sections=listOf(Section(0,"missing"))))),"M01: section[0]")
-        rejects(listOf(phrase.copy(sequence=Sequence(listOf(Event(0,3,listOf(Position(1,0))),Event(3,45,listOf(Position(1,0)))),BAR,"bad rhythm"))),"M01: event[0]")
+        rejects(listOf(phrase.copy(sequence=Sequence(listOf(Event(0,2,listOf(Position(1,0))),Event(2,46,listOf(Position(1,0)))),BAR,"bad rhythm"))),"M01: event[0]")
         rejects(listOf(phrase.copy(conditions="变调夹 2 品")),"M01: unsupported")
         assertTrue(phrase.sequence.sections.isEmpty())
         assertEquals(listOf(48,50,52,48),phrase.sequence.events.flatMap { it.positions }.map { it.midi })
