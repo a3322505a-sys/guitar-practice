@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -32,7 +34,8 @@ private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: 
 }
 
 @Composable
-fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit, moving: MovingPosition? = null) {
+fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Boolean, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 238.dp, onTap: (Position)->Unit, moving: MovingPosition? = null,
+    upcoming: List<Position> = emptyList(), showLegend: Boolean = true) {
     val visible = when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val low = positions.minOf { it.fret }
     val high = positions.maxOf { it.fret }
@@ -42,7 +45,13 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width=maxOf(maxWidth, (columns*36+56).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
-            Canvas(Modifier.width(width).height(diagramHeight).pointerInput(visible, enabled, onTap) {
+            Canvas(Modifier.width(width).height(diagramHeight).testTag("fretboard").semantics {
+                contentDescription=if(hint==Hint.HIDDEN) "指板，提示已隐藏" else buildString {
+                    append("指板，上为 1 弦，下为 6 弦。")
+                    current.filter { it in visible }.forEach { append("当前 ${it.string} 弦 ${it.fret} 品；") }
+                    upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 ${it.fret} 品；") }
+                }
+            }.pointerInput(visible, enabled, onTap) {
                 if(enabled) detectTapGestures { tap ->
                     val left=46.dp.toPx(); val cell=(size.width-left-10.dp.toPx())/columns
                     val vertical=size.height/238.dp.toPx()
@@ -71,6 +80,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                     val active=p in current
                     drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
                     if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
+                    if(p in upcoming) drawCircle(BlueInk,19.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
                     label(measurer,if(degrees && key!=null) key.degree(p.midi).toString() else Music.name(p.midi),center.x,center.y,if(root||active) Ink else Color.White)
                 }
                 if(moving!=null && hint!=Hint.HIDDEN) {
@@ -80,7 +90,7 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                     drawCircle(Pink,9.dp.toPx(),Offset(left+(moving.fret-low+.5f)*cell,y))
                     label(measurer,"${moving.source.fret}${moving.mark}${moving.target.fret}",size.width/2,205.dp.toPx()*vertical,color=PurpleInk)
                 }
-                label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
+                if(showLegend) label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
             }
         }
     }

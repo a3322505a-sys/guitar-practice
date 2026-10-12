@@ -138,6 +138,18 @@ private fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean,
     }
 }
 
+/** Visible playing information that cannot be conveyed by the colored pitch markers. */
+internal fun phraseCue(event: Event?, sequence: Sequence): String {
+    if(event==null || event.rest) return "休止 · 留拍"
+    return buildList {
+        if(event.positions.isEmpty()) add("死音")
+        event.expressionLabel().takeIf { it.isNotBlank() }?.let(::add)
+        sequence.links.firstOrNull { it.sourceTick==event.tick }?.let {
+            add(when(it.kind) { Technique.SLIDE -> "滑音"; Technique.HAMMER -> "击弦"; Technique.PULL -> "勾弦" })
+        }
+    }.joinToString(" · ").ifBlank { "按音位弹奏" }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PracticeApp(player: Player) {
@@ -158,7 +170,7 @@ fun PracticeApp(player: Player) {
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click",true)) }
     var viewPreference by rememberSaveable { mutableIntStateOf(0) }
     val activity=checkNotNull(LocalActivity.current)
-    // 0: closed, 1: practice content, 2: tempo/playback. Only one panel can be open.
+    // 0: closed, 1: practice content, 2: tempo/playback, 3: diagram help.
     var settingsPanel by rememberSaveable { mutableIntStateOf(0) }
     var moreExercisesOpen by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
@@ -302,24 +314,33 @@ fun PracticeApp(player: Player) {
                             val target=if(page==1) "${shownChord.name} · ${if(!chordPhrases) "逐弦检查" else "下一：$nextChord"}"
                                 else if(hint==Hint.FULL && event!=null) { if(event.rest) "现在：留拍" else "现在：${eventLabel(event)}" }
                                 else "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} 指型"
-                            Row(Modifier.fillMaxWidth().background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
+                            val phraseCard=page==1 && chordPhrases
+                            Row(Modifier.fillMaxWidth().then(if(phraseCard) Modifier.height((if(compact) 96.dp else 120.dp)*fontScale) else Modifier)
+                                .background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     val headline=buildAnnotatedString {
-                                        if(page==1 && !melody) {
+                                        if(phraseCard) append(phrase.title)
+                                        else if(page==1) {
                                             withStyle(SpanStyle(color=RoseInk,fontWeight=FontWeight.ExtraBold,fontSize=if(compact || shownChord.name.length>5) 22.sp else 30.sp)) { append(shownChord.name) }
                                             if(!chordPhrases) withStyle(SpanStyle(color=Ink,fontSize=14.sp)) { append(" · 逐弦检查") }
                                         } else append(if(melody) phrase.title else target)
                                     }
-                                    Text(headline,style=if(compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=Ink)
-                                    if(page==1 && chordPhrases && (!melody || hint!=Hint.HIDDEN)) Text(if(melody) "现在：${eventLabel(phraseNow)}\n下一：${eventLabel(nextEvent)}" else "下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk)
+                                    Text(headline,style=if(compact || phraseCard) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=Ink,
+                                        maxLines=if(phraseCard) 2 else Int.MAX_VALUE,overflow=TextOverflow.Ellipsis)
+                                    if(phraseCard) {
+                                        val cue=if(hint==Hint.HIDDEN) "已撤提示" else if(!melody) "${shownChord.name} · ${phraseCue(phraseNow,displayedSequence!!)}" else phraseCue(phraseNow,displayedSequence!!)
+                                        Text(cue,modifier=Modifier.testTag("phrase-cue"),style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=2,overflow=TextOverflow.Ellipsis)
+                                        if(!melody) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=1)
+                                    }
                                     if(page==1 && !chordPhrases && hint!=Hint.HIDDEN) Text(
                                         chordTones.filter { hint==Hint.FULL || it.midi%12==shownChord.root }.joinToString(" · ") { "${shownChord.role(it)} ${Music.name(it.midi)}" },
                                         style=MaterialTheme.typography.bodySmall,color=BlueInk)
                                     if(page==0 && hint==Hint.FULL && nextEvent!=null) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                                 }
                                 if(page==1 && !chordPhrases) TextButton(onClick={player.audition(shownChord.positions);note="${shownChord.name} · 整和弦试听"},enabled=selected && !player.active && progress.phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
+                                else if(phraseCard) TextButton(onClick={settingsPanel=3},modifier=Modifier.testTag("diagram-help"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("帮助") }
                                 else if(!compact && availableWidth>370.dp && !player.active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
-                                if(hint==Hint.HIDDEN) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
+                                if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
                             }
                                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
                                     if(page==0) {
@@ -328,19 +349,25 @@ fun PracticeApp(player: Player) {
                                             val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
                                             Fretboard(positions,scale.key,hint,false,current,!player.active,h,::tap)
                                         }
-                                    } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,current,!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap,moving)
-                                    else if(melody) Text("${event?.expressionLabel().orEmpty()} · 死音节奏",color=PurpleInk)
+                                    } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,phraseNow?.positions.orEmpty(),!player.active,maxHeight.coerceAtMost(300.dp*fontScale),::tap,moving,
+                                        nextEvent?.positions.orEmpty(),showLegend=false)
+                                    else if(melody) Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "死音节奏",color=PurpleInk)
                                     else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !player.active,maxHeight.coerceAtMost(390.dp*fontScale),::tap)
                                 }
-                                if(!compact) Text(if(hint==Hint.FULL) { if(melody) "上 1 弦 → 下 6 弦 · 绿色音位 · 粉色当前音" else if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
-                            if(!compact || !wide) Row(Modifier.fillMaxWidth().background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                                Text(if(selected) status else "准备好，就开始一轮",style=MaterialTheme.typography.labelLarge,color=if(progress.phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f))
+                                if(!compact && !phraseCard) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
+                            if(!compact || !wide || phraseCard) Row(Modifier.fillMaxWidth().height(56.dp*fontScale).testTag("playback-status")
+                                .background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
+                                Text(if(selected) status else "准备好，就开始一轮",style=MaterialTheme.typography.labelLarge,color=if(progress.phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f),maxLines=2,overflow=TextOverflow.Ellipsis)
                                 repeat(beatsPerBar) { i ->
-                                    Box(Modifier.padding(start=6.dp).size(if(i==cursor?.beat && showingSession) 11.dp else 8.dp).background(if(i==cursor?.beat && showingSession) Green else Lavender,RoundedCornerShape(8.dp)))
+                                    Box(Modifier.padding(start=6.dp).size(11.dp).background(if(i==cursor?.beat && showingSession) Green else Lavender,RoundedCornerShape(8.dp)))
                                 }
                             }
-                            if(selected && showingSession && cursor?.pre==false && !compact) LinearProgressIndicator(progress={ (cursor.localTick / displayedSequence!!.length).toFloat() },modifier=Modifier.fillMaxWidth(),color=Green,trackColor=Mint)
-                            if(selected && note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
+                            if(phraseCard || !compact) Box(Modifier.fillMaxWidth().height(4.dp)) {
+                                if(selected && showingSession && cursor?.pre==false) LinearProgressIndicator(progress={ (cursor.localTick / displayedSequence!!.length).toFloat() },modifier=Modifier.fillMaxWidth(),color=Green,trackColor=Mint)
+                            }
+                            if(phraseCard) Box(Modifier.fillMaxWidth().height(20.dp*fontScale)) {
+                                if(selected && hint==Hint.FULL) Text(note,color=Green,style=MaterialTheme.typography.bodySmall,maxLines=1,overflow=TextOverflow.Ellipsis)
+                            } else if(selected && note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
                         }
                         }
                         if(page==1 && !chordPhrases) ChordDeck(Chords.all.indexOf(first),Chords.all.size,{firstChange(Chords.all[it])},Modifier.weight(1f).fillMaxWidth()) { index,selected -> cardContent(Chords.all[index],selected) }
@@ -364,7 +391,7 @@ fun PracticeApp(player: Player) {
                         Row(Modifier.weight(1f),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
                             Column(Modifier.width(240.dp).fillMaxHeight().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                                 summary()
-                                if(compact) {
+                                if(compact && !(page==1 && chordPhrases)) {
                                     Text(status,color=Green,style=MaterialTheme.typography.labelLarge)
                                     Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                                         repeat(beatsPerBar) { i -> Box(Modifier.size(9.dp).background(if(i==cursor?.beat && showingSession) Green else Outline,RoundedCornerShape(9.dp))) }
@@ -403,11 +430,17 @@ fun PracticeApp(player: Player) {
             }
             Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).padding(bottom=24.dp).testTag(if(settingsPanel==1) "practice-settings" else "tempo-settings"),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    Text(if(settingsPanel==1) "练习设置" else "速度与播放",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
+                                    Text(when(settingsPanel) { 1 -> "练习设置"; 2 -> "速度与播放"; else -> "指板与演奏提示" },style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
                     TextButton(onClick={settingsPanel=0}) { Text("完成") }
                 }
                 Column(Modifier.weight(1f,fill=false).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
-                if(settingsPanel==2) {
+                if(settingsPanel==3) {
+                    Text("横向指板上方是 1 弦，下方是 6 弦；左侧数字为弦号，上方数字为品位。",style=MaterialTheme.typography.bodySmall)
+                    Text("绿色为路线音位，粉色为当前音，蓝色圈为下一音。同一音位可同时是当前和下一音。",style=MaterialTheme.typography.bodySmall)
+                    Text("和弦图左至右为 6→1 弦，金色为根音；O 为空弦，X 不弹。",style=MaterialTheme.typography.bodySmall)
+                    Text("x 为死音；P.M. 为手掌制音；↑/↓ 为拨弦方向；滑音、击弦、勾弦只拨来源音一次。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
+                    Text("撤提示会隐藏当前与下一音位及演奏提示，保留拍点与播放控制。",style=MaterialTheme.typography.bodySmall)
+                } else if(settingsPanel==2) {
                     Text("调整速度或循环后，下一次从头开始；声音开关立即生效。",style=MaterialTheme.typography.bodySmall,color=Muted)
                     Label("速度") {
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
