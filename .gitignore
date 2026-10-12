@@ -3,6 +3,7 @@
 **/build/
 local.properties
 .local/
+work/
 output/
 *.p12
 *.jks

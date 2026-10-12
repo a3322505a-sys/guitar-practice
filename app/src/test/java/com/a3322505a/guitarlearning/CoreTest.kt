@@ -9,6 +9,63 @@ import java.io.File
 import kotlin.math.*
 
 class CoreTest {
+    @Test fun scaleTripletsHaveTwelveEquallySpacedOnsetsInAFullBarAt60Bpm() {
+        val seq=Routes.scale(ScaleOptions(exercise=ScaleExercise.THIRDS,notesPerBeat=3)).sequence!!
+        seq.validateExpression()
+        assertEquals(48,seq.length)
+        assertEquals(12,seq.events.size)
+        assertTrue(seq.events.none { it.rest })
+        assertEquals((0..11).map { it*4 },seq.events.map { it.tick })
+        assertEquals(listOf(Tuplet(0,4),Tuplet(12,4),Tuplet(24,4),Tuplet(36,4)),seq.tuplets)
+        val session=Session(seq,60,true,2)
+        val frames=seq.events.map { session.frame((session.preTicks+it.tick).toDouble()) }
+        assertEquals(4*44100L,frames.first().toLong())
+        assertEquals(List(11) { 14700L },frames.zipWithNext { a,b -> b-a })
+        assertEquals(8*44100L,session.frame((session.preTicks+seq.length).toDouble()))
+        assertEquals(0.0,session.cursor(96.0).localTick,0.0)
+        assertEquals(1,session.cursor(96.0).loop)
+        assertEquals(48.0,session.resumeTick(71.0),0.0)
+        assertEquals(7350L,Session(seq,120,false,1).frame(4.0))
+    }
+    @Test fun partialTripletTailsKeepTheExistingWholeBarBoundary() {
+        // Two roots leave two sounding members; the full sol round trip leaves one.
+        val cases=listOf(ScaleOptions(exercise=ScaleExercise.ROOTS),ScaleOptions(pattern=1,octave=false))
+        val remainders=mutableSetOf<Int>()
+        cases.forEach { options ->
+            val old=Routes.scale(options).sequence!!
+            val seq=Routes.scale(options.copy(notesPerBeat=3)).sequence!!
+            val pitches=old.events.flatMap { it.positions }
+            assertEquals(pitches,seq.events.flatMap { it.positions })
+            val n=pitches.size;remainders+=n%3
+            val expectedLength=((n*4+47)/48)*48
+            assertEquals(expectedLength,seq.length)
+            val group=seq.tuplets.last()
+            val members=seq.events.filter { it.tick in group.tick until group.end }
+            assertEquals(3,members.size)
+            assertEquals(3-n%3,members.count { it.rest })
+            assertTrue(members.all { it.duration==4 })
+            val tail=seq.events.filter { it.tick>=group.end }
+            assertEquals(seq.length-group.end,tail.sumOf { it.duration })
+            assertTrue(tail.all { it.rest && it.duration%12==0 })
+            assertEquals(seq.length,seq.events.sumOf { it.duration })
+            assertEquals(0.0,Session(seq,60,false,2).cursor(seq.length.toDouble()).localTick,0.0)
+            seq.validateExpression()
+        }
+        assertEquals(setOf(1,2),remainders)
+    }
+    @Test fun everyScaleRhythmKeepsTheSamePitchRouteAndLegalNotation() {
+        for(key in Tonality.entries) for(pattern in 0..4) for(exercise in ScaleExercise.entries) for(octave in listOf(false,true)) {
+            val options=ScaleOptions(pattern=pattern,key=key,exercise=exercise,octave=octave)
+            val baseline=Routes.scale(options).sequence ?: continue
+            for(density in 1..3) {
+                val seq=Routes.scale(options.copy(notesPerBeat=density)).sequence!!
+                assertEquals(baseline.events.flatMap { it.positions },seq.events.flatMap { it.positions })
+                seq.validateExpression()
+                assertEquals(seq.length,seq.events.sumOf { it.duration })
+                assertTrue(seq.events.filterNot { it.rest }.all { it.duration==12/density })
+            }
+        }
+    }
     @Test fun tuningAndEightVoicings() {
         assertEquals(listOf(40,45,50,55,59,64),Music.openMidi.reversed())
         val expected=listOf(
@@ -53,7 +110,7 @@ class CoreTest {
         assertEquals((0..15).map { it*12 },s1.events.map { it.tick })
         assertEquals(12,s1.events.last().duration)
         assertTrue(s1.events.last().positions.isEmpty())
-        val eighth=Routes.scale(ScaleOptions(eighth=true)).sequence!!
+        val eighth=Routes.scale(ScaleOptions(notesPerBeat=2)).sequence!!
         assertEquals(96,eighth.length)
         assertEquals((0..15).map { it*6 },eighth.events.map { it.tick })
         assertEquals(6,eighth.events.last().duration)
@@ -68,7 +125,7 @@ class CoreTest {
     }
     @Test fun roundTripsRespectRangeDirectionAndSingleTurningNote() {
         for(key in Tonality.entries) for(pattern in 0..4) for(octave in listOf(false,true)) for(reverse in listOf(false,true)) for(eighth in listOf(false,true)) {
-            val seq=Routes.scale(ScaleOptions(pattern=pattern,key=key,octave=octave,reverse=reverse,eighth=eighth)).sequence!!
+            val seq=Routes.scale(ScaleOptions(pattern=pattern,key=key,octave=octave,reverse=reverse,notesPerBeat=if(eighth) 2 else 1)).sequence!!
             val pitches=seq.events.flatMap { it.positions }.map { it.midi }
             val turn=pitches.size/2
             assertEquals(pitches.first(),pitches.last())

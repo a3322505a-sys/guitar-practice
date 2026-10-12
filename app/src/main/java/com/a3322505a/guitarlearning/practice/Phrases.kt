@@ -44,7 +44,8 @@ object Phrases {
         },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
     )
     val mozart = MozartK265.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all).also(::validatePhrases)
+    val shayou = Shayou.phrases
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou).also(::validatePhrases)
     fun named(id: String): Phrase {
         // Activity saved state from v61 can still contain any of the six former IDs.
         val current=when(id) {
@@ -65,9 +66,9 @@ fun validatePhrases(phrases: List<Phrase>) {
         valid(phrase.id.isNotBlank() && ids.add(phrase.id),"duplicate or blank ID")
         valid(phrase.title.isNotBlank() && phrase.category.isNotBlank() && phrase.source.isNotBlank(),"missing title/category/source")
         valid(phrase.sourceBpm>0,"invalid source BPM")
-        // Current Position/audio model is standard tuning with no capo. Other conditions need real pitch support.
-        valid(phrase.conditions=="标准调弦 · 无变调夹","unsupported tuning/capo conditions")
         val seq=phrase.sequence
+        val conditions=if(seq.capoFret==0) "标准调弦 · 无变调夹" else "标准调弦 · 变调夹${seq.capoFret}品"
+        valid(phrase.conditions==conditions,"unsupported tuning/capo label: does not match actual pitch")
         valid(phrase.goal.isNotBlank() && phrase.suggestedBpm in 30..180,"missing goal or invalid starting BPM")
         val expression=runCatching { seq.validateExpression() }
         valid(expression.isSuccess,expression.exceptionOrNull()?.message ?: "invalid expression")

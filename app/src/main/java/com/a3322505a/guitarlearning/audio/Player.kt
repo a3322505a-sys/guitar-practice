@@ -55,9 +55,9 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
         progress = Progress()
         audioManager.abandonAudioFocusRequest(focus)
     }
-    fun audition(positions: List<Position>, strum: Boolean = false) {
+    fun audition(positions: List<Position>, strum: Boolean = false, capoFret: Int = 0) {
         if(active) return
-        session = Session(Sequence(listOf(Event(0,12,positions,strum=strum)),12,"试听"), 60, false, 1, preview=true)
+        session = Session(Sequence(listOf(Event(0,12,positions,strum=strum)),12,"试听",capoFret=capoFret), 60, false, 1, preview=true)
         resumeAt=0.0
         play(session!!,0.0)
     }

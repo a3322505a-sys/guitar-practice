@@ -1,8 +1,15 @@
 package com.a3322505a.guitarlearning
 
 import android.os.Bundle
+import android.os.Build
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
@@ -13,13 +20,38 @@ class MainActivity : ComponentActivity() {
     private lateinit var player: Player
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        immersiveStatusBar(window)
         player = ViewModelProvider(this)[PracticeModel::class.java].player
         setContent { PracticeApp(player) }
     }
+    override fun onResume() { super.onResume(); immersiveStatusBar(window) }
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) immersiveStatusBar(window)
+    }
     override fun onStop() { if (!isChangingConfigurations) player.pause(); super.onStop() }
+}
+
+/** One window policy for portrait, TAB, and the settings dialog. No view switch shows bars. */
+internal fun immersiveStatusBar(window: Window) {
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        hide(WindowInsetsCompat.Type.statusBars())
+    }
 }
 
 class PracticeModel(application: Application) : AndroidViewModel(application) {
     val player = Player(application)
     override fun onCleared() { player.release() }
+}
+
+/** Maximum display bounds stay large even when an OEM has letterboxed the current window. */
+internal fun practiceOrientation(activity: Activity, tab: Boolean): Int {
+    val smallestWidth = if(Build.VERSION.SDK_INT >= 30) {
+        val bounds=activity.windowManager.maximumWindowMetrics.bounds
+        minOf(bounds.width(),bounds.height()) / activity.resources.displayMetrics.density
+    } else activity.resources.configuration.smallestScreenWidthDp.toFloat()
+    return if(smallestWidth>=600 || activity.isInMultiWindowMode) ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        else if(tab) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 }
