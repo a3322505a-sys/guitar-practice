@@ -414,10 +414,20 @@ fun PracticeApp(player: Player) {
         }
       }
         if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={settingsPanel=0},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=Paper) {
-            val dialogWindow=(LocalView.current.parent as? DialogWindowProvider)?.window
-            DisposableEffect(dialogWindow) {
-                dialogWindow?.let(::immersiveStatusBar)
-                onDispose { }
+            val sheetView=LocalView.current
+            DisposableEffect(sheetView) {
+                // The dialog ancestor may be attached after the first composition.
+                fun applyWindowPolicy() {
+                    generateSequence(sheetView) { it.parent as? android.view.View }
+                        .filterIsInstance<DialogWindowProvider>().firstOrNull()?.window?.let(::immersiveStatusBar)
+                }
+                val attached=object : android.view.View.OnAttachStateChangeListener {
+                    override fun onViewAttachedToWindow(view: android.view.View) { applyWindowPolicy() }
+                    override fun onViewDetachedFromWindow(view: android.view.View) { }
+                }
+                sheetView.addOnAttachStateChangeListener(attached)
+                if(sheetView.isAttachedToWindow) applyWindowPolicy()
+                onDispose { sheetView.removeOnAttachStateChangeListener(attached) }
             }
             Column(Modifier.fillMaxWidth().padding(horizontal=16.dp).padding(bottom=24.dp).testTag(if(settingsPanel==1) "practice-settings" else "tempo-settings"),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
