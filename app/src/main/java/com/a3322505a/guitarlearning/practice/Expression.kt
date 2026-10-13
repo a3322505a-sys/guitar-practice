@@ -5,7 +5,7 @@ import com.a3322505a.guitarlearning.music.Position
 enum class Pick { DEFAULT, DOWN, UP, NONE }
 enum class Swing(val unit: Int, val title: String) { NONE(0,"直拍"), EIGHTH(6,"八分摇摆 2:1"), SIXTEENTH(3,"十六分摇摆 2:1") }
 data class PitchPoint(val tick: Double, val semitones: Double)
-data class Grace(val fret: Int, val writtenTicks: Double = 1.5)
+data class Grace(val fret: Int, val writtenTicks: Double = 1.5, val kind: Technique = Technique.SLIDE)
 data class StringExpression(val velocity: Float? = null, val palmMute: Boolean? = null, val ring: Boolean? = null,
     val accent: Boolean = false, val bend: List<PitchPoint> = emptyList(), val slide: Int = 0, val grace: Grace? = null,
     val short: Boolean = false)
@@ -34,11 +34,13 @@ fun Event.expressionLabel()=buildList {
     if(positions.any { muted(it.string) }) add("P.M.")
     if(short || stringExpression.values.any { it.short }) add("短促")
     if(vibrato) add("~ 揉弦")
+    if(ringEndTick!=null) add("let ring")
+    dynamicMark?.let { add(it) }
     if(stringExpression.values.any { it.bend.isNotEmpty() }) add("推弦／保持")
     if(stringExpression.values.any { it.slide==4 }) add("滑出↘")
     if(stringExpression.values.any { it.slide==8 }) add("滑出↗")
     if(stringExpression.values.any { it.slide==16 }) add("滑入↗")
-    stringExpression.values.mapNotNull { it.grace }.forEach { add("装饰${it.fret}/") }
+    stringExpression.values.mapNotNull { it.grace }.forEach { add("装饰${it.fret}${it.kind.mark}") }
     when(stroke) { Pick.DOWN -> add("↓"); Pick.UP -> add("↑"); Pick.NONE -> add("连奏"); else -> {} }
     if(deadStrings.isNotEmpty()) add(deadStrings.sorted().joinToString { "$it 弦 x" })
 }.joinToString(" ")
@@ -56,6 +58,7 @@ fun Sequence.validateExpression() {
         val group=tuplets.firstOrNull { e.tick>=it.tick && e.tick<it.end }
         require(if(group==null) e.tick%3==0 && e.duration%3==0 else e.duration==group.unit) { "event[${events.indexOf(e)}] unsupported TAB subdivision" }
         require(e.velocity.isFinite() && e.velocity in .1f..1.2f) { "invalid velocity" }
+        require(e.ringEndTick==null || e.ring && e.ringEndTick>=e.tick+e.duration && e.ringEndTick<=length) { "invalid let-ring boundary" }
         require(e.deadStrings.all { it in 1..6 } && e.positions.none { it.string in e.deadStrings }) { "dead strings must be separate from pitched positions" }
         require(e.stringExpression.keys.all { it in e.strings }) { "expression for absent string" }
         require(e.stringExpression.values.all { it.velocity==null || it.velocity.isFinite() && it.velocity in .1f..1.2f }) { "invalid string velocity" }
@@ -76,7 +79,9 @@ fun Sequence.validateExpression() {
         val b=target.positions.singleOrNull { it.string==link.string } ?: error("missing target string")
         require(a.fret!=b.fret && target.stroke==Pick.NONE) { "legato needs different frets and an unpicked target" }
         require(source.muted(link.string)==target.muted(link.string)) { "changing P.M. within a legato is unsupported" }
-        require(!source.short && source.stroke!=Pick.NONE && (source.ring || source.tick+source.duration==target.tick)) { "unsupported nested or interrupted legato" }
+        require(!source.short && source.stringExpression[link.string]?.short!=true &&
+            (source.stroke!=Pick.NONE || links.any { it.targetTick==source.tick && it.string==link.string }) &&
+            (source.ring || source.tick+source.duration==target.tick)) { "interrupted legato chain" }
         require(events.none { it.tick>source.tick && it.tick<target.tick && link.string in it.strings }) { "legato interrupted on same string" }
         require(sections.none { it.tick>source.tick && it.tick<=target.tick }) { "legato crosses a grip change" }
         require(link.kind!=Technique.HAMMER || b.fret>a.fret) { "hammer must ascend" }

@@ -35,13 +35,22 @@ class Sampler(private val bank: SoundBank = SoundBank.NYLON, load: (Int) -> Byte
         }
     }
     /** Continuous sample phase: targets never receive an ordinary picked attack. */
-    fun linked(from: Int,to: Int,arrival: Int,frames: Int,kind: Technique): FloatArray {
+    fun linked(from: Int,to: Int,arrival: Int,frames: Int,kind: Technique): FloatArray =
+        linkedChain(from,listOf(Triple(arrival,to,kind)),frames)
+
+    /** Successive gestures share one picked attack and continuous sample phase. */
+    fun linkedChain(from: Int,targets: List<Triple<Int,Int,Technique>>,frames: Int): FloatArray {
+        require(targets.isNotEmpty() && targets.first().first>0 && targets.zipWithNext().all { (a,b)->a.first<b.first })
         val root=roots.minBy { abs(it-from) };val wave=samples.getValue(root)
-        var phase=0.0
+        var phase=0.0;var segment=0
         val release=max(1,min(frames/3,SAMPLE_RATE*bank.releaseMs/1000))
         return FloatArray(frames) { i ->
-            val progress=if(kind==Technique.SLIDE) (i.toDouble()/arrival).coerceIn(0.0,1.0) else ((i-arrival+SAMPLE_RATE*.003)/(SAMPLE_RATE*.003)).coerceIn(0.0,1.0)
-            val midi=from+(to-from)*progress
+            while(segment<targets.lastIndex && i>=targets[segment].first) segment++
+            val (arrival,to,kind)=targets[segment]
+            val start=if(segment==0) 0 else targets[segment-1].first
+            val origin=if(segment==0) from else targets[segment-1].second
+            val progress=if(kind==Technique.SLIDE) ((i-start).toDouble()/(arrival-start)).coerceIn(0.0,1.0) else ((i-arrival+SAMPLE_RATE*.003)/(SAMPLE_RATE*.003)).coerceIn(0.0,1.0)
+            val midi=origin+(to-origin)*progress
             val at=phase.toInt()
             val value=if(at>=wave.lastIndex) 0f else wave[at]+(wave[at+1]-wave[at])*(phase-at).toFloat()
             phase+=bank.sampleRate.toDouble()/SAMPLE_RATE*2.0.pow((midi-root)/12.0)
@@ -79,9 +88,15 @@ class Pcm(val session: Session, sampler: Sampler) {
             if(seq.links.any { it.targetTick==event.tick && it.string==string }) return@mapIndexedNotNull null
             val offset = if(event.strum) (index * 0.012 * SAMPLE_RATE).roundToInt() else 0
             val p=event.positions.firstOrNull { it.string==string }
-            val link=seq.links.firstOrNull { it.sourceTick==event.tick && it.string==string }
-            val target=link?.let { seq.events.first { e->e.tick==it.targetTick } }
-            val duration=if(link!=null) link.targetTick-event.tick+seq.soundDuration(target!!,seq.position(link.targetTick,string)) else if(p!=null) seq.soundDuration(event,p) else event.duration
+            val chain=buildList {
+                var source=event.tick
+                while(true) {
+                    val next=seq.links.firstOrNull { it.sourceTick==source && it.string==string } ?: break
+                    add(next);source=next.targetTick
+                }
+            }
+            val last=chain.lastOrNull()
+            val duration=if(last!=null) last.targetTick-event.tick+seq.soundDuration(seq.events.first { it.tick==last.targetTick },seq.position(last.targetTick,string)) else if(p!=null) seq.soundDuration(event,p) else event.duration
             fun relativeFrame(tick: Double)=(session.sourceFrames(event.tick+tick)-session.sourceFrames(event.tick.toDouble())).toInt()-offset
             val expression=event.stringExpression[string]
             // GP staccato (Accent bit 1) releases at half the performed note duration;
@@ -95,14 +110,19 @@ class Pcm(val session: Session, sampler: Sampler) {
                 expression?.slide==16 -> listOf(0 to -3.0,(count*.25).toInt() to 0.0)
                 else -> emptyList()
             }
-            var wave=if(p==null) dead(string,count) else if(link!=null) sampler.linked(seq.midi(p),seq.midi(seq.position(link.targetTick,string)),relativeFrame((link.targetTick-event.tick).toDouble()).coerceAtLeast(1),count,link.kind)
+            var wave=if(p==null) dead(string,count) else if(chain.isNotEmpty()) sampler.linkedChain(seq.midi(p),chain.map { Triple(relativeFrame((it.targetTick-event.tick).toDouble()).coerceAtLeast(1),seq.midi(seq.position(it.targetTick,string)),it.kind) },count)
+                else if(expression?.grace!=null && expression.grace.kind!=Technique.SLIDE) sampler.linked(seq.midi(p)+expression.grace.fret-p.fret,seq.midi(p),relativeFrame(expression.grace.writtenTicks).coerceAtLeast(1),count,expression.grace.kind)
                 else if(contour.isNotEmpty()) sampler.expressive(seq.midi(p),count,contour)
                 else cache.getOrPut(Triple(seq.midi(p),count,event.vibrato)) { sampler.note(seq.midi(p),count,event.vibrato) }
             if(p!=null && event.muted(string)) wave=muted(wave)
-            if(target!=null && target.strength(string)!=event.strength(string)) {
-                val arrival=relativeFrame((link!!.targetTick-event.tick).toDouble())
-                val ratio=target.strength(string)/event.strength(string)
-                wave=FloatArray(wave.size) { i->wave[i]*(1f+(ratio-1f)*((i-arrival)/(SAMPLE_RATE*.003f)).coerceIn(0f,1f)) }
+            if(chain.any { seq.events.first { e->e.tick==it.targetTick }.strength(string)!=event.strength(string) }) {
+                val gains=chain.map { link -> relativeFrame((link.targetTick-event.tick).toDouble()) to seq.events.first { it.tick==link.targetTick }.strength(string)/event.strength(string) }
+                var at=0
+                wave=FloatArray(wave.size) { i ->
+                    while(at<gains.lastIndex && i>=gains[at+1].first) at++
+                    val prior=if(at==0) 1f else gains[at-1].second
+                    wave[i]*(prior+(gains[at].second-prior)*((i-gains[at].first)/(SAMPLE_RATE*.003f)).coerceIn(0f,1f))
+                }
             }
             Voice(event.tick,offset,wave,(.72/sqrt(event.strings.size.toDouble())).toFloat()*event.strength(string))
         }

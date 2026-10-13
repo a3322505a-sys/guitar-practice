@@ -17,7 +17,19 @@ data class TabSegment(
 }
 data class TabBar(val index: Int, val segments: List<TabSegment>)
 
-fun TabBar.readableWidth() = 68 + maxOf(4, segments.size) * 28
+fun TabBar.readableWidth(): Int {
+    val ticks=(segments.lastOrNull()?.end ?: 48)-(segments.firstOrNull()?.tick ?: 0)
+    // Temporal spacing must leave room for two-digit triplets and grace notes.
+    val required=segments.zipWithNext().maxOfOrNull { (a,b) ->
+        val gap=when {
+            b.expression?.stringExpression?.values?.any { it.grace!=null }==true && b.tick==b.eventId -> 40
+            (a.positions+b.positions).any { it.fret>=10 } -> 26
+            else -> 22
+        }
+        kotlin.math.ceil(ticks.toDouble()*gap/(b.tick-a.tick)).toInt()
+    } ?: 0
+    return 68+maxOf(maxOf(4,segments.size)*28,required)
+}
 fun tabSystems(bars: List<TabBar>, width: Int): List<List<TabBar>> {
     val rows = mutableListOf<MutableList<TabBar>>()
     var used = 40

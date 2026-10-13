@@ -151,7 +151,7 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                             if(s.tick==s.eventId) s.expression?.stringExpression?.get(p.string)?.let { expression ->
                                 if(expression.short) drawCircle(PurpleInk,1.6f*u,Offset(x,y-13*u))
                                 expression.grace?.let { grace ->
-                                    text(measurer,"${grace.fret}/",x-19*u,y-6*u,PurpleInk,10,true)
+                                    text(measurer,"${grace.fret}${grace.kind.mark}",x-19*u,y-6*u,PurpleInk,10,true)
                                     drawLine(PurpleInk,Offset(x-22*u,y+5*u),Offset(x-16*u,y-3*u),u)
                                 }
                                 val mark=if(expression.bend.isNotEmpty()) "b${expression.bend.maxOf { it.semitones }}" else when(expression.slide) { 4->"↘";8,16->"↗";else->"" }
@@ -170,11 +170,13 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                     if(s.tick==s.eventId && !s.rest) {
                         val expression=s.expression
                         val previousVelocity=sequence.events.lastOrNull { it.tick<s.eventId && !it.rest }?.velocity ?: 1f
-                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,if(expression?.velocity!=null && expression.velocity<1f && expression.velocity!=previousVelocity) "弱" else null,
+                        val previousRingEnd=sequence.events.lastOrNull { it.tick<s.eventId && !it.rest }?.ringEndTick
+                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,expression?.dynamicMark ?: if(expression?.velocity!=null && expression.velocity<previousVelocity) "弱" else null,
+                            if(expression?.ringEndTick!=null && expression.ringEndTick!=previousRingEnd) "let ring" else null,
                             expression?.positions?.filter { expression.muted(it.string) }?.takeIf { it.isNotEmpty() }?.let { "P.M." },if(expression?.short==true) "·" else null,
                             if(expression?.vibrato==true) "~" else null,
                             if(expression?.stroke==Pick.UP) "↑" else if(expression?.stroke==Pick.DOWN && !s.strum) "↓" else null).joinToString(" ")
-                        if(marks.isNotEmpty()) text(measurer,marks,x,top-43*u,PurpleInk,10)
+                        if(marks.isNotEmpty()) text(measurer,marks,x,top-24*u,PurpleInk,10)
                     }
                     s.tuplet?.takeIf { s.tick==it.tick }?.let { group ->
                         val right=rowX(group.end-group.unit) ?: x

@@ -10,7 +10,8 @@ const val SAMPLE_RATE = 44100
 data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false, val ring: Boolean = false,
     val velocity: Float = 1f, val accent: Boolean = false, val palmMute: Boolean = false,
     val deadStrings: Set<Int> = emptySet(), val pick: Pick = Pick.DEFAULT, val short: Boolean = false,
-    val stringExpression: Map<Int,StringExpression> = emptyMap(), val vibrato: Boolean = false) {
+    val stringExpression: Map<Int,StringExpression> = emptyMap(), val vibrato: Boolean = false, val ringEndTick: Int? = null,
+    val dynamicMark: String? = null) {
     // An onset is unique within a finite sequence. All its chord tones share this identity.
     val id get() = tick
 }
@@ -53,7 +54,7 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     fun soundDuration(event: Event, position: Position): Int {
         val stringEnd = events.firstOrNull { it.tick > event.tick && position.string in it.strings }?.tick ?: length
         val gripEnd = sections.firstOrNull { it.tick > event.tick }?.tick ?: length
-        val end=if(event.stringExpression[position.string]?.ring ?: event.ring) minOf(stringEnd,gripEnd) else minOf(event.tick+event.duration,stringEnd,gripEnd)
+        val end=if(event.stringExpression[position.string]?.ring ?: event.ring) minOf(stringEnd,gripEnd,event.ringEndTick ?: length) else minOf(event.tick+event.duration,stringEnd,gripEnd)
         val duration=end-event.tick
         return if(event.short) minOf(duration,3) else duration
     }

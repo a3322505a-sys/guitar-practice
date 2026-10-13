@@ -46,7 +46,7 @@ object Phrases {
     val mozart = MozartK265.phrases
     val shayou = Shayou.phrases
     val kafka = Kafka.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all).also(::validatePhrases)
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases).also(::validatePhrases)
     val catalogue=all.filter { !it.id.startsWith("KAF-") }+KafkaPractice.core
     fun practiceNamed(id: String)=named(KafkaPractice.replacement(id) ?: id)
     fun family(phrase: Phrase)=if(phrase.id in KafkaPractice.all.map { it.id }) named(phrase.relatedId ?: phrase.id) else phrase

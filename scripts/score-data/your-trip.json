@@ -1,0 +1,8914 @@
+{
+  "source": "your_trip.pdf",
+  "sha256": "3293c583569de637fa69396bd3280a483e3d1cef42a3645c7c31e03349406bc7",
+  "bpm": 142,
+  "capo": 2,
+  "meter": "4/4",
+  "tickPerQuarter": 12,
+  "bars": [
+    {
+      "number": 1,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 60.509
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 85.653
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 110.798
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 135.947
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 153.728
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 166.301
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 191.421
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 209.212
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 221.791
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 234.371
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 252.161
+        },
+        {
+          "tick": 21,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 264.741
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 282.532
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 295.111
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 312.902
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 330.692
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 343.272
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 368.399
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 388.525
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 402.756
+        },
+        {
+          "tick": 12,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 416.987
+        },
+        {
+          "tick": 15,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 431.218
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 445.449
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 459.68
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 479.806,
+          "grace": {
+            "string": 3,
+            "fret": 9,
+            "kind": "SLIDE"
+          }
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 499.931
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 524.58,
+          "grace": {
+            "string": 3,
+            "fret": 11,
+            "kind": "SLIDE"
+          }
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 544.706
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ],
+            [
+              4,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 68.486
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 81.03
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ],
+            [
+              4,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 93.574
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 111.314
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 123.858
+        },
+        {
+          "tick": 24,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 136.402
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 148.946
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ],
+            [
+              4,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 161.49
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ],
+            [
+              4,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 179.23
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 196.97
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 209.514
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 234.606
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 247.158,
+          "legato": [
+            {
+              "source": 0,
+              "string": 4,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 259.71
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 277.462
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 295.213
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 307.766
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 320.318
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 338.069
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 350.622
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 363.174,
+          "bend": {
+            "string": 3,
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                12,
+                2
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 400.826
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 418.571
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 431.118
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 443.665
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 461.41
+        },
+        {
+          "tick": 21,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 473.957
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 491.701
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 504.248
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 521.993
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 539.737
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 552.284
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 67.649
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 79.601
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ],
+            [
+              4,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 91.553
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 108.455
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 120.407
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 132.359
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 149.261
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 161.213
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 178.115
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 190.067
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 219.905
+        },
+        {
+          "tick": 3,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 231.827
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 248.688
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 260.61
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 277.47
+        },
+        {
+          "tick": 21,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 289.392
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 306.253
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 318.175
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 335.036
+        },
+        {
+          "tick": 39,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 346.958
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 363.818
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 390.235
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 408.916
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 422.126
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 435.335
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 454.017
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 467.226
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 485.908,
+          "grace": {
+            "string": 3,
+            "fret": 9,
+            "kind": "SLIDE"
+          }
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 504.589
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 527.469,
+          "grace": {
+            "string": 3,
+            "fret": 11,
+            "kind": "SLIDE"
+          }
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 546.15
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747,
+          "vibrato": true
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 72.75
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 88.31
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 103.869
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 119.428
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 134.986
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 150.546
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 178.654
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 194.255
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 209.857
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 225.458
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 241.059
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 263.122
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 297.736
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 313.288
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 328.835
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 344.393
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 359.945
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 375.498
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 391.048
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 406.602
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            5
+          ],
+          "pdfX": 437.034
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 453.763
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 470.493
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 490.983,
+          "grace": {
+            "string": 2,
+            "fret": 2,
+            "kind": "HAMMER"
+          }
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 507.713
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 524.442
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 541.172
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 66.397
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 82.045
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 97.697
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 113.347
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 128.998
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 144.643
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 160.298
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 188.496
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 204.196
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 219.896
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 235.596
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 251.294
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 273.498
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 308.25
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 323.9
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 339.55
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 355.2
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 370.851
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 386.501
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 402.147
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 417.801
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            5
+          ],
+          "pdfX": 448.33
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 464.043
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 479.757
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 495.47
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 511.183
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 526.896
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 542.61
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 66.009
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 81.271
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 96.533
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 111.796
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 127.058
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 142.319
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 157.582
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 185.393
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 200.702
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 216.012
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 231.322
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 246.629
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 268.279
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 302.482
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 317.745
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 333.002
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 348.269
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 363.531
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 378.794
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 394.051
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 409.318
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            5
+          ],
+          "pdfX": 439.459
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 455.871
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 472.284
+        },
+        {
+          "tick": 18,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 492.384,
+          "grace": {
+            "string": 2,
+            "fret": 2,
+            "kind": "HAMMER"
+          }
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 515.595
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 532.007
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 548.419
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 67.064
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 83.38
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 99.698
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 116.015
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 132.332
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 148.646
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 164.966
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            6
+          ],
+          "pdfX": 196.161
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 212.574
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 228.986
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 245.398
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 261.81
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 285.021
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 320.779
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 337.096
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 353.408
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 369.73
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 386.047
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 402.364
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 418.68
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 434.998
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4
+          ],
+          "pdfX": 466.194
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 482.634
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 499.072
+        },
+        {
+          "tick": 18,
+          "duration": 24,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 515.513
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4
+          ],
+          "pdfX": 548.392
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 60.38,
+          "legato": [
+            {
+              "source": 0,
+              "string": 1,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 70.013,
+          "legato": [
+            {
+              "source": 3,
+              "string": 1,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 83.634
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 97.26
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 106.894,
+          "legato": [
+            {
+              "source": 18,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 116.527,
+          "legato": [
+            {
+              "source": 21,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 130.146
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 143.774
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 153.407,
+          "legato": [
+            {
+              "source": 36,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 163.04,
+          "legato": [
+            {
+              "source": 39,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 189.362
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 202.972
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 212.593,
+          "legato": [
+            {
+              "source": 6,
+              "string": 3,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 222.214,
+          "legato": [
+            {
+              "source": 9,
+              "string": 3,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 235.817
+        },
+        {
+          "tick": 24,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 249.426
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 259.047,
+          "legato": [
+            {
+              "source": 24,
+              "string": 4,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 268.667,
+          "legato": [
+            {
+              "source": 27,
+              "string": 4,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 282.273
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 314.063
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 323.696,
+          "legato": [
+            {
+              "source": 0,
+              "string": 1,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 333.33,
+          "legato": [
+            {
+              "source": 3,
+              "string": 1,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 346.951
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 360.577
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 370.21,
+          "legato": [
+            {
+              "source": 18,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 379.843,
+          "legato": [
+            {
+              "source": 21,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 393.463
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 407.09
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 416.724,
+          "legato": [
+            {
+              "source": 36,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 426.357,
+          "legato": [
+            {
+              "source": 39,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 452.679
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 466.289
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 475.91,
+          "legato": [
+            {
+              "source": 6,
+              "string": 3,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 485.53,
+          "legato": [
+            {
+              "source": 9,
+              "string": 3,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 499.134
+        },
+        {
+          "tick": 24,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 512.742
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 522.363,
+          "legato": [
+            {
+              "source": 24,
+              "string": 4,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 531.984,
+          "legato": [
+            {
+              "source": 27,
+              "string": 4,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 545.59
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 60.739,
+          "legato": [
+            {
+              "source": 0,
+              "string": 1,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 70.731,
+          "legato": [
+            {
+              "source": 3,
+              "string": 1,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 84.861
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 98.994
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 108.987,
+          "legato": [
+            {
+              "source": 18,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 118.979,
+          "legato": [
+            {
+              "source": 21,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 133.109
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 147.242
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 157.235,
+          "legato": [
+            {
+              "source": 36,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 167.227,
+          "legato": [
+            {
+              "source": 39,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 31,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 194.055
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 208.176
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 218.157,
+          "legato": [
+            {
+              "source": 6,
+              "string": 3,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 228.138,
+          "legato": [
+            {
+              "source": 9,
+              "string": 3,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 242.252
+        },
+        {
+          "tick": 24,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 256.367
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [
+            [
+              4,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 266.348,
+          "legato": [
+            {
+              "source": 24,
+              "string": 4,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 276.329,
+          "legato": [
+            {
+              "source": 27,
+              "string": 4,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 290.444
+        }
+      ]
+    },
+    {
+      "number": 32,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 322.953
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 332.946,
+          "legato": [
+            {
+              "source": 0,
+              "string": 1,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 342.939,
+          "legato": [
+            {
+              "source": 3,
+              "string": 1,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 357.066
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 371.204
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 381.197,
+          "legato": [
+            {
+              "source": 18,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              5
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 391.19,
+          "legato": [
+            {
+              "source": 21,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 405.319
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 419.454
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 433.587
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "page": 1,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 24,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pdfX": 462.598
+        },
+        {
+          "tick": 24,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 490.829
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 500.81,
+          "legato": [
+            {
+              "source": 24,
+              "string": 3,
+              "kind": "SLIDE"
+            }
+          ]
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            3
+          ],
+          "pdfX": 510.791
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 520.772
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 530.754
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 540.735
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 550.716
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 67.561
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 79.451
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 91.341
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 108.156
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 120.046
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 131.936
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 148.751
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 160.641
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 172.531
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 184.421
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 196.311
+        }
+      ]
+    },
+    {
+      "number": 35,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 226.061
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 238.052
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 250.042
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 262.032
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 274.022
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 290.979
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 302.969
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 314.96
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 331.916
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 343.906
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 355.897
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 367.887
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 379.877
+        }
+      ]
+    },
+    {
+      "number": 36,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 409.382
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 426.201
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 438.093
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 449.986
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 466.805
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 478.697
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 490.59
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 507.409
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 519.301
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 536.12
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 548.013
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 79.152
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 99.238
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              8
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 119.324
+        },
+        {
+          "tick": 30,
+          "duration": 2,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 139.41,
+          "triplet": true
+        },
+        {
+          "tick": 32,
+          "duration": 2,
+          "notes": [
+            [
+              2,
+              8
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 151.007,
+          "triplet": true,
+          "legato": [
+            {
+              "source": 30,
+              "string": 2,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 34,
+          "duration": 2,
+          "notes": [
+            [
+              2,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 162.603,
+          "triplet": true,
+          "legato": [
+            {
+              "source": 32,
+              "string": 2,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 174.2
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 194.286
+        }
+      ]
+    },
+    {
+      "number": 38,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 226.92
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 243.323
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 254.921
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 266.519
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 282.922
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 294.52
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 306.119
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 322.521
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 334.12
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 345.718
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 357.317
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 368.915
+        }
+      ]
+    },
+    {
+      "number": 39,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 398.253
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 409.949
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 421.645
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 433.341
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 445.036
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 461.577
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 473.272
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              10
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 484.968
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 501.508
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 513.204
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 524.9
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 536.595
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 548.291
+        }
+      ]
+    },
+    {
+      "number": 40,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 50.747
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 67.807
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 79.871
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 91.935
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 108.995
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 121.059
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 133.123
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 150.183
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 162.247
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 179.307
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 191.371
+        }
+      ]
+    },
+    {
+      "number": 41,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 221.367
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 233.4
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 245.432
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 257.465
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 269.497
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 286.514
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 298.546
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 310.579
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 327.595
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 339.627
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 356.644
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 368.676
+        }
+      ]
+    },
+    {
+      "number": 42,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 400.187
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 417.237
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 429.292
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 441.348
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 458.398
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 470.453
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 482.509
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 499.559
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 511.615
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 523.67
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 535.726
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 547.782
+        }
+      ]
+    },
+    {
+      "number": 43,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 51.134
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 62.08
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 73.026
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 83.971
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 94.917
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 110.397
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 121.342
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 132.288
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 147.768
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 158.713
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 169.659
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 180.605
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 191.551
+        }
+      ]
+    },
+    {
+      "number": 44,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 221.524
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 236.852
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 247.69
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 258.529
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 273.857
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 289.184
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 304.512
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 315.351
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 326.189
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 337.027
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 347.866
+        }
+      ]
+    },
+    {
+      "number": 45,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 376.129
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 389.506
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 402.883
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 416.261
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 429.638
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 448.556
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 461.933
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              15
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 475.31
+        },
+        {
+          "tick": 30,
+          "duration": 2,
+          "notes": [
+            [
+              1,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 494.228,
+          "triplet": true
+        },
+        {
+          "tick": 32,
+          "duration": 2,
+          "notes": [
+            [
+              1,
+              15
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 505.151,
+          "triplet": true,
+          "legato": [
+            {
+              "source": 30,
+              "string": 1,
+              "kind": "HAMMER"
+            }
+          ]
+        },
+        {
+          "tick": 34,
+          "duration": 2,
+          "notes": [
+            [
+              1,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 516.073,
+          "triplet": true,
+          "legato": [
+            {
+              "source": 32,
+              "string": 1,
+              "kind": "PULL"
+            }
+          ]
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 526.995
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              15
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 545.913
+        }
+      ]
+    },
+    {
+      "number": 46,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 52.693
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 69.37
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 81.163
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 92.955
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 109.633
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 121.425
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 133.218
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 149.895
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 161.688
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 173.48
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 185.273
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 197.066
+        }
+      ]
+    },
+    {
+      "number": 47,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 226.679
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 238.578
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 250.478
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 262.378
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 274.278
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 291.107
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 303.007
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 314.907
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 331.736
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 343.636
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 355.536
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2
+          ],
+          "tied": [],
+          "pdfX": 367.436
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              17
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 379.336
+        }
+      ]
+    },
+    {
+      "number": 48,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 410.66
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 427.34
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 439.135
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 450.93
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 467.61
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 479.405
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 491.2
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 507.881
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 519.676
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 536.356
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 548.151
+        }
+      ]
+    },
+    {
+      "number": 49,
+      "page": 2,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 51.134
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              15
+            ],
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 63.445
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              15
+            ],
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3
+          ],
+          "pdfX": 75.756
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              15
+            ],
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 88.067
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              15
+            ],
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 100.377
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 117.787
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 130.098
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              14
+            ],
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 142.409
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 159.819
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              16
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 172.13
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 189.54
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              14
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 201.85
+        }
+      ]
+    },
+    {
+      "number": 98,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 18,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 222.214,
+          "ringToBarEnd": 101
+        },
+        {
+          "tick": 18,
+          "duration": 12,
+          "notes": [
+            [
+              1,
+              0
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 251.626,
+          "ringToBarEnd": 101
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 275.64
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 292.623,
+          "ringToBarEnd": 101
+        }
+      ]
+    },
+    {
+      "number": 99,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pdfX": 331.632,
+          "ringToBarEnd": 101
+        }
+      ]
+    },
+    {
+      "number": 100,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 399.902,
+          "ringToBarEnd": 101
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 423.864,
+          "ringToBarEnd": 101
+        },
+        {
+          "tick": 24,
+          "duration": 18,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 447.826,
+          "ringToBarEnd": 101
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 477.173,
+          "ringToBarEnd": 101
+        }
+      ]
+    },
+    {
+      "number": 101,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 509.107,
+          "ringToBarEnd": 101
+        }
+      ]
+    },
+    {
+      "number": 102,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 51.659,
+          "ringToBarEnd": 105
+        }
+      ]
+    },
+    {
+      "number": 103,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 150.889,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 176.809,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 202.728,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            4
+          ],
+          "pdfX": 239.383,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            4
+          ],
+          "pdfX": 276.039,
+          "ringToBarEnd": 105
+        }
+      ]
+    },
+    {
+      "number": 104,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 325.242,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 360.888,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 24,
+          "duration": 18,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 396.534,
+          "ringToBarEnd": 105
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 440.192,
+          "ringToBarEnd": 105
+        }
+      ]
+    },
+    {
+      "number": 105,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 480.387,
+          "ringToBarEnd": 105
+        }
+      ]
+    },
+    {
+      "number": 106,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 51.455,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 84.543,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 24,
+          "duration": 18,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 117.631,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 158.155,
+          "ringToBarEnd": 109
+        }
+      ]
+    },
+    {
+      "number": 107,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 196.542,
+          "ringToBarEnd": 109
+        }
+      ]
+    },
+    {
+      "number": 108,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 24,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 287.246,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pdfX": 335.668,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pdfX": 369.908,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 394.119,
+          "ringToBarEnd": 109
+        }
+      ]
+    },
+    {
+      "number": 109,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2
+          ],
+          "pdfX": 433.209,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 466.115,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [
+            [
+              3,
+              2
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 499.02,
+          "ringToBarEnd": 109
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 531.926,
+          "ringToBarEnd": 109
+        }
+      ]
+    },
+    {
+      "number": 110,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 51.659,
+          "ringToBarEnd": 113
+        }
+      ]
+    },
+    {
+      "number": 111,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "pdfX": 132.765,
+          "ringToBarEnd": 113
+        },
+        {
+          "tick": 12,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 159.839,
+          "ringToBarEnd": 113
+        },
+        {
+          "tick": 24,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 186.913,
+          "ringToBarEnd": 113
+        },
+        {
+          "tick": 36,
+          "duration": 12,
+          "notes": [
+            [
+              5,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 213.988,
+          "ringToBarEnd": 113
+        }
+      ]
+    },
+    {
+      "number": 112,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 253.813,
+          "ringToBarEnd": 113
+        }
+      ]
+    },
+    {
+      "number": 113,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4
+          ],
+          "pdfX": 335.034,
+          "ringToBarEnd": 113
+        }
+      ]
+    },
+    {
+      "number": 114,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 12,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 418.254,
+          "strum": true
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [],
+          "dead": [
+            2,
+            3,
+            4
+          ],
+          "tied": [],
+          "pdfX": 446.212
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 465.982
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [
+            2,
+            3,
+            4
+          ],
+          "pdfX": 485.752
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 505.522
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 525.292
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 545.062
+        }
+      ]
+    },
+    {
+      "number": 115,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [],
+          "dead": [],
+          "tied": [],
+          "pdfX": 51.609
+        },
+        {
+          "tick": 6,
+          "duration": 6,
+          "notes": [
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 64.377,
+          "velocity": 0.65
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 77.145,
+          "velocity": 0.7083
+        },
+        {
+          "tick": 18,
+          "duration": 6,
+          "notes": [
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 89.913,
+          "velocity": 0.7667
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 102.68,
+          "velocity": 0.825
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 115.448,
+          "velocity": 0.8833
+        },
+        {
+          "tick": 36,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 128.216,
+          "velocity": 0.9417
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 140.984,
+          "velocity": 1.0
+        }
+      ]
+    },
+    {
+      "number": 116,
+      "page": 4,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 48,
+          "notes": [
+            [
+              2,
+              3
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              4,
+              0
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "dead": [
+            5
+          ],
+          "tied": [],
+          "pdfX": 166.889
+        }
+      ]
+    },
+    {
+      "number": 136,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 396.95
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 408.737
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 420.524
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 432.311
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 444.099
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 460.768
+        },
+        {
+          "tick": 21,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 472.556
+        },
+        {
+          "tick": 27,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 489.225
+        },
+        {
+          "tick": 30,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 501.013
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 517.682
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 529.47
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 541.257
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 553.044
+        }
+      ]
+    },
+    {
+      "number": 137,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 51.455
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 62.952
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 74.449
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 85.946
+        },
+        {
+          "tick": 12,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 97.443
+        },
+        {
+          "tick": 15,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 108.939
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 120.436
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 131.933
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              2,
+              8
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 143.43
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 159.689
+        },
+        {
+          "tick": 33,
+          "duration": 3,
+          "notes": [
+            [
+              2,
+              7
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 171.186
+        },
+        {
+          "tick": 36,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 182.683
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 194.179
+        },
+        {
+          "tick": 42,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 205.676
+        },
+        {
+          "tick": 45,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 217.173
+        }
+      ]
+    },
+    {
+      "number": 138,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 243.164
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 259.418
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 270.912
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 282.406
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 298.66
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 310.154
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 321.647
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 337.901
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 349.395
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 365.649
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 377.143
+        }
+      ]
+    },
+    {
+      "number": 139,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 406.333
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 417.939
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 429.545
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 441.15
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 452.756
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 469.169
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 480.775
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 492.381
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 508.794
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 520.4
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 536.813
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 548.419
+        }
+      ]
+    },
+    {
+      "number": 140,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 53.402
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 67.486
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 77.446
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              15
+            ],
+            [
+              3,
+              12
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 87.405
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 101.49
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 111.449
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 121.409
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 135.493
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 145.453
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 159.538
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              14
+            ],
+            [
+              3,
+              11
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 169.497
+        }
+      ]
+    },
+    {
+      "number": 141,
+      "page": 5,
+      "events": [
+        {
+          "tick": 0,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 196.517
+        },
+        {
+          "tick": 3,
+          "duration": 3,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 206.591
+        },
+        {
+          "tick": 6,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 216.664
+        },
+        {
+          "tick": 9,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 226.738
+        },
+        {
+          "tick": 12,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              12
+            ],
+            [
+              3,
+              9
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 236.812
+        },
+        {
+          "tick": 18,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 251.058
+        },
+        {
+          "tick": 21,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 261.131
+        },
+        {
+          "tick": 24,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              10
+            ],
+            [
+              3,
+              7
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 271.205
+        },
+        {
+          "tick": 30,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 285.451
+        },
+        {
+          "tick": 33,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              9
+            ],
+            [
+              3,
+              6
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 295.524
+        },
+        {
+          "tick": 39,
+          "duration": 3,
+          "notes": [],
+          "dead": [
+            1,
+            2,
+            3
+          ],
+          "tied": [],
+          "pdfX": 309.771
+        },
+        {
+          "tick": 42,
+          "duration": 6,
+          "notes": [
+            [
+              1,
+              7
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          "dead": [],
+          "tied": [],
+          "pdfX": 319.844
+        }
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "id": "YT-GROOVE",
+      "title": "Your Trip · 双音切分与完整收尾",
+      "first": 1,
+      "last": 10,
+      "start": 0,
+      "end": 12,
+      "use": "Your Trip · 节奏与伴奏",
+      "goal": "保持死音与双音的十六分切分，接住推弦和滑音后的句尾。",
+      "technique": "双音切分、死音、击弦、推弦、装饰滑音",
+      "bpm": 60,
+      "description": "第1小节末死音弱起，2–9完整主题，保留第10小节第一拍的揉弦落点；随后三拍留空供循环。"
+    },
+    {
+      "id": "YT-ARPEGGIO",
+      "title": "Your Trip · 低音与高音分解",
+      "first": 10,
+      "last": 25,
+      "start": 18,
+      "end": 48,
+      "use": "Your Trip · 节奏与伴奏",
+      "goal": "完整弹完低音与高音的问答，保留内部休止和最后和弦的延音。",
+      "technique": "低音交替、分解、装饰击弦、跨小节延音",
+      "bpm": 60,
+      "description": "从第10小节第2拍后半进入，前一主题的揉弦音不重复；前一拍半留空，11–25的展开、变化和收束完整保留。"
+    },
+    {
+      "id": "YT-LEGATO",
+      "title": "Your Trip · 连续击勾弦推进",
+      "first": 26,
+      "last": 33,
+      "start": 0,
+      "end": 24,
+      "use": "Your Trip · 旋律与连奏",
+      "goal": "每组只拨起音，连续击弦、勾弦后保持休止；弹到最后和弦延音结束。",
+      "technique": "连续击勾弦、跨弦、句尾和弦",
+      "bpm": 50,
+      "description": "保留26–32的推进与第33小节前两拍的收尾和弦；后两拍属于下一主题的进入音，此练习留空，不把句尾截断。"
+    },
+    {
+      "id": "YT-RIFF",
+      "title": "Your Trip · 切分主题与高把位回应",
+      "first": 33,
+      "last": 49,
+      "start": 24,
+      "end": 48,
+      "use": "Your Trip · 旋律与连奏",
+      "goal": "从滑音进入，连续完成中把位主题、高把位回应和结尾双音。",
+      "technique": "切分、死音、三连音击勾弦、换把",
+      "bpm": 50,
+      "description": "第33小节前两拍留空，从第3拍滑音进入；34–49的主题、回应与结尾连续练习，内部重复不拆成多个入口。"
+    },
+    {
+      "id": "YT-RING",
+      "title": "Your Trip · 延响伴奏与渐强收束",
+      "first": 98,
+      "last": 116,
+      "start": 0,
+      "end": 48,
+      "use": "Your Trip · 节奏与伴奏",
+      "goal": "保留和弦长音与低音移动，让分解音在标记范围内延响，再渐强收束。",
+      "technique": "let ring、附点节奏、长延音、扫弦、渐强",
+      "bpm": 60,
+      "description": "98–116完整慢密度伴奏段：开头和弦、分解发展、长音和114–116扫弦收束一起保留。原谱let ring以每组虚线终点收音，长音小节不是空白。"
+    },
+    {
+      "id": "YT-END",
+      "title": "Your Trip · 跨弦八度与尾奏收束",
+      "first": 136,
+      "last": 141,
+      "start": 0,
+      "end": 48,
+      "use": "Your Trip · 节奏与伴奏",
+      "goal": "完整弹完尾奏准备、跨弦八度移动和最后下行收束，保持中间弦消音。",
+      "technique": "跨弦八度、死音、连续移位、尾奏",
+      "bpm": 55,
+      "description": "保留136–137的尾奏准备及138–141跨弦八度下行收束；130–135与前面主题高度相似，不再重复收录；142空终止小节不另练。"
+    }
+  ],
+  "reviewNotes": [
+    "原PDF为单个od.guit.声部；不声称原录音真实性。",
+    "无字音符的符干是延音续写；括号音为跨小节延音目标。",
+    "37与45的H/P组为十六分三连音，每音2 tick，不能按普通十六分3 tick处理。",
+    "装饰音的弦品和技巧取原谱；微小时值1.5 tick与推弦线性轮廓为示范近似。",
+    "115渐强用逐次力度0.65到1.0近似；原谱没有数值力度。",
+    "选择窗外的拍位是练习留空，独立标记padding，不冒充原谱休止。"
+  ]
+}
