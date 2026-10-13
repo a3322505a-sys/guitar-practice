@@ -4,33 +4,17 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogWindowProvider
-import com.a3322505a.guitarlearning.immersiveStatusBar
 import com.a3322505a.guitarlearning.practiceOrientation
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
@@ -175,7 +159,7 @@ fun PracticeApp(player: Player) {
             }
         }
       }
-        PracticeSettings(PracticeSettingsState(settingsPanel,page,chordPhrases,tabletControls,scale,first,phrase,
+        if(settingsPanel!=0) PracticeSettings(PracticeSettingsState(settingsPanel,page,chordPhrases,tabletControls,scale,first,phrase,
             Phrases.family(phrase),Phrases.versions(phrase),Phrases.catalogue.groupBy { it.use },Chords.all.groupBy { it.group },
             phrase.relatedId?.let { Phrases.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
             moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult),
