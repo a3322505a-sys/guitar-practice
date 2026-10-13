@@ -1,0 +1,40 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.simple",
+  "revision": 1,
+  "display": {
+    "title": "原创 simple",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 3048,
+      "sha256": "9d4f2e2d1333168fe42193ce7085df8c2c7ee69f238b12e366f98b7eafef8f22"
+    },
+    "practices.json": {
+      "bytes": 583,
+      "sha256": "455beb88c529c7df2b20cf5f1c79f0b765b31321c41c92f9350f7206458d92c6"
+    },
+    "provenance.json": {
+      "bytes": 853,
+      "sha256": "931023a8fb8a101410627f5327537467894969c309a3e6f6f62ee24460a6c2d4"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "37b5dbc880272a107300c4d092fa515495af721b6070223c09567f6ec4c928a4"
+    }
+  }
+}

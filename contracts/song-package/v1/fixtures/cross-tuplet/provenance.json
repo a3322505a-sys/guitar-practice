@@ -1,0 +1,41 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "cross-tuplet 原创手工数据",
+      "sha256": "50043e50e282f066d3fb4a6c222c81abf730fc719101ee014084539e73886962",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "cross-n0",
+      "sourceId": "original-source",
+      "location": "cross-a/cross-e0/cross-n0"
+    },
+    {
+      "noteId": "cross-n1",
+      "sourceId": "original-source",
+      "location": "cross-a/cross-e1/cross-n1"
+    },
+    {
+      "noteId": "cross-n2",
+      "sourceId": "original-source",
+      "location": "cross-a/cross-e2/cross-n2"
+    },
+    {
+      "noteId": "cross-n3",
+      "sourceId": "original-source",
+      "location": "cross-b/cross-e3/cross-n3"
+    },
+    {
+      "noteId": "cross-n4",
+      "sourceId": "original-source",
+      "location": "cross-b/cross-e4/cross-n4"
+    }
+  ]
+}

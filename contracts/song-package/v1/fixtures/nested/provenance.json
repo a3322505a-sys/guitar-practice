@@ -1,0 +1,71 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "nested 原创手工数据",
+      "sha256": "bc87751250a9926e867e78ae42a8e21f3a9efc8be271b05f2df5300032d27549",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "nested-n0",
+      "sourceId": "original-source",
+      "location": "nested/nested-e0/nested-n0"
+    },
+    {
+      "noteId": "nested-n1",
+      "sourceId": "original-source",
+      "location": "nested/nested-e1/nested-n1"
+    },
+    {
+      "noteId": "nested-n2",
+      "sourceId": "original-source",
+      "location": "nested/nested-e2/nested-n2"
+    },
+    {
+      "noteId": "nested-n3",
+      "sourceId": "original-source",
+      "location": "nested/nested-e3/nested-n3"
+    },
+    {
+      "noteId": "nested-n4",
+      "sourceId": "original-source",
+      "location": "nested/nested-e4/nested-n4"
+    },
+    {
+      "noteId": "nested-n5",
+      "sourceId": "original-source",
+      "location": "nested/nested-e5/nested-n5"
+    },
+    {
+      "noteId": "nested-n6",
+      "sourceId": "original-source",
+      "location": "nested/nested-e6/nested-n6"
+    },
+    {
+      "noteId": "outer-n0",
+      "sourceId": "original-source",
+      "location": "nested/outer-e0/outer-n0"
+    },
+    {
+      "noteId": "outer-n1",
+      "sourceId": "original-source",
+      "location": "nested/outer-e1/outer-n1"
+    },
+    {
+      "noteId": "outer-n2",
+      "sourceId": "original-source",
+      "location": "nested/outer-e2/outer-n2"
+    },
+    {
+      "noteId": "outer-n3",
+      "sourceId": "original-source",
+      "location": "nested/outer-e3/outer-n3"
+    }
+  ]
+}

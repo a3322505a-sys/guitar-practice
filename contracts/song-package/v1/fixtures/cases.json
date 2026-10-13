@@ -1,0 +1,109 @@
+[
+  {
+    "file": "complex.gpractice",
+    "valid": true
+  },
+  {
+    "file": "conditional.gpractice",
+    "valid": true
+  },
+  {
+    "file": "cross-tuplet.gpractice",
+    "valid": true
+  },
+  {
+    "file": "harmonics.gpractice",
+    "valid": true
+  },
+  {
+    "file": "multi-track.gpractice",
+    "valid": true
+  },
+  {
+    "file": "nested.gpractice",
+    "valid": true
+  },
+  {
+    "file": "pickup.gpractice",
+    "valid": true
+  },
+  {
+    "file": "simple.gpractice",
+    "valid": true
+  },
+  {
+    "file": "strum.gpractice",
+    "valid": true
+  },
+  {
+    "file": "swing.gpractice",
+    "valid": true
+  },
+  {
+    "file": "techniques.gpractice",
+    "valid": true
+  },
+  {
+    "file": "ties.gpractice",
+    "valid": true
+  },
+  {
+    "file": "invalid/unknown-field.gpractice",
+    "valid": false,
+    "code": "SCHEMA"
+  },
+  {
+    "file": "invalid/bad-track-ref.gpractice",
+    "valid": false,
+    "code": "MUSIC"
+  },
+  {
+    "file": "invalid/wrong-pitch.gpractice",
+    "valid": false,
+    "code": "MUSIC"
+  },
+  {
+    "file": "invalid/bad-duration.gpractice",
+    "valid": false,
+    "code": "MUSIC"
+  },
+  {
+    "file": "invalid/hash-mismatch.gpractice",
+    "valid": false,
+    "code": "HASH"
+  },
+  {
+    "file": "invalid/missing-capability.gpractice",
+    "valid": false,
+    "code": "CAPABILITY_DECLARATION"
+  },
+  {
+    "file": "invalid/review-not-complete.gpractice",
+    "valid": false,
+    "code": "REVIEW_NEEDED"
+  },
+  {
+    "file": "invalid/bad-source-ref.gpractice",
+    "valid": false,
+    "code": "SOURCE_MAPPING"
+  },
+  {
+    "file": "shared.gpractice",
+    "valid": true
+  },
+  {
+    "file": "invalid/boundary-relation.gpractice",
+    "valid": false,
+    "code": "BOUNDARY"
+  },
+  {
+    "file": "invalid/boundary-tuplet.gpractice",
+    "valid": false,
+    "code": "BOUNDARY"
+  },
+  {
+    "file": "invalid/shared-conflict.gpractice",
+    "valid": false,
+    "code": "MUSIC"
+  }
+]

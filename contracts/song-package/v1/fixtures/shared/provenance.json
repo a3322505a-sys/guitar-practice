@@ -1,0 +1,56 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "shared 原创手工数据",
+      "sha256": "440f618478332bf847d63b0ea2758cf55feb5b24c1bb321c9642082cfaa377e9",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "simple-n0",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e0/simple-n0"
+    },
+    {
+      "noteId": "simple-n1",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e1/simple-n1"
+    },
+    {
+      "noteId": "simple-n2",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e2/simple-n2"
+    },
+    {
+      "noteId": "simple-n3",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e3/simple-n3"
+    },
+    {
+      "noteId": "shared-simple-n0",
+      "sourceId": "original-source",
+      "location": "bar1/shared-simple-e0/shared-simple-n0"
+    },
+    {
+      "noteId": "shared-simple-n1",
+      "sourceId": "original-source",
+      "location": "bar1/shared-simple-e1/shared-simple-n1"
+    },
+    {
+      "noteId": "shared-simple-n2",
+      "sourceId": "original-source",
+      "location": "bar1/shared-simple-e2/shared-simple-n2"
+    },
+    {
+      "noteId": "shared-simple-n3",
+      "sourceId": "original-source",
+      "location": "bar1/shared-simple-e3/shared-simple-n3"
+    }
+  ]
+}

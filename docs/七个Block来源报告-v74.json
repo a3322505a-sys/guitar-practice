@@ -1,0 +1,279 @@
+{
+  "sourceSha256": "b9f5e0ae40d99035978764cf6c192b44e392877803d5b4e1958b14a1fe438081",
+  "writtenBars": 38,
+  "events": 803,
+  "noteheads": 988,
+  "deadNoteheads": 201,
+  "rests": 3,
+  "tripletEvents": 114,
+  "skippedEvents": 0,
+  "routes": [
+    {
+      "id": "SB-1",
+      "writtenBars": [
+        1,
+        2,
+        3
+      ],
+      "performanceBars": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3
+      ],
+      "length": 1152
+    },
+    {
+      "id": "SB-2",
+      "writtenBars": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "performanceBars": [
+        5,
+        6,
+        5,
+        6,
+        5,
+        6,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        7,
+        8,
+        9,
+        10,
+        7,
+        8,
+        9,
+        10,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        11,
+        12,
+        13,
+        14
+      ],
+      "length": 3456
+    },
+    {
+      "id": "SB-3",
+      "writtenBars": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "performanceBars": [
+        16,
+        17,
+        16,
+        17,
+        18,
+        19,
+        18,
+        19,
+        20,
+        21,
+        22,
+        20,
+        21,
+        22,
+        20,
+        21,
+        22,
+        20,
+        21,
+        22
+      ],
+      "length": 2400
+    },
+    {
+      "id": "SB-4",
+      "writtenBars": [
+        24,
+        25,
+        26,
+        27
+      ],
+      "performanceBars": [
+        24,
+        24,
+        24,
+        24,
+        25,
+        25,
+        25,
+        25,
+        26,
+        26,
+        26,
+        26,
+        27,
+        27,
+        27,
+        27
+      ],
+      "length": 1536
+    },
+    {
+      "id": "SB-5",
+      "writtenBars": [
+        29,
+        30,
+        31,
+        32,
+        33
+      ],
+      "performanceBars": [
+        29,
+        29,
+        29,
+        29,
+        30,
+        30,
+        30,
+        30,
+        31,
+        31,
+        31,
+        31,
+        32,
+        32,
+        32,
+        32,
+        33,
+        33,
+        33,
+        33
+      ],
+      "length": 1920
+    },
+    {
+      "id": "SB-6",
+      "writtenBars": [
+        35,
+        36,
+        37,
+        38
+      ],
+      "performanceBars": [
+        35,
+        36,
+        35,
+        36,
+        35,
+        36,
+        35,
+        36,
+        37,
+        37,
+        37,
+        37,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38,
+        38
+      ],
+      "length": 1920
+    },
+    {
+      "id": "SB-7",
+      "writtenBars": [
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "performanceBars": [
+        40,
+        41,
+        42,
+        40,
+        41,
+        42,
+        40,
+        41,
+        42,
+        40,
+        41,
+        42,
+        43,
+        43,
+        43,
+        43,
+        44,
+        44,
+        44,
+        44
+      ],
+      "length": 2304
+    }
+  ],
+  "kotlinSha256": "84077fab93cdabfff9e3e7a3a36075100745b069bf684be0ced6d64116a08132",
+  "diagnostics": [
+    {
+      "category": "review-needed",
+      "field": "repeatCount",
+      "bars": [
+        14,
+        17,
+        19
+      ],
+      "value": "GP default 2, not verified original count"
+    },
+    {
+      "category": "review-needed",
+      "field": "sourceCoverage",
+      "value": "GP contains 38 bars; original 4,15,23,28,34,39 are absent; no invented rests"
+    },
+    {
+      "category": "approximation",
+      "field": "tempo",
+      "value": "60 BPM practice reference, original unspecified"
+    },
+    {
+      "category": "approximation",
+      "field": "sound",
+      "value": "Existing App samples; GP RSE/effects/pickup automation not imported"
+    },
+    {
+      "category": "supported",
+      "field": "rhythm",
+      "value": "3/4,4/4,5/4,6/4; straight 32nds and 16th/32nd triplets; exact 24 ticks/quarter"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.swing",
+  "revision": 1,
+  "display": {
+    "title": "原创 swing",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "rhythm.swing.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 5379,
+      "sha256": "1d953fc020071d0ae77ecbc5af600a33b0b97ff45da90c28bc24bc377f5fd96d"
+    },
+    "practices.json": {
+      "bytes": 585,
+      "sha256": "2f5c9fafe3bd154d6691e05f3b7ee09d03d7b0a55fe60369449b36e25a30c892"
+    },
+    "provenance.json": {
+      "bytes": 1332,
+      "sha256": "2af3a5f0d691b83ac57f1ce0153c688d695116a465377214d9260fb4eae72346"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "14296816210d36bd803b1cd185fce9150dcc648c6755b8d5835868e900089c45"
+    }
+  }
+}

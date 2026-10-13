@@ -1,0 +1,13 @@
+{
+  "packageId": "personal.new-song",
+  "revision": 1,
+  "title": "填写歌曲/练习名称",
+  "author": "填写作者或来源",
+  "summary": "填写来源范围与教学处理",
+  "sourceSha256": "填写原件的64位小写SHA256",
+  "license": "填写来源许可",
+  "origin": "填写可核来源说明",
+  "tracks": ["填写GP轨道ID"],
+  "measureRange": [1, 8],
+  "practices": []
+}

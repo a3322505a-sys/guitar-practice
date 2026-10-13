@@ -1,0 +1,25 @@
+{
+  "status": "approved",
+  "reviewer": "original-fixture-author",
+  "method": "手工指定节奏与曲序；测试使用独立解析期望",
+  "tool": "song-package-v1",
+  "coverage": {
+    "tracks": 1,
+    "voices": 2,
+    "measures": 4,
+    "events": 29,
+    "notes": 27,
+    "rests": 2,
+    "relations": 0,
+    "techniques": 0,
+    "visits": 8,
+    "onsets": 54
+  },
+  "diagnostics": [],
+  "assumptions": [],
+  "hashes": {
+    "score.json": "42242e892e9da60b155d9f10e9ddd8057579ce1660fad2a04394de078b9da977",
+    "practices.json": "f60568e49335f951149ad84ab9ed36062e52b88348cbcc28feb7087dda26ad2f",
+    "provenance.json": "592d06fa2295f6352fb93e426e82a53d38ab08a0095e16016b4568d81ed6e2ba"
+  }
+}

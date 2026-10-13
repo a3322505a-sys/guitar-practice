@@ -36,16 +36,17 @@ object Patterns {
 
 data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>,
     val capoFret: Int = 0, val soundingName: String = name, val group: String = "基础和弦", val source: String = "",
-    val intervalRoles: Map<Int,String> = emptyMap(), val toneNames: Map<Int,String> = emptyMap()) {
+    val intervalRoles: Map<Int,String> = emptyMap(), val toneNames: Map<Int,String> = emptyMap(),
+    val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
     val baseFret get() = if(positions.maxOf { it.fret }<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
-    val conditions get() = if(capoFret==0) "标准调弦 · 无变调夹" else "变调夹${capoFret}品 · 实音 $soundingName"
-    fun midi(p: Position) = p.midi + capoFret
+    val conditions get() = conditionsLabel ?: if(capoFret==0) "标准调弦 · 无变调夹" else "变调夹${capoFret}品 · 实音 $soundingName"
+    fun midi(p: Position) = openStringMidi[p.string-1]+p.fret+capoFret
     fun isRoot(p: Position) = midi(p)%12==root
     fun noteName(p: Position, octave: Boolean = false) = (toneNames[midi(p)%12] ?: Music.name(midi(p))) + if(octave) (midi(p)/12-1) else ""
     val arpeggio get() = listOf(positions.first()) + positions.filter { it.string <= 3 }
-    fun role(p: Position) = when (midi(p) % 12) {
+    fun role(p: Position) = if(root<0) "按法音" else when (midi(p) % 12) {
         root -> "根音"
         third -> "三音"
         else -> intervalRoles[(midi(p)-root)%12] ?: when ((midi(p) - root) % 12) {

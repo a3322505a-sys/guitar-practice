@@ -2,6 +2,8 @@ package com.a3322505a.guitarlearning.practice
 
 import com.a3322505a.guitarlearning.music.*
 import kotlin.math.roundToLong
+import com.a3322505a.guitarlearning.practice.compile.PerformancePlan
+import com.a3322505a.guitarlearning.practice.compile.LegacySequenceAdapter
 
 const val QUARTER = 12
 const val BAR = 48
@@ -15,40 +17,63 @@ data class Event(val tick: Int, val duration: Int, val positions: List<Position>
     // An onset is unique within a finite sequence. All its chord tones share this identity.
     val id get() = tick
 }
-data class Section(val tick: Int, val chord: String)
+data class Section(val tick: Int, val chord: String,val voicingId: String? = null)
 data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4,
     val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0, val capoFret: Int = 0,
-    val barMeters: List<Int> = emptyList(), val swing: Swing = Swing.NONE) {
+    val barMeters: List<Int> = emptyList(), val swing: Swing = Swing.NONE,
+    val ticksPerQuarter: Int = QUARTER, val sourceBars: List<Int> = emptyList(),
+    val runtimePlan: PerformancePlan? = null, val openStringMidi: List<Int> = listOf(64,59,55,50,45,40),
+    val catalogueOnly: Boolean = false) {
     init {
         require(length > 0)
-        require(beatsPerBar in listOf(2,4))
+        require(beatsPerBar in 2..6)
+        require(ticksPerQuarter in listOf(12,24))
         require(capoFret in 0..12)
-        require(barMeters.all { it in listOf(2,4) } && (barMeters.isEmpty() || barMeters.sum()*QUARTER==length))
+        require(barMeters.all { it in 2..6 } && (barMeters.isEmpty() || barMeters.sum()*ticksPerQuarter==length))
+        require(sourceBars.isEmpty() || sourceBars.size==barCount && sourceBars.all { it>0 })
         require(events.map { it.id }.distinct().size == events.size)
         require(events.all { it.tick >= 0 && it.duration > 0 && it.tick + it.duration <= length })
     }
-    val barTicks get() = beatsPerBar * QUARTER
-    val barCount get() = if(barMeters.isEmpty()) (length+barTicks-1)/barTicks else barMeters.size
-    val barStarts: List<Int> = if(barMeters.isEmpty()) (0..length step barTicks).toList() else barMeters.runningFold(0) { at,beats -> at+beats*QUARTER }
-    fun meter(bar: Int) = barMeters.getOrElse(bar) { beatsPerBar }
+    val barTicks get() = beatsPerBar * ticksPerQuarter
+    val performance: PerformancePlan by lazy {
+        check(!catalogueOnly) { "曲目尚未准备" }
+        runtimePlan ?: LegacySequenceAdapter.compile(this)
+    }
+    val barCount get() = runtimePlan?.visits?.size ?: if(barMeters.isEmpty()) (length+barTicks-1)/barTicks else barMeters.size
+    val barStarts: List<Int> = runtimePlan?.let { it.visits.map { v -> (v.start.value()*QUARTER).roundToLong().toInt() }+length }
+        ?: if(barMeters.isEmpty()) (0..length step barTicks).toList() else barMeters.runningFold(0) { at,beats -> at+beats*ticksPerQuarter }
+    fun barNumber(bar: Int) = sourceBars.getOrElse(bar) { originalBar+bar+1 }
+    fun barLabel(bar: Int) = runtimePlan?.visits?.get(bar)?.let { it.measure.label+" · 经过"+it.occurrence }
+        ?: if(sourceBars.isEmpty()) "${barNumber(bar)}" else "${barNumber(bar)} · 展开${bar+1}"
+    fun meter(bar: Int) = runtimePlan?.visits?.get(bar)?.measure?.meter?.beatGroups?.size ?: barMeters.getOrElse(bar) { beatsPerBar }
     fun barStart(bar: Int) = barStarts[bar]
     fun barEnd(bar: Int) = minOf(length,barStarts.getOrElse(bar+1) { length })
     fun barAt(tick: Double) = barStarts.indexOfLast { it<=tick }.coerceIn(0,barCount-1)
     /** Written straight pairs retain their notation; source triplet-feel warps audio and cursor together. */
     fun performedTick(tick: Double): Double {
         if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
-        val pair=swing.unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
-        return base+if(local<=swing.unit) local*4/3 else pair*2/3+(local-swing.unit)*2/3
+        val unit=swing.unit*ticksPerQuarter/QUARTER
+        val pair=unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
+        return base+if(local<=unit) local*4/3 else pair*2/3+(local-unit)*2/3
     }
     fun writtenTick(tick: Double): Double {
         if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
-        val pair=swing.unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
-        return base+if(local<=pair*2/3) local*3/4 else swing.unit+(local-pair*2/3)*3/2
+        val unit=swing.unit*ticksPerQuarter/QUARTER
+        val pair=unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
+        return base+if(local<=pair*2/3) local*3/4 else unit+(local-pair*2/3)*3/2
     }
-    val route get() = events.flatMap { it.positions }.distinct()
-    fun midi(position: Position) = position.midi + capoFret
+    val route get() = runtimePlan?.mainPositions ?: events.flatMap { it.positions }.distinct()
+    fun midi(position: Position) = runtimePlan?.mainTrack?.midi(position.string,position.fret) ?: (openStringMidi[position.string-1]+position.fret+capoFret)
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
-    fun sectionAt(tick: Double) = sections.indexOfLast { it.tick <= tick }
+    fun sectionAt(tick: Double) = runtimePlan?.harmonies?.indexOfLast { it.start.value()*QUARTER<=tick } ?: sections.indexOfLast { it.tick <= tick }
+    fun chordAt(section: Section): Chord? {
+        if(runtimePlan==null) return Chords.named(section.chord)
+        val v=runtimePlan.score.voicings.firstOrNull { it.id==section.voicingId && it.trackId==runtimePlan.practice.mainTrackId } ?: return null
+        val track=runtimePlan.mainTrack
+        return Chord(section.chord,-1,null,v.frets.reversed().map { it.takeIf { fret -> fret>=0 } },v.fingers.reversed(),
+            capoFret=track.capo,group="本地曲包",openStringMidi=track.openStringMidi,
+            conditionsLabel=track.name+" · 夹"+track.capo+"品")
+    }
     // Let-ring audio lasts until the same string is picked or the grip changes.
     // Engraved duration stays the original rhythmic value; this is not a tied onset.
     fun soundDuration(event: Event, position: Position): Int {
@@ -56,7 +81,7 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
         val gripEnd = sections.firstOrNull { it.tick > event.tick }?.tick ?: length
         val end=if(event.stringExpression[position.string]?.ring ?: event.ring) minOf(stringEnd,gripEnd,event.ringEndTick ?: length) else minOf(event.tick+event.duration,stringEnd,gripEnd)
         val duration=end-event.tick
-        return if(event.short) minOf(duration,3) else duration
+        return if(event.short) minOf(duration,ticksPerQuarter/4) else duration
     }
 }
 
@@ -205,36 +230,4 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
     if(length > tick) events += Event(tick, length-tick, emptyList(), chords.last().name)
     val extra = if(length>tick) " 尾部留 ${(length-tick)/12.0} 拍。" else ""
     return Sequence(events, length, kind.instruction + extra, sections,capoFret=first.capoFret)
-}
-
-data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false,
-    val range: BarRange = BarRange(0,sequence.barCount-1)) {
-    init { require(bpm>0 && repeats>=0); require(preview || range.valid(sequence)) }
-    val startTick = if(preview) 0 else sequence.barStart(range.first)
-    val endTick = if(preview) sequence.length else sequence.barEnd(range.last)
-    val practiceLength = endTick-startTick
-    val preBeats = sequence.meter(if(preview) 0 else range.first)
-    val preTicks = if(follow) preBeats*QUARTER else 0
-    val totalTicks: Long? = if(repeats == 0) null else preTicks.toLong() + practiceLength.toLong()*repeats
-    private fun performed(tick: Double): Double {
-        if(tick<preTicks || preview) return tick
-        val loop=kotlin.math.floor((tick-preTicks)/practiceLength)
-        val local=startTick+(tick-preTicks)%practiceLength
-        return preTicks+loop*practiceLength+sequence.performedTick(local)-startTick
-    }
-    fun frame(tick: Double) = (performed(tick) * SAMPLE_RATE * 60 / (bpm * QUARTER)).roundToLong()
-    fun tick(frame: Long): Double {
-        val played=frame.toDouble()*bpm*QUARTER/(SAMPLE_RATE*60)
-        if(played<preTicks || preview) return played
-        val loop=kotlin.math.floor((played-preTicks)/practiceLength)
-        return preTicks+loop*practiceLength+sequence.writtenTick(startTick+(played-preTicks)%practiceLength)-startTick
-    }
-    fun sourceFrames(tick: Double) = (sequence.performedTick(tick)*SAMPLE_RATE*60/(bpm*QUARTER)).roundToLong()
-    fun loopAt(tick: Double) = if(tick<preTicks) -1 else ((tick-preTicks)/practiceLength).toInt()
-    fun localTick(tick: Double) = if(tick<preTicks) tick else startTick+(tick-preTicks)%practiceLength
-    fun resumeTick(tick: Double): Double {
-        if(tick < preTicks) return 0.0
-        val loop = loopAt(tick)
-        return preTicks + loop.toDouble()*practiceLength + sequence.barStart(sequence.barAt(localTick(tick)))-startTick
-    }
 }

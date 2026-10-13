@@ -1,0 +1,151 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "complex 原创手工数据",
+      "sha256": "42242e892e9da60b155d9f10e9ddd8057579ce1660fad2a04394de078b9da977",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "quint-n0",
+      "sourceId": "original-source",
+      "location": "triple/quint-e0/quint-n0"
+    },
+    {
+      "noteId": "quint-n1",
+      "sourceId": "original-source",
+      "location": "triple/quint-e1/quint-n1"
+    },
+    {
+      "noteId": "quint-n2",
+      "sourceId": "original-source",
+      "location": "triple/quint-e2/quint-n2"
+    },
+    {
+      "noteId": "quint-n3",
+      "sourceId": "original-source",
+      "location": "triple/quint-e3/quint-n3"
+    },
+    {
+      "noteId": "quint-n4",
+      "sourceId": "original-source",
+      "location": "triple/quint-e4/quint-n4"
+    },
+    {
+      "noteId": "compound-n0",
+      "sourceId": "original-source",
+      "location": "compound/compound-e0/compound-n0"
+    },
+    {
+      "noteId": "compound-n1",
+      "sourceId": "original-source",
+      "location": "compound/compound-e1/compound-n1"
+    },
+    {
+      "noteId": "compound-n2",
+      "sourceId": "original-source",
+      "location": "compound/compound-e2/compound-n2"
+    },
+    {
+      "noteId": "compound-n3",
+      "sourceId": "original-source",
+      "location": "compound/compound-e3/compound-n3"
+    },
+    {
+      "noteId": "compound-n4",
+      "sourceId": "original-source",
+      "location": "compound/compound-e4/compound-n4"
+    },
+    {
+      "noteId": "compound-n5",
+      "sourceId": "original-source",
+      "location": "compound/compound-e5/compound-n5"
+    },
+    {
+      "noteId": "irregular-n0",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e0/irregular-n0"
+    },
+    {
+      "noteId": "irregular-n1",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e1/irregular-n1"
+    },
+    {
+      "noteId": "irregular-n2",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e2/irregular-n2"
+    },
+    {
+      "noteId": "irregular-n3",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e3/irregular-n3"
+    },
+    {
+      "noteId": "irregular-n4",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e4/irregular-n4"
+    },
+    {
+      "noteId": "irregular-n5",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e5/irregular-n5"
+    },
+    {
+      "noteId": "irregular-n6",
+      "sourceId": "original-source",
+      "location": "irregular/irregular-e6/irregular-n6"
+    },
+    {
+      "noteId": "five-n0",
+      "sourceId": "original-source",
+      "location": "five/five-e0/five-n0"
+    },
+    {
+      "noteId": "five-n1",
+      "sourceId": "original-source",
+      "location": "five/five-e1/five-n1"
+    },
+    {
+      "noteId": "five-n2",
+      "sourceId": "original-source",
+      "location": "five/five-e2/five-n2"
+    },
+    {
+      "noteId": "five-n3",
+      "sourceId": "original-source",
+      "location": "five/five-e3/five-n3"
+    },
+    {
+      "noteId": "five-n4",
+      "sourceId": "original-source",
+      "location": "five/five-e4/five-n4"
+    },
+    {
+      "noteId": "bass-n0",
+      "sourceId": "original-source",
+      "location": "triple/bass-e0/bass-n0"
+    },
+    {
+      "noteId": "bass-n1",
+      "sourceId": "original-source",
+      "location": "compound/bass-e1/bass-n1"
+    },
+    {
+      "noteId": "bass-n2",
+      "sourceId": "original-source",
+      "location": "irregular/bass-e2/bass-n2"
+    },
+    {
+      "noteId": "bass-n3",
+      "sourceId": "original-source",
+      "location": "five/bass-e3/bass-n3"
+    }
+  ]
+}

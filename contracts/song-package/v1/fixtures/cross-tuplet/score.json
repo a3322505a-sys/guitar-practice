@@ -1,0 +1,233 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "cross-a",
+      "label": "cross-a",
+      "meter": {
+        "numerator": 3,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 12,
+        "d": 5
+      },
+      "incompleteReason": "原创不完整小节"
+    },
+    {
+      "id": "cross-b",
+      "label": "cross-b",
+      "meter": {
+        "numerator": 2,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 8,
+        "d": 5
+      },
+      "incompleteReason": "原创不完整小节"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "cross-e0",
+          "measureId": "cross-a",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": [
+              "cross-group"
+            ]
+          },
+          "notes": [
+            {
+              "id": "cross-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "cross-e1",
+          "measureId": "cross-a",
+          "onset": {
+            "n": 4,
+            "d": 5
+          },
+          "duration": {
+            "n": 4,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": [
+              "cross-group"
+            ]
+          },
+          "notes": [
+            {
+              "id": "cross-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "cross-e2",
+          "measureId": "cross-a",
+          "onset": {
+            "n": 8,
+            "d": 5
+          },
+          "duration": {
+            "n": 4,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": [
+              "cross-group"
+            ]
+          },
+          "notes": [
+            {
+              "id": "cross-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "cross-e3",
+          "measureId": "cross-b",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": [
+              "cross-group"
+            ]
+          },
+          "notes": [
+            {
+              "id": "cross-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "cross-e4",
+          "measureId": "cross-b",
+          "onset": {
+            "n": 4,
+            "d": 5
+          },
+          "duration": {
+            "n": 4,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": [
+              "cross-group"
+            ]
+          },
+          "notes": [
+            {
+              "id": "cross-n4",
+              "string": 1,
+              "fret": 4,
+              "midi": 68
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [
+    {
+      "id": "cross-group",
+      "voiceId": "upper",
+      "eventIds": [
+        "cross-e0",
+        "cross-e1",
+        "cross-e2",
+        "cross-e3",
+        "cross-e4"
+      ],
+      "actual": 5,
+      "normal": 4
+    }
+  ],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

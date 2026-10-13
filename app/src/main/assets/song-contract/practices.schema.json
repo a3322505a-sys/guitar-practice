@@ -1,0 +1,1367 @@
+{
+  "type": "object",
+  "properties": {
+    "practices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/practice"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    },
+    "extensions": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9.-]{0,63}$": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "additionalProperties": false,
+      "maxProperties": 32
+    }
+  },
+  "required": [
+    "practices",
+    "aliases"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guitar-practice.invalid/contracts/v1/practices.schema.json",
+  "$defs": {
+    "q": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": -1000000000000,
+          "maximum": 1000000000000
+        },
+        "d": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        }
+      },
+      "required": [
+        "n",
+        "d"
+      ],
+      "additionalProperties": false
+    },
+    "version": {
+      "type": "object",
+      "properties": {
+        "major": {
+          "enum": [
+            1
+          ]
+        },
+        "minor": {
+          "enum": [
+            0
+          ]
+        }
+      },
+      "required": [
+        "major",
+        "minor"
+      ],
+      "additionalProperties": false
+    },
+    "meter": {
+      "type": "object",
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "denominator": {
+          "enum": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32,
+            64
+          ]
+        },
+        "beatGroups": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "minItems": 1,
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator",
+        "beatGroups"
+      ],
+      "additionalProperties": false
+    },
+    "curvePoint": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/q"
+        },
+        "semitones": {
+          "type": "number",
+          "minimum": -24,
+          "maximum": 24
+        }
+      },
+      "required": [
+        "at",
+        "semitones"
+      ],
+      "additionalProperties": false
+    },
+    "oscillation": {
+      "type": "object",
+      "properties": {
+        "depth": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "rateHz": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "depth",
+        "rateHz"
+      ],
+      "additionalProperties": false
+    },
+    "grace": {
+      "type": "object",
+      "properties": {
+        "fret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36
+        },
+        "duration": {
+          "$ref": "#/$defs/q"
+        },
+        "kind": {
+          "enum": [
+            "pick",
+            "hammer",
+            "pull",
+            "slide",
+            "tap"
+          ]
+        }
+      },
+      "required": [
+        "fret",
+        "duration",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "ornament": {
+      "type": "object",
+      "properties": {
+        "timing": {
+          "enum": [
+            "before",
+            "on"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/grace"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "timing",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "repluck": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "trill",
+            "tremolo"
+          ]
+        },
+        "unit": {
+          "$ref": "#/$defs/q"
+        },
+        "alternateFret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36
+        }
+      },
+      "required": [
+        "kind",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "articulation": {
+      "type": "object",
+      "properties": {
+        "velocity": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 2
+        },
+        "accent": {
+          "type": "boolean"
+        },
+        "pick": {
+          "enum": [
+            "default",
+            "down",
+            "up",
+            "none"
+          ]
+        },
+        "palmMute": {
+          "type": "boolean"
+        },
+        "short": {
+          "type": "boolean"
+        },
+        "letRing": {
+          "type": "boolean"
+        },
+        "ringUntil": {
+          "$ref": "#/$defs/q"
+        },
+        "cut": {
+          "type": "boolean"
+        },
+        "strumDelayMs": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "bend": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/curvePoint"
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "vibrato": {
+          "$ref": "#/$defs/oscillation"
+        },
+        "tremoloBar": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/curvePoint"
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "slide": {
+          "enum": [
+            "none",
+            "in-up",
+            "in-down",
+            "out-up",
+            "out-down"
+          ]
+        },
+        "tapping": {
+          "type": "boolean"
+        },
+        "ornament": {
+          "$ref": "#/$defs/ornament"
+        },
+        "repluck": {
+          "$ref": "#/$defs/repluck"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "harmonic": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "natural",
+            "artificial",
+            "pinch"
+          ]
+        },
+        "partial": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 16
+        },
+        "touchFret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 48
+        },
+        "soundMidi": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        }
+      },
+      "required": [
+        "kind",
+        "partial",
+        "touchFret",
+        "soundMidi"
+      ],
+      "additionalProperties": false
+    },
+    "note": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "string": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "fret": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36
+        },
+        "midi": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        },
+        "dead": {
+          "type": "boolean"
+        },
+        "harmonic": {
+          "$ref": "#/$defs/harmonic"
+        },
+        "articulation": {
+          "$ref": "#/$defs/articulation"
+        },
+        "sourceRef": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "sharedSoundId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        }
+      },
+      "required": [
+        "id",
+        "string",
+        "fret",
+        "midi"
+      ],
+      "additionalProperties": false
+    },
+    "written": {
+      "type": "object",
+      "properties": {
+        "baseDenominator": {
+          "enum": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32,
+            64
+          ]
+        },
+        "dots": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "tupletGroupIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "baseDenominator"
+      ],
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "measureId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "onset": {
+          "$ref": "#/$defs/q"
+        },
+        "duration": {
+          "$ref": "#/$defs/q"
+        },
+        "written": {
+          "$ref": "#/$defs/written"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/note"
+          },
+          "minItems": 0,
+          "maxItems": 6
+        },
+        "articulation": {
+          "$ref": "#/$defs/articulation"
+        },
+        "measureRest": {
+          "type": "boolean"
+        },
+        "practicePadding": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "sourceRef": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "id",
+        "measureId",
+        "onset",
+        "duration",
+        "written",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "measure": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "meter": {
+          "$ref": "#/$defs/meter"
+        },
+        "actualDuration": {
+          "$ref": "#/$defs/q"
+        },
+        "leadIn": {
+          "$ref": "#/$defs/q"
+        },
+        "incompleteReason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "sourceRef": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "meter",
+        "actualDuration"
+      ],
+      "additionalProperties": false
+    },
+    "track": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "openStringMidi": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 127
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "capo": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "fretCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "instrument": {
+          "enum": [
+            "guitar"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "openStringMidi"
+      ],
+      "additionalProperties": false
+    },
+    "voice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "trackId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          },
+          "minItems": 1,
+          "maxItems": 200000
+        }
+      },
+      "required": [
+        "id",
+        "trackId",
+        "events"
+      ],
+      "additionalProperties": false
+    },
+    "tuplet": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "voiceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "eventIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 1,
+          "maxItems": 1024
+        },
+        "actual": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
+        },
+        "normal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "parentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        }
+      },
+      "required": [
+        "id",
+        "voiceId",
+        "eventIds",
+        "actual",
+        "normal"
+      ],
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "tie",
+            "slur",
+            "hammer",
+            "pull",
+            "slide",
+            "slide-pick",
+            "tap"
+          ]
+        },
+        "fromNoteId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "toNoteId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "fromNoteId",
+        "toNoteId"
+      ],
+      "additionalProperties": false
+    },
+    "condition": {
+      "type": "object",
+      "properties": {
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000
+        },
+        "repeatPasses": {
+          "type": "object",
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9._-]{0,95}$": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              },
+              "minItems": 1,
+              "maxItems": 32
+            }
+          },
+          "additionalProperties": false,
+          "maxProperties": 4
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "tempo": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/q"
+        },
+        "beatUnit": {
+          "$ref": "#/$defs/q"
+        },
+        "bpm": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        },
+        "rampEnd": {
+          "$ref": "#/$defs/q"
+        },
+        "endBpm": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "at",
+        "beatUnit",
+        "bpm"
+      ],
+      "additionalProperties": false
+    },
+    "dynamic": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/q"
+        },
+        "velocity": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 2
+        },
+        "trackId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        },
+        "rampEnd": {
+          "$ref": "#/$defs/q"
+        },
+        "endVelocity": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 2
+        }
+      },
+      "required": [
+        "at",
+        "velocity"
+      ],
+      "additionalProperties": false
+    },
+    "swing": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/q"
+        },
+        "end": {
+          "$ref": "#/$defs/q"
+        },
+        "unit": {
+          "$ref": "#/$defs/q"
+        },
+        "ratio": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "trackIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "voiceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "unit",
+        "ratio"
+      ],
+      "additionalProperties": false
+    },
+    "repeat": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "times": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end",
+        "times"
+      ],
+      "additionalProperties": false
+    },
+    "ending": {
+      "type": "object",
+      "properties": {
+        "repeatId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "passes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "repeatId",
+        "start",
+        "end",
+        "passes"
+      ],
+      "additionalProperties": false
+    },
+    "marker": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "measureId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "segno",
+            "coda",
+            "fine"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "measureId",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "jump": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "at": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "dc",
+            "ds",
+            "to-coda"
+          ]
+        },
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "required": [
+        "id",
+        "at",
+        "target",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "form": {
+      "type": "object",
+      "properties": {
+        "repeats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repeat"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "endings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ending"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "markers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/marker"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "jumps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jump"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "repeatsAfterJump": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "voicing": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "trackId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "frets": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -1,
+            "maximum": 36
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "fingers": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "minItems": 6,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "trackId",
+        "frets",
+        "fingers"
+      ],
+      "additionalProperties": false
+    },
+    "harmony": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "measureId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "onset": {
+          "$ref": "#/$defs/q"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "voicingId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "required": [
+        "id",
+        "measureId",
+        "onset",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "coordinate": {
+      "type": "object",
+      "properties": {
+        "measureId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "offset": {
+          "$ref": "#/$defs/q"
+        },
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000
+        }
+      },
+      "required": [
+        "measureId"
+      ],
+      "additionalProperties": false
+    },
+    "segment": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/coordinate"
+        },
+        "end": {
+          "$ref": "#/$defs/coordinate"
+        },
+        "formPolicy": {
+          "enum": [
+            "written",
+            "performed"
+          ]
+        },
+        "entry": {
+          "enum": [
+            "reject",
+            "carryIn",
+            "reattack",
+            "truncate"
+          ]
+        },
+        "exit": {
+          "enum": [
+            "reject",
+            "truncate"
+          ]
+        },
+        "affectedNoteIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 200000
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "practice": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "goal": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "mainTrackId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "mixTrackIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/segment"
+          },
+          "minItems": 1,
+          "maxItems": 256
+        },
+        "suggestedTempo": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 180
+        },
+        "familyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "variantOf": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "relatedIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "visibility": {
+          "enum": [
+            "core",
+            "variant",
+            "source",
+            "hidden"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "padding": {
+          "$ref": "#/$defs/q"
+        },
+        "paddingReason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "tempoMode": {
+          "enum": [
+            "source",
+            "fixed"
+          ]
+        },
+        "difficulty": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "goal",
+        "mainTrackId",
+        "mixTrackIds",
+        "segments"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "format": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "license": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "origin": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "sha256",
+        "format",
+        "license",
+        "origin"
+      ],
+      "additionalProperties": false
+    },
+    "sourceMap": {
+      "type": "object",
+      "properties": {
+        "noteId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "sourceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "noteId",
+        "sourceId",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "enum": [
+            "supported",
+            "approximation",
+            "out-of-scope",
+            "review-needed",
+            "unsupported-blocker"
+          ]
+        },
+        "pointer": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "sourceRef": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "featureId": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "practiceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 200000
+        },
+        "handling": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "category",
+        "pointer",
+        "featureId",
+        "reason",
+        "practiceIds",
+        "handling"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

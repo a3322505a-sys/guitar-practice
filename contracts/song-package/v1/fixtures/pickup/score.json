@@ -1,0 +1,141 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "pickup",
+      "label": "pickup",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 1,
+        "d": 4
+      },
+      "incompleteReason": "原创不完整小节",
+      "leadIn": {
+        "n": 15,
+        "d": 4
+      }
+    },
+    {
+      "id": "partial-tail",
+      "label": "partial-tail",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 15,
+        "d": 4
+      },
+      "incompleteReason": "原创不完整小节"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "pickup-e",
+          "measureId": "pickup",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 4
+          },
+          "written": {
+            "baseDenominator": 16,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "pickup-n",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "tail-e",
+          "measureId": "partial-tail",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 15,
+            "d": 4
+          },
+          "written": {
+            "baseDenominator": 2,
+            "dots": 3,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tail-n",
+              "string": 1,
+              "fret": 3,
+              "midi": 67
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

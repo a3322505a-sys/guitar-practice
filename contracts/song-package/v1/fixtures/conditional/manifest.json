@@ -1,0 +1,43 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.conditional",
+  "revision": 1,
+  "display": {
+    "title": "原创 conditional",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "form.condition.v1",
+    "form.repeat.v1",
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "tempo.map.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 5925,
+      "sha256": "b7dac091cf556271cb1269a79ec67332d587d95e53d8b039259324c443ae958e"
+    },
+    "practices.json": {
+      "bytes": 599,
+      "sha256": "a88c101f0373dc7b0f3249ab7bdb53c1611ebe6b3674d458dbc8053c18b3ff2b"
+    },
+    "provenance.json": {
+      "bytes": 1482,
+      "sha256": "eccab28156a735a5ce90e579decca54617100a37381216e17bc3ec9b96d05811"
+    },
+    "review.json": {
+      "bytes": 698,
+      "sha256": "eae2fe59e066c7d32c587109cba104ef5f7b63b4f6ff13e923d77d0a0a0937d0"
+    }
+  }
+}

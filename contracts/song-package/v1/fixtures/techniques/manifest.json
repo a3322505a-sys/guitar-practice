@@ -1,0 +1,51 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.techniques",
+  "revision": 1,
+  "display": {
+    "title": "原创 techniques",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "technique.bend.v1",
+    "technique.dynamics.v1",
+    "technique.grace.v1",
+    "technique.harmonic.v1",
+    "technique.legato.v1",
+    "technique.mute.v1",
+    "technique.repluck.v1",
+    "technique.sustain.v1",
+    "technique.tapping.v1",
+    "technique.tremolo-bar.v1",
+    "technique.vibrato.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 14302,
+      "sha256": "e061d1d5dcf61164463dc47a37cf869fac7d68fcb0d0b69f92f300f9bcdac775"
+    },
+    "practices.json": {
+      "bytes": 585,
+      "sha256": "a2bb57d3093455e3693cc39877adc3de557513dc411cc2b7b88ddc2e0801ebcb"
+    },
+    "provenance.json": {
+      "bytes": 2283,
+      "sha256": "f99c4d6a0b3987ace13bc51a71da7ea5a8e62e2e5d9098d5b56e51f7e4de3025"
+    },
+    "review.json": {
+      "bytes": 701,
+      "sha256": "bb459d44ee2a807042972e1f75e2c58bc5904910a201ab63c0aa06c7a4c525c6"
+    }
+  }
+}

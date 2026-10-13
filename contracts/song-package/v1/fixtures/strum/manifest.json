@@ -1,0 +1,42 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.strum",
+  "revision": 1,
+  "display": {
+    "title": "原创 strum",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "technique.strum.v1",
+    "technique.sustain.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 2217,
+      "sha256": "3a1dead19ededf58bcc15e2c42b8137ef898c52154075b3fdbe04d385c3de867"
+    },
+    "practices.json": {
+      "bytes": 585,
+      "sha256": "bcea61655ed624f0c40c6853e5d4a3d6a4cafbd9fa26b36ecfa23a64493a854f"
+    },
+    "provenance.json": {
+      "bytes": 604,
+      "sha256": "abd016f7c341b3f4411801ffa0a6fd310b4ace815d921fe7becfc78beaa69a9e"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "e6f466fdd923e0e2ddb8b3d9052cb2dec30db2cbd4a5789b1d31d3c012582f3f"
+    }
+  }
+}

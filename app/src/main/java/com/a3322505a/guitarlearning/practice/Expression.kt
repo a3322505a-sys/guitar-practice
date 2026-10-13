@@ -48,7 +48,8 @@ fun Event.expressionLabel()=buildList {
 /** Validate one timeline before notation, PCM or diagrams consume it. */
 fun Sequence.validateExpression() {
     tuplets.forEach { group ->
-        require(group.unit in listOf(2,4) && group.tick>=0 && group.end<=length && group.tick%(3*group.unit)==0) { "invalid triplet position/unit" }
+        val units=if(ticksPerQuarter==24) listOf(2,4,8) else listOf(2,4)
+        require(group.unit in units && group.tick>=0 && group.end<=length && group.tick%(3*group.unit)==0) { "invalid triplet position/unit" }
         require(barAt(group.tick.toDouble())==barAt((group.end-1).toDouble())) { "triplet crosses a bar" }
         val members=events.filter { it.tick>=group.tick && it.tick<group.end }
         require(members.map { it.tick }==listOf(group.tick,group.tick+group.unit,group.tick+2*group.unit) && members.all { it.duration==group.unit }) { "triplet needs three equal members (rests are explicit)" }

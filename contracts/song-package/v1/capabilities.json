@@ -1,0 +1,248 @@
+{
+  "format": "guitar-practice-capabilities",
+  "version": {
+    "major": 1,
+    "minor": 0
+  },
+  "capabilities": [
+    "form.condition.v1",
+    "form.jump.v1",
+    "form.repeat.v1",
+    "form.volta.v1",
+    "guitar.six-string.v1",
+    "guitar.tuning-capo.v1",
+    "meter.compound.v1",
+    "meter.irregular.v1",
+    "rhythm.nested-tuplet.v1",
+    "rhythm.swing.v1",
+    "rhythm.tuplet.v1",
+    "score.polyphony.v1",
+    "score.rational.v1",
+    "technique.bend.v1",
+    "technique.dynamics.v1",
+    "technique.grace.v1",
+    "technique.harmonic.v1",
+    "technique.legato.v1",
+    "technique.mute.v1",
+    "technique.repluck.v1",
+    "technique.strum.v1",
+    "technique.sustain.v1",
+    "technique.tapping.v1",
+    "technique.tie.v1",
+    "technique.tremolo-bar.v1",
+    "technique.vibrato.v1",
+    "tempo.map.v1"
+  ],
+  "limits": {
+    "compressedBytes": 16777216,
+    "jsonBytes": 33554432,
+    "totalInflatedBytes": 67108864,
+    "files": 5,
+    "jsonDepth": 48,
+    "jsonNodes": 2000000,
+    "tracks": 8,
+    "voicesPerTrack": 4,
+    "measures": 10000,
+    "sourceNotes": 200000,
+    "visits": 50000,
+    "plannedNotes": 1000000,
+    "tupletDepth": 4,
+    "repeatDepth": 4,
+    "phaseCacheEntries": 256,
+    "preparedPracticeCache": 3,
+    "plannedNotesPerPractice": 100000,
+    "plannedEventsPerPractice": 200000,
+    "visitsScope": "aggregate per package"
+  },
+  "matrix": {
+    "form.condition.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "form.jump.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "form.repeat.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "form.volta.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "guitar.six-string.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "guitar.tuning-capo.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "meter.compound.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "meter.irregular.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "rhythm.nested-tuplet.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "rhythm.swing.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "rhythm.tuplet.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "score.polyphony.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "score.rational.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.bend.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.dynamics.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.grace.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.harmonic.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.legato.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.mute.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.repluck.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.strum.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.sustain.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.tapping.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.tie.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.tremolo-bar.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "technique.vibrato.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "sample approximation",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "tempo.map.v1": {
+      "model": "implemented",
+      "tablature": "implemented",
+      "timingPitch": "implemented",
+      "timbre": "not applicable",
+      "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    }
+  }
+}

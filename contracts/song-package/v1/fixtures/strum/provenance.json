@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "strum 原创手工数据",
+      "sha256": "3a1dead19ededf58bcc15e2c42b8137ef898c52154075b3fdbe04d385c3de867",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "strum-low",
+      "sourceId": "original-source",
+      "location": "strum/strum-e/strum-low"
+    },
+    {
+      "noteId": "strum-high",
+      "sourceId": "original-source",
+      "location": "strum/strum-e/strum-high"
+    }
+  ]
+}

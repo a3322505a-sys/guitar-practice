@@ -25,13 +25,16 @@ internal data class PracticeSettingsState(
     val catalogueGroups: Map<String,List<Phrase>>,val chordGroups: Map<String,List<Chord>>,val relatedTitle: String?,
     val bpm: Int,val repeats: Int,val firstBar: Int,val lastBar: Int,val range: BarRange,val wholeRange: BarRange,
     val guitar: Boolean,val click: Boolean,val moreExercisesOpen: Boolean,val beatsPerBar: Int,
-    val sequence: Sequence?,val displayedSequence: Sequence?,val scaleResult: RouteResult)
+    val sequence: Sequence?,val displayedSequence: Sequence?,val scaleResult: RouteResult,
+    val sourceTempo: Boolean = false,val multiplier: Int = 100,val mainTrackId: String? = null,val soloTrack: Boolean = false)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PracticeSettings(state: PracticeSettingsState,onClose: ()->Unit,onBpm: (Int)->Unit,
     onRepeats: (Int)->Unit,onGuitar: (Boolean)->Unit,onClick: (Boolean)->Unit,onMoreExercises: ()->Unit,
-    onScale: (ScaleOptions)->Unit,onPhrase: (Phrase)->Unit,onChord: (Chord)->Unit,onRange: (BarRange)->Unit) = with(state) {
+    onScale: (ScaleOptions)->Unit,onPhrase: (Phrase)->Unit,onChord: (Chord)->Unit,onRange: (BarRange)->Unit,
+    onLibrary: ()->Unit = {},onSourceTempo: (Boolean)->Unit = {},onMultiplier: (Int)->Unit = {},
+    onMainTrack: (String)->Unit = {},onSoloTrack: (Boolean)->Unit = {}) = with(state) {
 if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),containerColor=Paper) {
     val sheetView=LocalView.current
     DisposableEffect(sheetView) {
@@ -54,6 +57,7 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
             PracticeTextButton(onClick={onClose()}) { Text("完成") }
         }
         Column(Modifier.weight(1f,fill=false).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
+        if(settingsPanel==1) OutlinedButton(onClick=onLibrary) { Text("本地曲库 / 导入歌曲") }
         if(settingsPanel==3) {
             Text("横向指板上方是 1 弦，下方是 6 弦；左侧数字为弦号，上方数字为品位。",style=MaterialTheme.typography.bodySmall)
             Text("绿色为路线音位，粉色为当前音，蓝色圈为下一音。同一音位可同时是当前和下一音。",style=MaterialTheme.typography.bodySmall)
@@ -64,12 +68,24 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
         } else if(settingsPanel==2) {
             Text("调整速度或循环后，下一次从头开始；声音开关立即生效。",style=MaterialTheme.typography.bodySmall,color=Muted)
             Label("速度") {
+                if(sequence?.runtimePlan!=null) {
+                    Choices(listOf("原谱速度 × 倍率","固定四分音符速度"),if(sourceTempo) 0 else 1) { onSourceTempo(it==0) }
+                    if(sourceTempo) {
+                        val mark=sequence.runtimePlan.tempos.first()
+                        Text(beatUnitName(mark.beatUnit)+" = "+mark.bpm+" BPM；保留速度变化。")
+                        Choices(listOf("50%","75%","100%","125%","150%"),listOf(50,75,100,125,150).indexOf(multiplier)) {
+                            onMultiplier(listOf(50,75,100,125,150)[it])
+                        }
+                    }
+                }
+                if(sequence?.runtimePlan==null || !sourceTempo) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(onClick={onBpm((bpm-5).coerceAtLeast(30))},enabled=bpm>30,modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier).testTag("tempo-slower")) { Text("−5") }
                     Text("$bpm BPM",modifier=Modifier.weight(1f),fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleLarge)
                     OutlinedButton(onClick={onBpm((bpm+5).coerceAtMost(180))},enabled=bpm<180,modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier).testTag("tempo-faster")) { Text("+5") }
                 }
                 Slider(value=bpm.toFloat(),onValueChange={ value -> val next=value.toInt();if(next!=bpm) { onBpm(next) } },valueRange=30f..180f,modifier=Modifier.testTag("tempo-slider"))
+                }
             }
             Label("循环与声音") {
                 Text("跟练次数")
@@ -81,7 +97,8 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Text("节拍声",modifier=Modifier.weight(1f));Switch(click,onCheckedChange={onClick(it)},modifier=Modifier.testTag("click-switch"))
                 }
-                Text("$beatsPerBar/4 · 跟练预备 1 小节 · 示范只播 1 遍",style=MaterialTheme.typography.bodySmall,color=Muted)
+                val meter=sequence?.runtimePlan?.visits?.getOrNull(range.first)?.measure?.meter
+                Text((meter?.let { it.numerator.toString()+"/"+it.denominator } ?: "$beatsPerBar/4")+" · 跟练预备 1 小节 · 示范只播 1 遍",style=MaterialTheme.typography.bodySmall,color=Muted)
             }
         } else {
         Text("选择要练的内容；更改后，下一次从头开始。",style=MaterialTheme.typography.bodySmall,color=Muted)
@@ -106,10 +123,19 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
                 }
             }
         } else if(chordPhrases) {
+            phrase.sequence.runtimePlan?.let { plan ->
+                val tracks=plan.score.tracks.filter { it.id in plan.practice.mixTrackIds }
+                if(tracks.size>1) Label("主练轨与声音") {
+                    Choices(tracks.map { it.name },tracks.indexOfFirst { it.id==(mainTrackId ?: plan.practice.mainTrackId) }) {
+                        onMainTrack(tracks[it].id)
+                    }
+                    Choices(listOf("混合参与轨","仅听主练轨"),if(soloTrack) 1 else 0) { onSoloTrack(it==1) }
+                }
+            }
             Label("选择短句") {
                 catalogueGroups.forEach { (use,items) ->
                     Text(use,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
-                    Choices(items.map { it.title },items.indexOf(family),Pink) { onPhrase(items[it]) }
+                    Choices(items.map { it.title },items.indexOfFirst { it.id==family.id },Pink) { onPhrase(items[it]) }
                 }
 
                 if(versions.size>1) {
@@ -118,7 +144,7 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
                     PracticeTextButton(onClick={versionsOpen=!versionsOpen},modifier=Modifier.testTag("phrase-versions-toggle")) {
                         Text(if(versionsOpen) "收起更多版本 ▴" else "更多版本 ▾")
                     }
-                    if(versionsOpen) Choices(versions.map { it.version ?: it.title },versions.indexOf(phrase),Sky) { onPhrase(versions[it]) }
+                    if(versionsOpen) Choices(versions.map { it.version ?: it.title },versions.indexOfFirst { it.id==phrase.id },Sky) { onPhrase(versions[it]) }
                 }
                 Text("${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
                 Text("${phrase.technique} · ${phrase.tempoLabel} ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)
@@ -127,15 +153,15 @@ if(settingsPanel!=0) ModalBottomSheet(onDismissRequest={onClose()},sheetState=re
                 Text("目标：${phrase.goal} 建议起步 ${phrase.suggestedBpm} BPM。",style=MaterialTheme.typography.bodySmall,color=BlueInk)
                 phrase.relatedId?.let { Text("基础素材：${relatedTitle}",style=MaterialTheme.typography.bodySmall,color=Muted) }
             }
-            Label("练习小节") {
-                Text("当前范围：${range.first+phrase.sequence.originalBar+1}–${range.last+phrase.sequence.originalBar+1} 小节；完整经过范围一次计一轮。",modifier=Modifier.testTag("phrase-range"))
+            if(!phrase.unprepared) Label("练习小节") {
+                Text("当前范围：${phrase.sequence.barLabel(range.first)}–${phrase.sequence.barLabel(range.last)} 小节；完整经过范围一次计一轮。",modifier=Modifier.testTag("phrase-range"))
                 OutlinedButton(onClick={if(range!=wholeRange) { onRange(wholeRange) }},modifier=Modifier.then(if(tabletControls) Modifier.heightIn(min=64.dp) else Modifier)) { Text("整句") }
                 val bars=(0..wholeRange.last).toList()
                 Text("起始小节")
-                Choices(bars.map { "${it+phrase.sequence.originalBar+1}" },range.first,Mint) { if(it!=firstBar) { onRange(BarRange(it,maxOf(lastBar,it))) } }
+                Choices(bars.map { phrase.sequence.barLabel(it) },range.first,Mint) { if(it!=firstBar) { onRange(BarRange(it,maxOf(lastBar,it))) } }
                 Text("结束小节")
                 val endings=(range.first..wholeRange.last).toList()
-                Choices(endings.map { "${it+phrase.sequence.originalBar+1}" },endings.indexOf(range.last),Sky) { if(endings[it]!=lastBar) { onRange(BarRange(firstBar,endings[it])) } }
+                Choices(endings.map { phrase.sequence.barLabel(it) },endings.indexOf(range.last),Sky) { if(endings[it]!=lastBar) { onRange(BarRange(firstBar,endings[it])) } }
             }
         } else {
             Label("选择和弦") {

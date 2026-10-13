@@ -1,0 +1,56 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "conditional 原创手工数据",
+      "sha256": "b7dac091cf556271cb1269a79ec67332d587d95e53d8b039259324c443ae958e",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "condition-n0",
+      "sourceId": "original-source",
+      "location": "condition-a/condition-e0/condition-n0"
+    },
+    {
+      "noteId": "condition-n1",
+      "sourceId": "original-source",
+      "location": "condition-a/condition-e1/condition-n1"
+    },
+    {
+      "noteId": "condition-n2",
+      "sourceId": "original-source",
+      "location": "condition-a/condition-e2/condition-n2"
+    },
+    {
+      "noteId": "condition-n3",
+      "sourceId": "original-source",
+      "location": "condition-a/condition-e3/condition-n3"
+    },
+    {
+      "noteId": "condition-n4",
+      "sourceId": "original-source",
+      "location": "condition-b/condition-e4/condition-n4"
+    },
+    {
+      "noteId": "condition-n5",
+      "sourceId": "original-source",
+      "location": "condition-b/condition-e5/condition-n5"
+    },
+    {
+      "noteId": "condition-n6",
+      "sourceId": "original-source",
+      "location": "condition-b/condition-e6/condition-n6"
+    },
+    {
+      "noteId": "condition-n7",
+      "sourceId": "original-source",
+      "location": "condition-b/condition-e7/condition-n7"
+    }
+  ]
+}

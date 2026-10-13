@@ -1,0 +1,167 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "tie-a",
+      "label": "tie-a",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    },
+    {
+      "id": "tie-b",
+      "label": "tie-b",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "tie-first",
+          "measureId": "tie-a",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 1,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tie-origin",
+              "string": 1,
+              "fret": 0,
+              "midi": 64,
+              "articulation": {
+                "bend": [
+                  {
+                    "at": {
+                      "n": 0,
+                      "d": 1
+                    },
+                    "semitones": 0
+                  },
+                  {
+                    "at": {
+                      "n": 4,
+                      "d": 1
+                    },
+                    "semitones": 2
+                  }
+                ],
+                "vibrato": {
+                  "depth": 0.1,
+                  "rateHz": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "tie-second",
+          "measureId": "tie-b",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 1,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tie-target",
+              "string": 1,
+              "fret": 0,
+              "midi": 64,
+              "articulation": {
+                "pick": "none"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [
+    {
+      "id": "tie-relation",
+      "kind": "tie",
+      "fromNoteId": "tie-origin",
+      "toNoteId": "tie-target"
+    }
+  ],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

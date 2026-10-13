@@ -1,0 +1,40 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.pickup",
+  "revision": 1,
+  "display": {
+    "title": "原创 pickup",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 2462,
+      "sha256": "1a6f415c369f1b4b8407dc4e22493e86a2ac5ed9179f496398ea83591696b9c6"
+    },
+    "practices.json": {
+      "bytes": 594,
+      "sha256": "10eec5e5b81dd13ddf1289fe4a0674a6211b6ef4f8c229cf36481a0125ef8dfb"
+    },
+    "provenance.json": {
+      "bytes": 603,
+      "sha256": "2e9385ffa27fa59740c20d56294c4851650c5ecb4b46c13dc8cb77848f301242"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "d2edfa8491b3dff489e6977797dceb82762690e6def6599daa70d6b743f2f445"
+    }
+  }
+}

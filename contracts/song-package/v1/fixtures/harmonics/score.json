@@ -1,0 +1,178 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "harmonics",
+      "label": "harmonics",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "harmonic-e0",
+          "measureId": "harmonics",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "natural",
+              "string": 1,
+              "fret": 0,
+              "midi": 76,
+              "harmonic": {
+                "kind": "natural",
+                "partial": 2,
+                "touchFret": 12,
+                "soundMidi": 76
+              }
+            }
+          ]
+        },
+        {
+          "id": "harmonic-e1",
+          "measureId": "harmonics",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "artificial",
+              "string": 2,
+              "fret": 3,
+              "midi": 81,
+              "harmonic": {
+                "kind": "artificial",
+                "partial": 3,
+                "touchFret": 10,
+                "soundMidi": 81
+              }
+            }
+          ]
+        },
+        {
+          "id": "harmonic-e2",
+          "measureId": "harmonics",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "pinch",
+              "string": 3,
+              "fret": 5,
+              "midi": 84,
+              "harmonic": {
+                "kind": "pinch",
+                "partial": 4,
+                "touchFret": 10,
+                "soundMidi": 84
+              }
+            }
+          ]
+        },
+        {
+          "id": "harmonic-rest",
+          "measureId": "harmonics",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

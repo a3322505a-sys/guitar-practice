@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "ties 原创手工数据",
+      "sha256": "eca2051c349cce8d62e0b9cb4bb33e30312a5dec4e89952b99aa7fd70efcaea6",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "tie-origin",
+      "sourceId": "original-source",
+      "location": "tie-a/tie-first/tie-origin"
+    },
+    {
+      "noteId": "tie-target",
+      "sourceId": "original-source",
+      "location": "tie-b/tie-second/tie-target"
+    }
+  ]
+}

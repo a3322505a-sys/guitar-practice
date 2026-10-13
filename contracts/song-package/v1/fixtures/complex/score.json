@@ -1,0 +1,899 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "triple",
+      "label": "triple",
+      "meter": {
+        "numerator": 3,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 3,
+        "d": 1
+      }
+    },
+    {
+      "id": "compound",
+      "label": "compound",
+      "meter": {
+        "numerator": 6,
+        "denominator": 8,
+        "beatGroups": [
+          3,
+          3
+        ]
+      },
+      "actualDuration": {
+        "n": 3,
+        "d": 1
+      }
+    },
+    {
+      "id": "irregular",
+      "label": "irregular",
+      "meter": {
+        "numerator": 7,
+        "denominator": 8,
+        "beatGroups": [
+          2,
+          2,
+          3
+        ]
+      },
+      "actualDuration": {
+        "n": 7,
+        "d": 2
+      }
+    },
+    {
+      "id": "five",
+      "label": "five",
+      "meter": {
+        "numerator": 5,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 5,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        38
+      ],
+      "capo": 1,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "quint-e0",
+          "measureId": "triple",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "quint"
+            ]
+          },
+          "notes": [
+            {
+              "id": "quint-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "quint-e1",
+          "measureId": "triple",
+          "onset": {
+            "n": 2,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "quint"
+            ]
+          },
+          "notes": [
+            {
+              "id": "quint-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "quint-e2",
+          "measureId": "triple",
+          "onset": {
+            "n": 4,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "quint"
+            ]
+          },
+          "notes": [
+            {
+              "id": "quint-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "quint-e3",
+          "measureId": "triple",
+          "onset": {
+            "n": 6,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "quint"
+            ]
+          },
+          "notes": [
+            {
+              "id": "quint-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 68
+            }
+          ]
+        },
+        {
+          "id": "quint-e4",
+          "measureId": "triple",
+          "onset": {
+            "n": 8,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "quint"
+            ]
+          },
+          "notes": [
+            {
+              "id": "quint-n4",
+              "string": 1,
+              "fret": 4,
+              "midi": 69
+            }
+          ]
+        },
+        {
+          "id": "quint-rest",
+          "measureId": "triple",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": []
+        },
+        {
+          "id": "compound-e0",
+          "measureId": "compound",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "compound-e1",
+          "measureId": "compound",
+          "onset": {
+            "n": 1,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "compound-e2",
+          "measureId": "compound",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "compound-e3",
+          "measureId": "compound",
+          "onset": {
+            "n": 3,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n3",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "compound-e4",
+          "measureId": "compound",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n4",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "compound-e5",
+          "measureId": "compound",
+          "onset": {
+            "n": 5,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "compound-n5",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "irregular-e0",
+          "measureId": "irregular",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "irregular-e1",
+          "measureId": "irregular",
+          "onset": {
+            "n": 1,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "irregular-e2",
+          "measureId": "irregular",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "irregular-e3",
+          "measureId": "irregular",
+          "onset": {
+            "n": 3,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 68
+            }
+          ]
+        },
+        {
+          "id": "irregular-e4",
+          "measureId": "irregular",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n4",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "irregular-e5",
+          "measureId": "irregular",
+          "onset": {
+            "n": 5,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n5",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "irregular-e6",
+          "measureId": "irregular",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "irregular-n6",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "five-e0",
+          "measureId": "five",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "five-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "five-e1",
+          "measureId": "five",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "five-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "five-e2",
+          "measureId": "five",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "five-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "five-e3",
+          "measureId": "five",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "five-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 68
+            }
+          ]
+        },
+        {
+          "id": "five-e4",
+          "measureId": "five",
+          "onset": {
+            "n": 4,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "five-n4",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lower",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "bass-e0",
+          "measureId": "triple",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 3,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 2,
+            "dots": 1,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "bass-n0",
+              "string": 6,
+              "fret": 0,
+              "midi": 39
+            }
+          ],
+          "measureRest": false
+        },
+        {
+          "id": "bass-e1",
+          "measureId": "compound",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 3,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 2,
+            "dots": 1,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "bass-n1",
+              "string": 6,
+              "fret": 0,
+              "midi": 39
+            }
+          ],
+          "measureRest": false
+        },
+        {
+          "id": "bass-e2",
+          "measureId": "irregular",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 7,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 2,
+            "dots": 2,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "bass-n2",
+              "string": 6,
+              "fret": 0,
+              "midi": 39
+            }
+          ],
+          "measureRest": false
+        },
+        {
+          "id": "bass-e3",
+          "measureId": "five",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 1,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "bass-n3",
+              "string": 6,
+              "fret": 0,
+              "midi": 39
+            }
+          ],
+          "measureRest": false
+        },
+        {
+          "id": "bass-tail",
+          "measureId": "five",
+          "onset": {
+            "n": 4,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "tuplets": [
+    {
+      "id": "quint",
+      "voiceId": "upper",
+      "eventIds": [
+        "quint-e0",
+        "quint-e1",
+        "quint-e2",
+        "quint-e3",
+        "quint-e4"
+      ],
+      "actual": 5,
+      "normal": 4
+    }
+  ],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60,
+      "rampEnd": {
+        "n": 3,
+        "d": 1
+      },
+      "endBpm": 120
+    },
+    {
+      "at": {
+        "n": 3,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 3,
+        "d": 2
+      },
+      "bpm": 60
+    },
+    {
+      "at": {
+        "n": 6,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 90
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {
+    "repeats": [
+      {
+        "id": "repeat",
+        "start": "triple",
+        "end": "five",
+        "times": 2
+      }
+    ]
+  },
+  "voicings": [],
+  "harmonies": []
+}
