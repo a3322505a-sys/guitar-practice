@@ -7,7 +7,7 @@ class PhraseSettingsStore(private val prefs: SharedPreferences) {
     fun selected()=Phrases.named(runCatching { prefs.getString("phrase-selected","S01") }.getOrNull() ?: "S01")
     fun load(phrase: Phrase,fallbackBpm: Int=60,fallbackRepeats: Int=4): PhraseSettings {
         fun read(key: String,default: Int)=runCatching { prefs.getInt("phrase.${phrase.id}.$key",default) }.getOrDefault(default)
-        val whole=BarRange(0,phrase.sequence.length/phrase.sequence.barTicks-1)
+        val whole=BarRange(0,phrase.sequence.barCount-1)
         val bpm=read("bpm",fallbackBpm).takeIf { it in 30..180 } ?: fallbackBpm
         val repeats=read("repeats",fallbackRepeats).takeIf { it in listOf(0,1,4,8) } ?: fallbackRepeats
         val saved=BarRange(read("first",whole.first),read("last",whole.last))

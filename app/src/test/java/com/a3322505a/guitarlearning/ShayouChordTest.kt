@@ -18,8 +18,8 @@ class ShayouChordTest {
         assertEquals(expected,ShayouChords.all.map { it.positions.toSet() }.toSet())
         assertEquals(11,ShayouChords.all.count { it.group=="斜阳 · 伴奏指法" })
         assertEquals(5,ShayouChords.all.count { it.group=="斜阳 · 双音 riff" })
-        assertEquals(28,Chords.all.size)
-        assertEquals(28,Chords.all.map { it.name }.distinct().size)
+        assertEquals(28+KafkaChords.all.size,Chords.all.size)
+        assertEquals(Chords.all.size,Chords.all.map { it.name }.distinct().size)
         ShayouChords.all.forEach { chord ->
             assertSame(chord,Chords.named(chord.name))
             chord.frets.forEachIndexed { i,fret ->

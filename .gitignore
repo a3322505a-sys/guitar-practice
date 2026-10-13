@@ -8,3 +8,4 @@ output/
 *.p12
 *.jks
 *.password
+__pycache__/

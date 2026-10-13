@@ -34,13 +34,14 @@ fun tabSystems(bars: List<TabBar>, width: Int): List<List<TabBar>> {
 
 fun Sequence.tabBars(): List<TabBar> {
     validateExpression()
-    require(length % barTicks == 0)
-    val result = List(length / barTicks) { mutableListOf<TabSegment>() }
+    require(barMeters.isNotEmpty() || length % barTicks == 0)
+    val result = List(barCount) { mutableListOf<TabSegment>() }
     for (event in events) {
         var at = event.tick
         val end = event.tick + event.duration
         while (at < end) {
-            val room = minOf(end - at, barTicks - at % barTicks)
+            val bar=barAt(at.toDouble())
+            val room = minOf(end - at, barEnd(bar) - at)
             // Start long values on their natural metric boundary. Eighths on weak beats
             // tie into the next beat rather than disguising syncopation as a long value.
             val group=tuplets.firstOrNull { at>=it.tick && at<it.end }
@@ -48,7 +49,7 @@ fun Sequence.tabBars(): List<TabBar> {
                 it!=RhythmValue.TRIPLET_EIGHTH && it!=RhythmValue.TRIPLET_SIXTEENTH && it.ticks <= room && at % (if(it==RhythmValue.DOTTED_EIGHTH) QUARTER else it.ticks) == 0
             }
                 ?: error("Unsupported subdivision at tick $at")
-            result[at / barTicks] += TabSegment(event.id, at, value, event.positions, event.chord,
+            result[bar] += TabSegment(event.id, at, value, event.positions, event.chord,
                 event.strum && at == event.tick, event.positions.isNotEmpty() && at > event.tick,
                 event.positions.isNotEmpty() && at + value.ticks < end,event,group,
                 links.firstOrNull { it.sourceTick==event.tick }.takeIf { at==event.tick },
@@ -64,7 +65,9 @@ data class Cursor(val pre: Boolean, val loop: Int, val localTick: Double, val ba
 fun Session.cursor(tick: Double): Cursor {
     val bounded = totalTicks?.let { tick.coerceIn(0.0, (it - 0.00001).coerceAtLeast(0.0)) } ?: tick.coerceAtLeast(0.0)
     val local = localTick(bounded)
-    return Cursor(bounded < preTicks, loopAt(bounded), local, local.toInt() / sequence.barTicks, local.toInt() % sequence.barTicks / QUARTER)
+    val pre=bounded<preTicks
+    val bar=if(pre) range.first else sequence.barAt(local)
+    return Cursor(pre,loopAt(bounded),local,bar,if(pre) local.toInt()/QUARTER else (local-sequence.barStart(bar)).toInt()/QUARTER)
 }
 
 /** Beam adjacent short notes within the beat; rests and beat boundaries break groups. */

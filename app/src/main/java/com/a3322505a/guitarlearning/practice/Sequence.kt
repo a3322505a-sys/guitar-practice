@@ -16,15 +16,34 @@ data class Event(val tick: Int, val duration: Int, val positions: List<Position>
 }
 data class Section(val tick: Int, val chord: String)
 data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4,
-    val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0, val capoFret: Int = 0) {
+    val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0, val capoFret: Int = 0,
+    val barMeters: List<Int> = emptyList(), val swing: Swing = Swing.NONE) {
     init {
         require(length > 0)
         require(beatsPerBar in listOf(2,4))
         require(capoFret in 0..12)
+        require(barMeters.all { it in listOf(2,4) } && (barMeters.isEmpty() || barMeters.sum()*QUARTER==length))
         require(events.map { it.id }.distinct().size == events.size)
         require(events.all { it.tick >= 0 && it.duration > 0 && it.tick + it.duration <= length })
     }
     val barTicks get() = beatsPerBar * QUARTER
+    val barCount get() = if(barMeters.isEmpty()) (length+barTicks-1)/barTicks else barMeters.size
+    val barStarts: List<Int> = if(barMeters.isEmpty()) (0..length step barTicks).toList() else barMeters.runningFold(0) { at,beats -> at+beats*QUARTER }
+    fun meter(bar: Int) = barMeters.getOrElse(bar) { beatsPerBar }
+    fun barStart(bar: Int) = barStarts[bar]
+    fun barEnd(bar: Int) = minOf(length,barStarts.getOrElse(bar+1) { length })
+    fun barAt(tick: Double) = barStarts.indexOfLast { it<=tick }.coerceIn(0,barCount-1)
+    /** Written straight pairs retain their notation; source triplet-feel warps audio and cursor together. */
+    fun performedTick(tick: Double): Double {
+        if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
+        val pair=swing.unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
+        return base+if(local<=swing.unit) local*4/3 else pair*2/3+(local-swing.unit)*2/3
+    }
+    fun writtenTick(tick: Double): Double {
+        if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
+        val pair=swing.unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
+        return base+if(local<=pair*2/3) local*3/4 else swing.unit+(local-pair*2/3)*3/2
+    }
     val route get() = events.flatMap { it.positions }.distinct()
     fun midi(position: Position) = position.midi + capoFret
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
@@ -34,7 +53,7 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     fun soundDuration(event: Event, position: Position): Int {
         val stringEnd = events.firstOrNull { it.tick > event.tick && position.string in it.strings }?.tick ?: length
         val gripEnd = sections.firstOrNull { it.tick > event.tick }?.tick ?: length
-        val end=if(event.ring) minOf(stringEnd,gripEnd) else minOf(event.tick+event.duration,stringEnd,gripEnd)
+        val end=if(event.stringExpression[position.string]?.ring ?: event.ring) minOf(stringEnd,gripEnd) else minOf(event.tick+event.duration,stringEnd,gripEnd)
         val duration=end-event.tick
         return if(event.short) minOf(duration,3) else duration
     }
@@ -188,20 +207,33 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
 }
 
 data class Session(val sequence: Sequence, val bpm: Int, val follow: Boolean, val repeats: Int, val preview: Boolean = false,
-    val range: BarRange = BarRange(0,sequence.length/sequence.barTicks-1)) {
+    val range: BarRange = BarRange(0,sequence.barCount-1)) {
     init { require(bpm>0 && repeats>=0); require(preview || range.valid(sequence)) }
-    val startTick = if(preview) 0 else range.first*sequence.barTicks
-    val endTick = if(preview) sequence.length else (range.last+1)*sequence.barTicks
+    val startTick = if(preview) 0 else sequence.barStart(range.first)
+    val endTick = if(preview) sequence.length else sequence.barEnd(range.last)
     val practiceLength = endTick-startTick
-    val preTicks = if(follow) sequence.barTicks else 0
+    val preBeats = sequence.meter(if(preview) 0 else range.first)
+    val preTicks = if(follow) preBeats*QUARTER else 0
     val totalTicks: Long? = if(repeats == 0) null else preTicks.toLong() + practiceLength.toLong()*repeats
-    fun frame(tick: Double) = (tick * SAMPLE_RATE * 60 / (bpm * QUARTER)).roundToLong()
-    fun tick(frame: Long) = frame.toDouble() * bpm * QUARTER / (SAMPLE_RATE * 60)
+    private fun performed(tick: Double): Double {
+        if(tick<preTicks || preview) return tick
+        val loop=kotlin.math.floor((tick-preTicks)/practiceLength)
+        val local=startTick+(tick-preTicks)%practiceLength
+        return preTicks+loop*practiceLength+sequence.performedTick(local)-startTick
+    }
+    fun frame(tick: Double) = (performed(tick) * SAMPLE_RATE * 60 / (bpm * QUARTER)).roundToLong()
+    fun tick(frame: Long): Double {
+        val played=frame.toDouble()*bpm*QUARTER/(SAMPLE_RATE*60)
+        if(played<preTicks || preview) return played
+        val loop=kotlin.math.floor((played-preTicks)/practiceLength)
+        return preTicks+loop*practiceLength+sequence.writtenTick(startTick+(played-preTicks)%practiceLength)-startTick
+    }
+    fun sourceFrames(tick: Double) = (sequence.performedTick(tick)*SAMPLE_RATE*60/(bpm*QUARTER)).roundToLong()
     fun loopAt(tick: Double) = if(tick<preTicks) -1 else ((tick-preTicks)/practiceLength).toInt()
     fun localTick(tick: Double) = if(tick<preTicks) tick else startTick+(tick-preTicks)%practiceLength
     fun resumeTick(tick: Double): Double {
         if(tick < preTicks) return 0.0
         val loop = loopAt(tick)
-        return preTicks + loop.toDouble()*practiceLength + (localTick(tick).toInt()/sequence.barTicks)*sequence.barTicks-startTick
+        return preTicks + loop.toDouble()*practiceLength + sequence.barStart(sequence.barAt(localTick(tick)))-startTick
     }
 }

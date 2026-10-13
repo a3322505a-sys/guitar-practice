@@ -75,6 +75,6 @@ object Chords {
         Chord("Asus4(no5)", 9, null, listOf(null,0,0,2,null,null), listOf(0,0,0,2,0,0)),
         Chord("Bm7(no5)", 11, 2, listOf(null,2,0,2,null,null), listOf(0,1,0,2,0,0)),
         Chord("D/F♯", 2, 6, listOf(2,null,0,2,null,null), listOf(1,0,0,2,0,0)),
-    ) + ShayouChords.all
+    ) + ShayouChords.all + KafkaChords.all
     fun named(name: String) = all.first { it.name == name }
 }

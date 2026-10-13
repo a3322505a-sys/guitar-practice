@@ -32,7 +32,7 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
     private var resumeAt = 0.0
     val active get() = progress.phase == Phase.PLAYING || progress.phase == Phase.PREPARING
 
-    fun start(sequence: Sequence, bpm: Int, follow: Boolean, repeats: Int, range: BarRange = BarRange(0,sequence.length/sequence.barTicks-1)) {
+    fun start(sequence: Sequence, bpm: Int, follow: Boolean, repeats: Int, range: BarRange = BarRange(0,sequence.barCount-1)) {
         generation++
         session = Session(sequence, bpm, follow, if(follow) repeats else 1,range=range)
         resumeAt = 0.0

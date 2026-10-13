@@ -45,7 +45,8 @@ object Phrases {
     )
     val mozart = MozartK265.phrases
     val shayou = Shayou.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou).also(::validatePhrases)
+    val kafka = Kafka.phrases
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka).also(::validatePhrases)
     fun named(id: String): Phrase {
         // Activity saved state from v61 can still contain any of the six former IDs.
         val current=when(id) {
@@ -72,7 +73,7 @@ fun validatePhrases(phrases: List<Phrase>) {
         valid(phrase.goal.isNotBlank() && phrase.suggestedBpm in 30..180,"missing goal or invalid starting BPM")
         val expression=runCatching { seq.validateExpression() }
         valid(expression.isSuccess,expression.exceptionOrNull()?.message ?: "invalid expression")
-        valid(seq.length%seq.barTicks==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
+        valid((seq.barMeters.isNotEmpty() || seq.length%seq.barTicks==0) && seq.events.isNotEmpty(),"length must contain complete bars and events")
         valid(seq.events.any { !it.rest },"no sounding notes")
         var end=0
         seq.events.forEachIndexed { index,event ->
