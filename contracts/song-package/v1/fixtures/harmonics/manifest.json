@@ -1,0 +1,41 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.harmonics",
+  "revision": 1,
+  "display": {
+    "title": "原创 harmonics",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "technique.harmonic.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 3460,
+      "sha256": "f26c92fc4fa45a2714809ad664a14e453c993402dede8bd60538372af82d6cbf"
+    },
+    "practices.json": {
+      "bytes": 593,
+      "sha256": "83d20300e560cfc2e466e5f7339224fc83318ea37a9ea1d3d0fbab6c335fe06c"
+    },
+    "provenance.json": {
+      "bytes": 743,
+      "sha256": "85d5ce6e512d96d7b4e1dd03ec8f02ef37ba14d8ccb29cbdf2bfd7a1c945aa89"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "8321f4bef664e04415f4786cd708f5d12ed0646119b891962f1163c8f502b920"
+    }
+  }
+}

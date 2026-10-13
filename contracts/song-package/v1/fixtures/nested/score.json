@@ -1,0 +1,425 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "nested",
+      "label": "nested",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "nested-e0",
+          "measureId": "nested",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "nested-e1",
+          "measureId": "nested",
+          "onset": {
+            "n": 2,
+            "d": 35
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "nested-e2",
+          "measureId": "nested",
+          "onset": {
+            "n": 4,
+            "d": 35
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "nested-e3",
+          "measureId": "nested",
+          "onset": {
+            "n": 6,
+            "d": 35
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "nested-e4",
+          "measureId": "nested",
+          "onset": {
+            "n": 8,
+            "d": 35
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n4",
+              "string": 1,
+              "fret": 4,
+              "midi": 68
+            }
+          ]
+        },
+        {
+          "id": "nested-e5",
+          "measureId": "nested",
+          "onset": {
+            "n": 2,
+            "d": 7
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n5",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "nested-e6",
+          "measureId": "nested",
+          "onset": {
+            "n": 12,
+            "d": 35
+          },
+          "duration": {
+            "n": 2,
+            "d": 35
+          },
+          "written": {
+            "baseDenominator": 32,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer",
+              "inner"
+            ]
+          },
+          "notes": [
+            {
+              "id": "nested-n6",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "outer-e0",
+          "measureId": "nested",
+          "onset": {
+            "n": 2,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer"
+            ]
+          },
+          "notes": [
+            {
+              "id": "outer-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "outer-e1",
+          "measureId": "nested",
+          "onset": {
+            "n": 4,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer"
+            ]
+          },
+          "notes": [
+            {
+              "id": "outer-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "outer-e2",
+          "measureId": "nested",
+          "onset": {
+            "n": 6,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer"
+            ]
+          },
+          "notes": [
+            {
+              "id": "outer-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "outer-e3",
+          "measureId": "nested",
+          "onset": {
+            "n": 8,
+            "d": 5
+          },
+          "duration": {
+            "n": 2,
+            "d": 5
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": [
+              "outer"
+            ]
+          },
+          "notes": [
+            {
+              "id": "outer-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "nested-rest",
+          "measureId": "nested",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 2,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 2,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": []
+        }
+      ]
+    }
+  ],
+  "tuplets": [
+    {
+      "id": "outer",
+      "voiceId": "upper",
+      "eventIds": [
+        "nested-e0",
+        "nested-e1",
+        "nested-e2",
+        "nested-e3",
+        "nested-e4",
+        "nested-e5",
+        "nested-e6",
+        "outer-e0",
+        "outer-e1",
+        "outer-e2",
+        "outer-e3"
+      ],
+      "actual": 5,
+      "normal": 4
+    },
+    {
+      "id": "inner",
+      "voiceId": "upper",
+      "eventIds": [
+        "nested-e0",
+        "nested-e1",
+        "nested-e2",
+        "nested-e3",
+        "nested-e4",
+        "nested-e5",
+        "nested-e6"
+      ],
+      "actual": 7,
+      "normal": 4,
+      "parentId": "outer"
+    }
+  ],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

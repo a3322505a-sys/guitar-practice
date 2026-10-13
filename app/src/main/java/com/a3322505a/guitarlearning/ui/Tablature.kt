@@ -31,6 +31,10 @@ import com.a3322505a.guitarlearning.practice.*
 
 @Composable
 fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, following: Boolean, modifier: Modifier = Modifier) {
+    if(sequence.runtimePlan!=null) {
+        PlanTablature(sequence.runtimePlan,hint,cursor,following,modifier)
+        return
+    }
     val bars = remember(sequence) { sequence.tabBars() }
     val state = rememberLazyListState()
     BoxWithConstraints(modifier.fillMaxSize().testTag("tablature")) {
@@ -72,11 +76,11 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
     val height=beamY+if(segments.any { it.tuplet!=null }) 32f else 14f
     val measurer = rememberTextMeasurer()
     val description = buildString {
-        append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。${bars.map { sequence.meter(it.index) }.distinct().joinToString("、") { "$it/4" }} 拍。上方 1 弦，下方 6 弦。")
+        append("六线谱，第 ${sequence.barNumber(bars.first().index)} 至 ${sequence.barNumber(bars.last().index)} 小节。${bars.map { sequence.meter(it.index) }.distinct().joinToString("、") { "$it/4" }} 拍。上方 1 弦，下方 6 弦。")
         if(sequence.swing!=Swing.NONE) append("${sequence.swing.title}；")
         if(sequence.capoFret>0) append("变调夹${sequence.capoFret}品，数字为相对品位。")
         if(hint != Hint.HIDDEN) bars.forEach { bar -> bar.segments.forEach { s ->
-                if(s.rest) append("休止 ${s.value.ticks/12.0} 拍；")
+                if(s.rest) append("休止 ${s.duration.toDouble()/sequence.ticksPerQuarter} 拍；")
                 else visible(s,hint,key).forEach { append("${it.string} 弦 ${it.fret} 品；") }
                 s.expression?.let { e ->
                     if(s.strum && e.stroke==Pick.DOWN) append("下拨，从有效低音弦到高音弦；")
@@ -99,7 +103,7 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
             val target=bars.firstOrNull { it.index==sequence.barAt(tick.toDouble()) } ?: return null
             val preceding=bars.takeWhile { it.index!=target.index }.sumOf { it.readableWidth() }
             val width=usable*target.readableWidth()/total
-            return left+usable*preceding/total+27*u+(tick-sequence.barStart(target.index)).toFloat()/(sequence.meter(target.index)*QUARTER)*(width-49*u)
+            return left+usable*preceding/total+27*u+(tick-sequence.barStart(target.index)).toFloat()/(sequence.meter(target.index)*sequence.ticksPerQuarter)*(width-49*u)
         }
         var x0=left
         text(measurer,"TAB",13*u,top+2.5f*gap,Muted,11)
@@ -109,14 +113,14 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
             val width=usable*bar.readableWidth()/total
             val current=cursor?.pre == false && cursor.bar == bar.index
             if(current) drawRoundRect(Mint,Offset(x0-3*u,4*u),Size(width,(height-12)*u),androidx.compose.ui.geometry.CornerRadius(12*u))
-            text(measurer,"${bar.index+sequence.originalBar+1}",x0+10*u,16*u,if(current) Green else Muted,12)
-            if(bar.index>0 && sequence.meter(bar.index)!=sequence.meter(bar.index-1)) text(measurer,"${sequence.meter(bar.index)}/4",x0+30*u,16*u,Ink,12)
+            text(measurer,if(sequence.sourceBars.isEmpty()) "${sequence.barNumber(bar.index)}" else "${sequence.barNumber(bar.index)} (${bar.index+1})",x0+10*u,16*u,if(current) Green else Muted,12)
+            if(bar.index>0 && sequence.meter(bar.index)!=sequence.meter(bar.index-1)) text(measurer,"${sequence.meter(bar.index)}/4",x0+(if(sequence.sourceBars.isEmpty()) 30 else 110)*u,16*u,Ink,12)
             if(bar.index==0 && sequence.swing!=Swing.NONE) text(measurer,sequence.swing.title,x0+width/2,16*u,PurpleInk,10)
             for(i in 0..5) drawLine(Color(0xFFA0B4A9),Offset(x0,top+i*gap),Offset(x0+width,top+i*gap),u*.8f)
             drawLine(Ink,Offset(x0,top),Offset(x0,top+5*gap),u)
             val start=x0+27*u
             val span=width-49*u
-            val barTicks=sequence.meter(bar.index)*QUARTER
+            val barTicks=sequence.meter(bar.index)*sequence.ticksPerQuarter
             fun at(s: TabSegment) = start + (s.tick-sequence.barStart(bar.index)).toFloat()/barTicks*span
             for((i,s) in bar.segments.withIndex()) {
                 val x=at(s)
@@ -252,7 +256,7 @@ private fun DrawScope.tie(x1: Float,x2: Float,y: Float,u: Float) {
     val p=Path().apply { moveTo(x1,y); cubicTo(x1+(x2-x1)*.25f,y+9*u,x1+(x2-x1)*.75f,y+9*u,x2,y) }
     drawPath(p,Ink,style=Stroke(u))
 }
-private fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
+internal fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
     when(v) {
         RhythmValue.WHOLE -> { drawLine(Ink,Offset(x-10*u,y-5*u),Offset(x+10*u,y-5*u),u); drawRect(Ink,Offset(x-6*u,y-5*u),Size(12*u,5*u)) }
         RhythmValue.HALF -> { drawLine(Ink,Offset(x-10*u,y),Offset(x+10*u,y),u); drawRect(Ink,Offset(x-6*u,y-5*u),Size(12*u,5*u)) }
@@ -260,7 +264,8 @@ private fun DrawScope.rest(v: RhythmValue,x: Float,y: Float,u: Float) {
             val p=Path().apply { moveTo(x-3*u,y-13*u); lineTo(x+4*u,y-5*u); lineTo(x-3*u,y); lineTo(x+4*u,y+6*u); cubicTo(x-7*u,y+2*u,x-6*u,y+10*u,x,y+13*u) }
             drawPath(p,Ink,style=Stroke(2.2f*u))
         }
-        RhythmValue.EIGHTH, RhythmValue.DOTTED_EIGHTH, RhythmValue.SIXTEENTH, RhythmValue.TRIPLET_EIGHTH, RhythmValue.TRIPLET_SIXTEENTH -> {
+        RhythmValue.EIGHTH, RhythmValue.DOTTED_EIGHTH, RhythmValue.SIXTEENTH, RhythmValue.THIRTY_SECOND, RhythmValue.SIXTY_FOURTH,
+        RhythmValue.TRIPLET_EIGHTH, RhythmValue.TRIPLET_SIXTEENTH, RhythmValue.TRIPLET_THIRTY_SECOND -> {
             repeat(v.flags) { level ->
                 val yy=y+level*6*u
                 drawCircle(Ink,3*u,Offset(x-3*u,yy-7*u))

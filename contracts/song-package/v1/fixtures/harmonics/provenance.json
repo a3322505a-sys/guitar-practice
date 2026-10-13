@@ -1,0 +1,31 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "harmonics 原创手工数据",
+      "sha256": "f26c92fc4fa45a2714809ad664a14e453c993402dede8bd60538372af82d6cbf",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "natural",
+      "sourceId": "original-source",
+      "location": "harmonics/harmonic-e0/natural"
+    },
+    {
+      "noteId": "artificial",
+      "sourceId": "original-source",
+      "location": "harmonics/harmonic-e1/artificial"
+    },
+    {
+      "noteId": "pinch",
+      "sourceId": "original-source",
+      "location": "harmonics/harmonic-e2/pinch"
+    }
+  ]
+}

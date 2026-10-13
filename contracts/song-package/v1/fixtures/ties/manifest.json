@@ -1,0 +1,43 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.ties",
+  "revision": 1,
+  "display": {
+    "title": "原创 ties",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "technique.bend.v1",
+    "technique.tie.v1",
+    "technique.vibrato.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 3068,
+      "sha256": "eca2051c349cce8d62e0b9cb4bb33e30312a5dec4e89952b99aa7fd70efcaea6"
+    },
+    "practices.json": {
+      "bytes": 585,
+      "sha256": "827644e447fb5accb4c9cfee5ae076334c26f9bda24db79934fc2bb6b0749174"
+    },
+    "provenance.json": {
+      "bytes": 610,
+      "sha256": "fcb91148237b1fa8023fbf1861b23b9467c3ae1b353bb7c2e0f995fd336c6aab"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "5f54b10599b387cec49532aa91432613fb9068e98f7065179a74735316cbc226"
+    }
+  }
+}

@@ -23,22 +23,23 @@ import com.a3322505a.guitarlearning.practice.*
 @Composable
 internal fun PracticeTransport(tab: Boolean, bpm: Int, beatsPerBar: Int, hint: Hint,
     active: Boolean, phase: Phase, hasSequence: Boolean, onTempo: ()->Unit, onHint: ()->Unit,
-    onPauseResume: ()->Unit, onRestart: ()->Unit, onDemo: ()->Unit, onFollow: ()->Unit, onStop: ()->Unit) {
+    onPauseResume: ()->Unit, onRestart: ()->Unit, onDemo: ()->Unit, onFollow: ()->Unit, onStop: ()->Unit,
+    tempoLabel: String? = null,meterLabel: String? = null) {
 // Keep the original footer typography, control sizes and TAB row layout.
 PracticeTheme {
 Surface(color=Color.Transparent,shadowElevation=10.dp,shape=RoundedCornerShape(topStart=26.dp,topEnd=26.dp),border=BorderStroke(1.dp,Color.White)) {
     Column(Modifier.background(Brush.verticalGradient(listOf(Color(0xFFF4FFFC),Color(0xFFE5F6F2)))).navigationBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
         if(!tab) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             TextButton(onClick={onTempo()},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) {
-                MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text("$bpm BPM",fontWeight=FontWeight.Bold)
+                MusicMotif(Modifier.size(22.dp),"metronome");Spacer(Modifier.width(6.dp));Text(tempoLabel ?: "$bpm BPM",fontWeight=FontWeight.Bold)
             }
-            Text("· $beatsPerBar/4",color=Muted,style=MaterialTheme.typography.labelMedium)
+            Text("· "+(meterLabel ?: "$beatsPerBar/4"),color=Muted,style=MaterialTheme.typography.labelMedium)
             Spacer(Modifier.weight(1f))
             TextButton(onClick={onHint()},contentPadding=PaddingValues(horizontal=8.dp,vertical=0.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
         }
         Row(Modifier.fillMaxWidth().testTag("transport"),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
             if(tab) {
-                TextButton(onClick={onTempo()},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("$bpm BPM") }
+                TextButton(onClick={onTempo()},modifier=Modifier.testTag("tempo-button"),contentPadding=PaddingValues(horizontal=4.dp)) { Text(tempoLabel ?: "$bpm BPM") }
                 TextButton(onClick={onHint()},contentPadding=PaddingValues(horizontal=4.dp)) { Text(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示") }
             }
             if(active || phase==Phase.PAUSED) {

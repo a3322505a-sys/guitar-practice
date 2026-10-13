@@ -1,0 +1,56 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "swing 原创手工数据",
+      "sha256": "1d953fc020071d0ae77ecbc5af600a33b0b97ff45da90c28bc24bc377f5fd96d",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "swing-n0",
+      "sourceId": "original-source",
+      "location": "swing/swing-e0/swing-n0"
+    },
+    {
+      "noteId": "swing-n1",
+      "sourceId": "original-source",
+      "location": "swing/swing-e1/swing-n1"
+    },
+    {
+      "noteId": "swing-n2",
+      "sourceId": "original-source",
+      "location": "swing/swing-e2/swing-n2"
+    },
+    {
+      "noteId": "swing-n3",
+      "sourceId": "original-source",
+      "location": "swing/swing-e3/swing-n3"
+    },
+    {
+      "noteId": "swing-n4",
+      "sourceId": "original-source",
+      "location": "swing/swing-e4/swing-n4"
+    },
+    {
+      "noteId": "swing-n5",
+      "sourceId": "original-source",
+      "location": "swing/swing-e5/swing-n5"
+    },
+    {
+      "noteId": "swing-n6",
+      "sourceId": "original-source",
+      "location": "swing/swing-e6/swing-n6"
+    },
+    {
+      "noteId": "swing-n7",
+      "sourceId": "original-source",
+      "location": "swing/swing-e7/swing-n7"
+    }
+  ]
+}

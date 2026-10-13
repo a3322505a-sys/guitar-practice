@@ -1,0 +1,56 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "multi-track 原创手工数据",
+      "sha256": "245da0c807b853c7708e5441292af152c696077a2a433873bb8f9bd6b2a87a86",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "simple-n0",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e0/simple-n0"
+    },
+    {
+      "noteId": "simple-n1",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e1/simple-n1"
+    },
+    {
+      "noteId": "simple-n2",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e2/simple-n2"
+    },
+    {
+      "noteId": "simple-n3",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e3/simple-n3"
+    },
+    {
+      "noteId": "second-simple-n0",
+      "sourceId": "original-source",
+      "location": "bar1/second-simple-e0/second-simple-n0"
+    },
+    {
+      "noteId": "second-simple-n1",
+      "sourceId": "original-source",
+      "location": "bar1/second-simple-e1/second-simple-n1"
+    },
+    {
+      "noteId": "second-simple-n2",
+      "sourceId": "original-source",
+      "location": "bar1/second-simple-e2/second-simple-n2"
+    },
+    {
+      "noteId": "second-simple-n3",
+      "sourceId": "original-source",
+      "location": "bar1/second-simple-e3/second-simple-n3"
+    }
+  ]
+}

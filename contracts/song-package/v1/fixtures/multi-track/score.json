@@ -1,0 +1,287 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "bar1",
+      "label": "bar1",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    },
+    {
+      "id": "second-guitar",
+      "name": "second-guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        38
+      ],
+      "capo": 1,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "simple-e0",
+          "measureId": "bar1",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "simple-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "simple-e1",
+          "measureId": "bar1",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "simple-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "simple-e2",
+          "measureId": "bar1",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "simple-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "simple-e3",
+          "measureId": "bar1",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "simple-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 67
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "second-voice",
+      "trackId": "second-guitar",
+      "events": [
+        {
+          "id": "second-simple-e0",
+          "measureId": "bar1",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "second-simple-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "second-simple-e1",
+          "measureId": "bar1",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "second-simple-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "second-simple-e2",
+          "measureId": "bar1",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "second-simple-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 67
+            }
+          ]
+        },
+        {
+          "id": "second-simple-e3",
+          "measureId": "bar1",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "second-simple-n3",
+              "string": 1,
+              "fret": 3,
+              "midi": 68
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

@@ -1,0 +1,47 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.complex",
+  "revision": 1,
+  "display": {
+    "title": "原创 complex",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "form.repeat.v1",
+    "guitar.six-string.v1",
+    "guitar.tuning-capo.v1",
+    "meter.compound.v1",
+    "meter.irregular.v1",
+    "rhythm.tuplet.v1",
+    "score.polyphony.v1",
+    "score.rational.v1",
+    "tempo.map.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 17974,
+      "sha256": "42242e892e9da60b155d9f10e9ddd8057579ce1660fad2a04394de078b9da977"
+    },
+    "practices.json": {
+      "bytes": 587,
+      "sha256": "f60568e49335f951149ad84ab9ed36062e52b88348cbcc28feb7087dda26ad2f"
+    },
+    "provenance.json": {
+      "bytes": 3816,
+      "sha256": "592d06fa2295f6352fb93e426e82a53d38ab08a0095e16016b4568d81ed6e2ba"
+    },
+    "review.json": {
+      "bytes": 700,
+      "sha256": "4b5b5c457d6041646dadb5d5867c3180cd1333bab7473abc32068698f50553e8"
+    }
+  }
+}

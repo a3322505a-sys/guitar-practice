@@ -1,0 +1,308 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "condition-a",
+      "label": "condition-a",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    },
+    {
+      "id": "condition-b",
+      "label": "condition-b",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "condition-e0",
+          "measureId": "condition-a",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "condition-e1",
+          "measureId": "condition-a",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "condition-e2",
+          "measureId": "condition-a",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "condition-e3",
+          "measureId": "condition-a",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n3",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "condition-e4",
+          "measureId": "condition-b",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n4",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "condition-e5",
+          "measureId": "condition-b",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n5",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "condition-e6",
+          "measureId": "condition-b",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n6",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "condition-e7",
+          "measureId": "condition-b",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "condition-n7",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    },
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 120,
+      "condition": {
+        "occurrence": 2
+      }
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {
+    "repeats": [
+      {
+        "id": "condition-repeat",
+        "start": "condition-a",
+        "end": "condition-b",
+        "times": 2
+      }
+    ]
+  },
+  "voicings": [],
+  "harmonies": []
+}

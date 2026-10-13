@@ -1,0 +1,31 @@
+{
+  "practices": [
+    {
+      "id": "practice",
+      "title": "原创 practice",
+      "goal": "按完整乐句练习",
+      "mainTrackId": "guitar",
+      "mixTrackIds": [
+        "guitar"
+      ],
+      "segments": [
+        {
+          "start": {
+            "measureId": "strum",
+            "occurrence": 1
+          },
+          "end": {
+            "measureId": "strum",
+            "offset": {
+              "n": 4,
+              "d": 1
+            },
+            "occurrence": 1
+          },
+          "formPolicy": "written"
+        }
+      ]
+    }
+  ],
+  "aliases": []
+}

@@ -1,0 +1,136 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "strum",
+      "label": "strum",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "strum-e",
+          "measureId": "strum",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 4,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 1,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "strum-low",
+              "string": 6,
+              "fret": 0,
+              "midi": 40
+            },
+            {
+              "id": "strum-high",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ],
+          "articulation": {
+            "pick": "up",
+            "strumDelayMs": 12,
+            "letRing": true
+          }
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [],
+  "form": {},
+  "voicings": [
+    {
+      "id": "local-grip",
+      "name": "包内双音按法",
+      "trackId": "guitar",
+      "frets": [
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        0
+      ],
+      "fingers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "harmonies": [
+    {
+      "id": "local-harmony",
+      "measureId": "strum",
+      "onset": {
+        "n": 0,
+        "d": 1
+      },
+      "name": "原创双音",
+      "voicingId": "local-grip"
+    }
+  ]
+}

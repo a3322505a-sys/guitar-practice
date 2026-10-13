@@ -1,0 +1,286 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "swing",
+      "label": "swing",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "swing-e0",
+          "measureId": "swing",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n0",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "swing-e1",
+          "measureId": "swing",
+          "onset": {
+            "n": 1,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n1",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "swing-e2",
+          "measureId": "swing",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n2",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "swing-e3",
+          "measureId": "swing",
+          "onset": {
+            "n": 3,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n3",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "swing-e4",
+          "measureId": "swing",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n4",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        },
+        {
+          "id": "swing-e5",
+          "measureId": "swing",
+          "onset": {
+            "n": 5,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n5",
+              "string": 1,
+              "fret": 2,
+              "midi": 66
+            }
+          ]
+        },
+        {
+          "id": "swing-e6",
+          "measureId": "swing",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n6",
+              "string": 1,
+              "fret": 0,
+              "midi": 64
+            }
+          ]
+        },
+        {
+          "id": "swing-e7",
+          "measureId": "swing",
+          "onset": {
+            "n": 7,
+            "d": 2
+          },
+          "duration": {
+            "n": 1,
+            "d": 2
+          },
+          "written": {
+            "baseDenominator": 8,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "swing-n7",
+              "string": 1,
+              "fret": 1,
+              "midi": 65
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [],
+  "swing": [
+    {
+      "start": {
+        "n": 0,
+        "d": 1
+      },
+      "end": {
+        "n": 4,
+        "d": 1
+      },
+      "unit": {
+        "n": 1,
+        "d": 2
+      },
+      "ratio": [
+        2,
+        1
+      ]
+    }
+  ],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

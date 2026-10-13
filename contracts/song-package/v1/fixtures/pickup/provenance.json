@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "pickup 原创手工数据",
+      "sha256": "1a6f415c369f1b4b8407dc4e22493e86a2ac5ed9179f496398ea83591696b9c6",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "pickup-n",
+      "sourceId": "original-source",
+      "location": "pickup/pickup-e/pickup-n"
+    },
+    {
+      "noteId": "tail-n",
+      "sourceId": "original-source",
+      "location": "partial-tail/tail-e/tail-n"
+    }
+  ]
+}

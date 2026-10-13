@@ -2,10 +2,24 @@ package com.a3322505a.guitarlearning.practice
 
 import android.content.SharedPreferences
 
-data class PhraseSettings(val bpm: Int,val repeats: Int,val range: BarRange)
-class PhraseSettingsStore(private val prefs: SharedPreferences) {
-    fun selected()=Phrases.practiceNamed(runCatching { prefs.getString("phrase-selected","S01") }.getOrNull() ?: "S01")
+data class PhraseSettings(val bpm: Int,val repeats: Int,val range: BarRange,val rangeReset: Boolean = false)
+class PhraseSettingsStore(private val prefs: SharedPreferences,private val resolve: (String)->Phrase = Phrases::practiceNamed) {
+    fun tempo(phrase: Phrase): Pair<Boolean,Int> {
+        if(phrase.assetKey==null) return false to 100
+        val prefix=assetPrefix(phrase)
+        val default=if(phrase.unprepared) phrase.defaultSourceTempo else phrase.sequence.performance.practice.tempoMode!="fixed"
+        val source=runCatching { prefs.getBoolean(prefix+"sourceTempo",default) }.getOrDefault(default)
+        val multiplier=runCatching { prefs.getInt(prefix+"multiplier",100) }.getOrDefault(100).coerceIn(25,200)
+        return source to multiplier
+    }
+    fun saveTempo(phrase: Phrase,source: Boolean,multiplier: Int) {
+        if(phrase.assetKey==null) return
+        val prefix="asset."+phrase.assetKey.encoded+"."
+        prefs.edit().putBoolean(prefix+"sourceTempo",source).putInt(prefix+"multiplier",multiplier.coerceIn(25,200)).apply()
+    }
+    fun selected()=resolve(runCatching { prefs.getString("phrase-selected","S01") }.getOrNull() ?: "S01")
     fun load(phrase: Phrase,fallbackBpm: Int=60,fallbackRepeats: Int=4): PhraseSettings {
+        if(phrase.assetKey!=null) return loadAsset(phrase)
         val previous=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
             ?.takeIf { KafkaPractice.replacement(it)==phrase.id } ?: KafkaPractice.previousSelection(phrase.id)
         val settingsId=if(previous!=null && !prefs.contains("phrase.${phrase.id}.bpm")) previous else phrase.id
@@ -19,8 +33,43 @@ class PhraseSettingsStore(private val prefs: SharedPreferences) {
     }
     fun save(phrase: Phrase,bpm: Int,repeats: Int,range: BarRange) {
         require(bpm in 30..180 && repeats in listOf(0,1,4,8) && range.valid(phrase.sequence))
+        if(phrase.assetKey!=null) {
+            val prefix="asset."+phrase.assetKey.encoded+"."
+            val plan=phrase.sequence.performance
+            prefs.edit().putString("phrase-selected",phrase.id).putInt(prefix+"bpm",bpm).putInt(prefix+"repeats",repeats)
+                .putString(prefix+"first",anchor(phrase,range.first)).putString(prefix+"last",anchor(phrase,range.last))
+                .putString(prefix+"route",plan.routeFingerprint).apply()
+            return
+        }
         prefs.edit().putString("phrase-selected",phrase.id).putInt("phrase.${phrase.id}.bpm",bpm)
             .putInt("phrase.${phrase.id}.repeats",repeats).putInt("phrase.${phrase.id}.first",range.first)
             .putInt("phrase.${phrase.id}.last",range.last).apply()
+    }
+    private fun anchor(phrase: Phrase,index: Int): String {
+        val plan=phrase.sequence.performance;val v=plan.visits[index]
+        val sourceIndex=plan.score.measures.indexOfFirst { it.id==v.measure.id }
+        val offset=if(sourceIndex<0) v.sourceStart else v.sourceStart-plan.score.measureStarts[sourceIndex]
+        return v.measure.id+":"+v.occurrence+":"+offset+":"+v.duration
+    }
+    private fun loadAsset(phrase: Phrase): PhraseSettings {
+        val prefix=assetPrefix(phrase)
+        fun number(key: String,default: Int)=runCatching { prefs.getInt(prefix+key,default) }.getOrDefault(default)
+        val bpm=number("bpm",phrase.suggestedBpm).takeIf { it in 30..180 } ?: phrase.suggestedBpm
+        val repeats=number("repeats",4).takeIf { it in listOf(0,1,4,8) } ?: 4
+        val whole=BarRange(0,phrase.sequence.barCount-1)
+        if(phrase.unprepared) return PhraseSettings(bpm,repeats,whole)
+        val first=runCatching { prefs.getString(prefix+"first",null) }.getOrNull()
+        val last=runCatching { prefs.getString(prefix+"last",null) }.getOrNull()
+        val plan=phrase.sequence.performance
+        val a=plan.visits.indices.indexOfFirst { anchor(phrase,it)==first }
+        val b=plan.visits.indices.indexOfFirst { anchor(phrase,it)==last }
+        val valid=a>=0 && b>=a
+        return PhraseSettings(bpm,repeats,if(valid) BarRange(a,b) else whole,first!=null && !valid)
+    }
+    private fun assetPrefix(phrase: Phrase): String {
+        val current="asset."+phrase.assetKey!!.encoded+"."
+        val selected=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
+        return if(!prefs.contains(current+"bpm") && selected!=null && selected!=phrase.id && resolve(selected).id==phrase.id)
+            "asset."+selected+"." else current
     }
 }

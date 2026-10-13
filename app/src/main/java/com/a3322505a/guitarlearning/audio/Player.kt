@@ -32,9 +32,10 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
     private var resumeAt = 0.0
     val active get() = progress.phase == Phase.PLAYING || progress.phase == Phase.PREPARING
 
-    fun start(sequence: Sequence, bpm: Int, follow: Boolean, repeats: Int, range: BarRange = BarRange(0,sequence.barCount-1)) {
+    fun start(sequence: Sequence, bpm: Int, follow: Boolean, repeats: Int, range: BarRange = BarRange(0,sequence.barCount-1),
+        sourceTempo: Boolean = sequence.runtimePlan!=null, multiplier: Double = 1.0) {
         generation++
-        session = Session(sequence, bpm, follow, if(follow) repeats else 1,range=range)
+        session = Session(sequence, bpm, follow, if(follow) repeats else 1,range=range,sourceTempo=sourceTempo,tempoMultiplier=multiplier)
         resumeAt = 0.0
         play(session!!, resumeAt)
     }
@@ -55,9 +56,9 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
         progress = Progress()
         audioManager.abandonAudioFocusRequest(focus)
     }
-    fun audition(positions: List<Position>, strum: Boolean = false, capoFret: Int = 0) {
+    fun audition(positions: List<Position>, strum: Boolean = false, capoFret: Int = 0, openStringMidi: List<Int> = listOf(64,59,55,50,45,40)) {
         if(active) return
-        session = Session(Sequence(listOf(Event(0,12,positions,strum=strum)),12,"试听",capoFret=capoFret), 60, false, 1, preview=true)
+        session = Session(Sequence(listOf(Event(0,12,positions,strum=strum)),12,"试听",capoFret=capoFret,openStringMidi=openStringMidi), 60, false, 1, preview=true)
         resumeAt=0.0
         play(session!!,0.0)
     }
@@ -78,7 +79,7 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
                 val chunkSize = 512
                 output = sinkFactory?.invoke() ?: AndroidSink(attributes)
                 val origin = current.frame(fromTick)
-                val end = current.totalTicks?.let { current.frame(it.toDouble()) }
+                val end = current.totalFrames
                 var written = origin
                 output.play()
                 while(id == generation && (end == null || written < end)) {
@@ -100,7 +101,7 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
                     publish(id, Progress(Phase.PLAYING,current.tick(heard),""))
                     Thread.sleep(12)
                 }
-                if(id==generation) publish(id,Progress(Phase.ENDED,current.totalTicks!!.toDouble(),if(current.preview) "试听结束" else "本次练习结束"))
+                if(id==generation) publish(id,Progress(Phase.ENDED,current.totalExactTicks!!,if(current.preview) "试听结束" else "本次练习结束"))
             } catch(error: Exception) {
                 publish(id,Progress(Phase.ERROR,message=error.message ?: "音频输出失败"))
             } finally {

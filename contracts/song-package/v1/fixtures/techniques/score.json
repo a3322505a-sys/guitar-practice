@@ -1,0 +1,684 @@
+{
+  "documentId": "original",
+  "measures": [
+    {
+      "id": "tech0",
+      "label": "tech0",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    },
+    {
+      "id": "tech1",
+      "label": "tech1",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    },
+    {
+      "id": "tech2",
+      "label": "tech2",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    },
+    {
+      "id": "tech3",
+      "label": "tech3",
+      "meter": {
+        "numerator": 4,
+        "denominator": 4,
+        "beatGroups": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "actualDuration": {
+        "n": 4,
+        "d": 1
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "name": "guitar",
+      "openStringMidi": [
+        64,
+        59,
+        55,
+        50,
+        45,
+        40
+      ],
+      "capo": 0,
+      "fretCount": 24
+    }
+  ],
+  "voices": [
+    {
+      "id": "upper",
+      "trackId": "guitar",
+      "events": [
+        {
+          "id": "tech-e0",
+          "measureId": "tech0",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n0",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "bend": [
+                  {
+                    "at": {
+                      "n": 0,
+                      "d": 1
+                    },
+                    "semitones": 0
+                  },
+                  {
+                    "at": {
+                      "n": 1,
+                      "d": 1
+                    },
+                    "semitones": 2
+                  }
+                ],
+                "vibrato": {
+                  "depth": 0.15,
+                  "rateHz": 5
+                },
+                "tremoloBar": [
+                  {
+                    "at": {
+                      "n": 0,
+                      "d": 1
+                    },
+                    "semitones": 0
+                  },
+                  {
+                    "at": {
+                      "n": 1,
+                      "d": 1
+                    },
+                    "semitones": -1
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e1",
+          "measureId": "tech0",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n1",
+              "string": 2,
+              "fret": 3,
+              "midi": 62,
+              "articulation": {
+                "pick": "none"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e2",
+          "measureId": "tech0",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n2",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "pick": "none"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e3",
+          "measureId": "tech0",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n3",
+              "string": 2,
+              "fret": 5,
+              "midi": 64,
+              "articulation": {
+                "pick": "none"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e4",
+          "measureId": "tech1",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n4",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "palmMute": true,
+                "accent": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e5",
+          "measureId": "tech1",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n5",
+              "string": 2,
+              "fret": 3,
+              "midi": 62,
+              "articulation": {
+                "tapping": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e6",
+          "measureId": "tech1",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n6",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "ornament": {
+                  "timing": "on",
+                  "notes": [
+                    {
+                      "fret": 0,
+                      "duration": {
+                        "n": 1,
+                        "d": 8
+                      },
+                      "kind": "hammer"
+                    },
+                    {
+                      "fret": 1,
+                      "duration": {
+                        "n": 1,
+                        "d": 8
+                      },
+                      "kind": "pick"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e7",
+          "measureId": "tech1",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n7",
+              "string": 2,
+              "fret": 5,
+              "midi": 64,
+              "articulation": {
+                "ornament": {
+                  "timing": "before",
+                  "notes": [
+                    {
+                      "fret": 0,
+                      "duration": {
+                        "n": 1,
+                        "d": 8
+                      },
+                      "kind": "slide"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e8",
+          "measureId": "tech2",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n8",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "repluck": {
+                  "kind": "trill",
+                  "unit": {
+                    "n": 1,
+                    "d": 4
+                  },
+                  "alternateFret": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e9",
+          "measureId": "tech2",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n9",
+              "string": 2,
+              "fret": 3,
+              "midi": 62,
+              "articulation": {
+                "repluck": {
+                  "kind": "tremolo",
+                  "unit": {
+                    "n": 1,
+                    "d": 4
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e10",
+          "measureId": "tech2",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n10",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "slide": "in-up"
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e11",
+          "measureId": "tech2",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n11",
+              "string": 2,
+              "fret": 5,
+              "midi": 64,
+              "articulation": {
+                "slide": "out-down",
+                "short": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e12",
+          "measureId": "tech3",
+          "onset": {
+            "n": 0,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n12",
+              "string": 2,
+              "fret": 1,
+              "midi": 60,
+              "articulation": {
+                "letRing": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e13",
+          "measureId": "tech3",
+          "onset": {
+            "n": 1,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n13",
+              "string": 2,
+              "fret": 3,
+              "midi": 62,
+              "articulation": {
+                "cut": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e14",
+          "measureId": "tech3",
+          "onset": {
+            "n": 2,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n14",
+              "string": 1,
+              "fret": 0,
+              "midi": 76,
+              "harmonic": {
+                "kind": "natural",
+                "partial": 2,
+                "touchFret": 12,
+                "soundMidi": 76
+              }
+            }
+          ]
+        },
+        {
+          "id": "tech-e15",
+          "measureId": "tech3",
+          "onset": {
+            "n": 3,
+            "d": 1
+          },
+          "duration": {
+            "n": 1,
+            "d": 1
+          },
+          "written": {
+            "baseDenominator": 4,
+            "dots": 0,
+            "tupletGroupIds": []
+          },
+          "notes": [
+            {
+              "id": "tech-n15",
+              "string": 3,
+              "fret": 0,
+              "midi": 55,
+              "dead": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tuplets": [],
+  "relations": [
+    {
+      "id": "legato0",
+      "kind": "hammer",
+      "fromNoteId": "tech-n0",
+      "toNoteId": "tech-n1"
+    },
+    {
+      "id": "legato1",
+      "kind": "pull",
+      "fromNoteId": "tech-n1",
+      "toNoteId": "tech-n2"
+    },
+    {
+      "id": "legato2",
+      "kind": "slide",
+      "fromNoteId": "tech-n2",
+      "toNoteId": "tech-n3"
+    }
+  ],
+  "tempos": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "beatUnit": {
+        "n": 1,
+        "d": 1
+      },
+      "bpm": 60
+    }
+  ],
+  "dynamics": [
+    {
+      "at": {
+        "n": 0,
+        "d": 1
+      },
+      "velocity": 0.4,
+      "rampEnd": {
+        "n": 4,
+        "d": 1
+      },
+      "endVelocity": 1
+    }
+  ],
+  "swing": [],
+  "form": {},
+  "voicings": [],
+  "harmonies": []
+}

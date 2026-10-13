@@ -1,0 +1,72 @@
+{
+  "simple": {
+    "visits": [
+      "bar1"
+    ],
+    "length": {
+      "n": 4,
+      "d": 1
+    },
+    "seconds": 4
+  },
+  "complex": {
+    "visits": [
+      "triple",
+      "compound",
+      "irregular",
+      "five",
+      "triple",
+      "compound",
+      "irregular",
+      "five"
+    ],
+    "length": {
+      "n": 29,
+      "d": 1
+    },
+    "firstRampSeconds": 2.0794415416798357,
+    "compoundSeconds": 2
+  },
+  "nested": {
+    "length": {
+      "n": 4,
+      "d": 1
+    },
+    "innerDurations": [
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      },
+      {
+        "n": 2,
+        "d": 35
+      }
+    ]
+  },
+  "techniques": {
+    "length": {
+      "n": 16,
+      "d": 1
+    }
+  }
+}

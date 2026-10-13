@@ -1,0 +1,41 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.cross-tuplet",
+  "revision": 1,
+  "display": {
+    "title": "原创 cross-tuplet",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "rhythm.tuplet.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 4376,
+      "sha256": "50043e50e282f066d3fb4a6c222c81abf730fc719101ee014084539e73886962"
+    },
+    "practices.json": {
+      "bytes": 589,
+      "sha256": "b88da6e74cdfc145b21d97b8748564e6f835f7496fbddf06ef795e57be4b2c74"
+    },
+    "provenance.json": {
+      "bytes": 983,
+      "sha256": "13fbcb882b1c2905339ff5bad6ab1f6e98aa96080cc8723238a91be8763461d9"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "83865ea5e5922f57664ba0f4ce4727bdd5fe6419c86a7578a192e3c3193b7ef3"
+    }
+  }
+}

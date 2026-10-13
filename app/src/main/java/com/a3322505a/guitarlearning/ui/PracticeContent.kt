@@ -42,6 +42,12 @@ internal data class PracticeContentState(
 internal fun PracticeContent(state: PracticeContentState,modifier: Modifier,
     onChord: (Chord)->Unit,onView: (Int)->Unit,onTap: (Position)->Unit,
     onAudition: (Chord)->Unit,onHelp: ()->Unit) = with(state) {
+    if(displayedSequence==null) {
+        Box(modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
+            Text(if(note.isNotBlank()) note else scaleResult.reason.ifBlank { "正在准备曲目…" },color=Muted)
+        }
+        return@with
+    }
     fun eventLabel(value: Event?)=if(value==null || value.rest) "留拍" else listOf(value.positions.joinToString { "${it.string} 弦 ${it.fret} 品 ${Music.name(displayedSequence!!.midi(it),true)}" },value.expressionLabel()).filter { it.isNotBlank() }.joinToString(" ")
 BoxWithConstraints(modifier.fillMaxWidth()) {
   val availableWidth=maxWidth
@@ -102,7 +108,9 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                       Text(headline,style=if(compact || phraseCard) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold,color=Ink,
                           maxLines=if(phraseCard) 2 else Int.MAX_VALUE,overflow=TextOverflow.Ellipsis)
                       if(phraseCard) {
-                          val cue=if(hint==Hint.HIDDEN) "已撤提示" else if(!melody) "${shownChord.name} · ${phraseCue(phraseNow,displayedSequence!!)}" else phraseCue(phraseNow,displayedSequence!!)
+                          val cue=if(hint==Hint.HIDDEN) "已撤提示" else displayedSequence?.runtimePlan?.let {
+                              planCue(it,if(showingSession) cursor else null)
+                          } ?: if(!melody) "${shownChord.name} · ${phraseCue(phraseNow,displayedSequence!!)}" else phraseCue(phraseNow,displayedSequence!!)
                           Text(cue,modifier=Modifier.testTag("phrase-cue"),style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=2,overflow=TextOverflow.Ellipsis)
                           if(!melody) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=1)
                       }
@@ -124,10 +132,15 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                               val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
                               Fretboard(positions,scale.key,hint,false,current,!active,h,onTap)
                           }
-                      } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,phraseNow?.positions.orEmpty(),!active,maxHeight.coerceAtMost(300.dp*fontScale),onTap,moving,
-                          nextEvent?.positions.orEmpty(),showLegend=false,capoFret=displayedSequence.capoFret)
+                      } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,
+                          if(showingSession) current else phraseNow?.positions ?: displayedSequence.runtimePlan?.notes?.take(1)?.map { it.position }.orEmpty(),
+                          !active,maxHeight.coerceAtMost(300.dp*fontScale),onTap,moving,
+                          nextEvent?.positions.orEmpty(),showLegend=false,capoFret=displayedSequence.capoFret,
+                          openStringMidi=displayedSequence.runtimePlan?.mainTrack?.openStringMidi ?: Music.openMidi.toList(),
+                          movingPositions=cursor?.movingPositions ?: moving?.let { listOf(it) }.orEmpty())
                       else if(melody) Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "死音节奏",color=PurpleInk)
-                      else ChordDiagram(shownChord,hint,if(selected) current else emptyList(),selected && !active,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),onTap)
+                      else ChordDiagram(shownChord,if(shownChord.root<0 && hint==Hint.ROOTS) Hint.FULL else hint,
+                          if(selected) current else emptyList(),selected && !active,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),onTap)
                   }
                   if(!compact && !phraseCard) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
               if(!compact || !wide || phraseCard) Row(Modifier.fillMaxWidth().height(56.dp*fontScale).testTag("playback-status")

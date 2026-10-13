@@ -1,0 +1,96 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "techniques 原创手工数据",
+      "sha256": "e061d1d5dcf61164463dc47a37cf869fac7d68fcb0d0b69f92f300f9bcdac775",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "tech-n0",
+      "sourceId": "original-source",
+      "location": "tech0/tech-e0/tech-n0"
+    },
+    {
+      "noteId": "tech-n1",
+      "sourceId": "original-source",
+      "location": "tech0/tech-e1/tech-n1"
+    },
+    {
+      "noteId": "tech-n2",
+      "sourceId": "original-source",
+      "location": "tech0/tech-e2/tech-n2"
+    },
+    {
+      "noteId": "tech-n3",
+      "sourceId": "original-source",
+      "location": "tech0/tech-e3/tech-n3"
+    },
+    {
+      "noteId": "tech-n4",
+      "sourceId": "original-source",
+      "location": "tech1/tech-e4/tech-n4"
+    },
+    {
+      "noteId": "tech-n5",
+      "sourceId": "original-source",
+      "location": "tech1/tech-e5/tech-n5"
+    },
+    {
+      "noteId": "tech-n6",
+      "sourceId": "original-source",
+      "location": "tech1/tech-e6/tech-n6"
+    },
+    {
+      "noteId": "tech-n7",
+      "sourceId": "original-source",
+      "location": "tech1/tech-e7/tech-n7"
+    },
+    {
+      "noteId": "tech-n8",
+      "sourceId": "original-source",
+      "location": "tech2/tech-e8/tech-n8"
+    },
+    {
+      "noteId": "tech-n9",
+      "sourceId": "original-source",
+      "location": "tech2/tech-e9/tech-n9"
+    },
+    {
+      "noteId": "tech-n10",
+      "sourceId": "original-source",
+      "location": "tech2/tech-e10/tech-n10"
+    },
+    {
+      "noteId": "tech-n11",
+      "sourceId": "original-source",
+      "location": "tech2/tech-e11/tech-n11"
+    },
+    {
+      "noteId": "tech-n12",
+      "sourceId": "original-source",
+      "location": "tech3/tech-e12/tech-n12"
+    },
+    {
+      "noteId": "tech-n13",
+      "sourceId": "original-source",
+      "location": "tech3/tech-e13/tech-n13"
+    },
+    {
+      "noteId": "tech-n14",
+      "sourceId": "original-source",
+      "location": "tech3/tech-e14/tech-n14"
+    },
+    {
+      "noteId": "tech-n15",
+      "sourceId": "original-source",
+      "location": "tech3/tech-e15/tech-n15"
+    }
+  ]
+}

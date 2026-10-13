@@ -1,0 +1,41 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.shared",
+  "revision": 1,
+  "display": {
+    "title": "原创 shared",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.polyphony.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 6025,
+      "sha256": "440f618478332bf847d63b0ea2758cf55feb5b24c1bb321c9642082cfaa377e9"
+    },
+    "practices.json": {
+      "bytes": 583,
+      "sha256": "455beb88c529c7df2b20cf5f1c79f0b765b31321c41c92f9350f7206458d92c6"
+    },
+    "provenance.json": {
+      "bytes": 1433,
+      "sha256": "8575514dedc3c904034a0ffa9e57b3dda7df1eeac29c7aed98148e1a82310e1b"
+    },
+    "review.json": {
+      "bytes": 697,
+      "sha256": "553170e03f2a2113a66569a36a9f7c5bdb6a53a5ebf9526ac16f2ee7b0cbd89e"
+    }
+  }
+}

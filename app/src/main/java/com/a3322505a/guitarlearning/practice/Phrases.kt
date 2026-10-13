@@ -10,6 +10,9 @@ data class Phrase(
     val tempoLabel: String = "原速",
     val goal: String = "保持拍点，按谱面完整弹奏一轮。", val suggestedBpm: Int = 60,
     val use: String = "单音", val relatedId: String? = null, val version: String? = null,
+    val assetKey: com.a3322505a.guitarlearning.music.score.PracticeKey? = null,
+    val familyKey: String? = null,
+    val unprepared: Boolean = false,val defaultSourceTempo: Boolean = true,
 )
 
 object Phrases {
@@ -46,7 +49,7 @@ object Phrases {
     val mozart = MozartK265.phrases
     val shayou = Shayou.phrases
     val kafka = Kafka.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases).also(::validatePhrases)
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases+SevenBlocks.phrases).also(::validatePhrases)
     val catalogue=all.filter { !it.id.startsWith("KAF-") }+KafkaPractice.core
     fun practiceNamed(id: String)=named(KafkaPractice.replacement(id) ?: id)
     fun family(phrase: Phrase)=if(phrase.id in KafkaPractice.all.map { it.id }) named(phrase.relatedId ?: phrase.id) else phrase

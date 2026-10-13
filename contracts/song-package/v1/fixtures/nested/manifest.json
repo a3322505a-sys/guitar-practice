@@ -1,0 +1,42 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.nested",
+  "revision": 1,
+  "display": {
+    "title": "原创 nested",
+    "author": "项目原创",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "rhythm.nested-tuplet.v1",
+    "rhythm.tuplet.v1",
+    "score.rational.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 8356,
+      "sha256": "bc87751250a9926e867e78ae42a8e21f3a9efc8be271b05f2df5300032d27549"
+    },
+    "practices.json": {
+      "bytes": 587,
+      "sha256": "7ac6ce5983337fb79a0cb7ed16b47bc7209816de863663fb5b5cd6c62afebafe"
+    },
+    "provenance.json": {
+      "bytes": 1731,
+      "sha256": "93a83e26b275a32c8c2def66c2551fb85a406c728f62a7db393f35c2f0f54a99"
+    },
+    "review.json": {
+      "bytes": 700,
+      "sha256": "7d0e0633dca35add8e3ec2d01606857dea7a9ced3be6616a099385afac5a0c3b"
+    }
+  }
+}
