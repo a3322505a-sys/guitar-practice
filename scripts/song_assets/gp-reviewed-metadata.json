@@ -1,0 +1,343 @@
+{
+  "shayou-v72": {
+    "Bar/Clef": [
+      "05899b6f50bb65d3f638ce9c96c3765fb36ee98959c493f7fd723131a281d097",
+      "3fdff1329394ae7dd0d00be94119146b5bdf64143316f2d5c7dcb97eff2286cc",
+      "d1c6712772d0c9a0a7636dbb2d672ba04edff01c40c38ef3c5a51f4898fdcd50"
+    ],
+    "Bar/XProperties": [
+      "31bc54b6395652f3ff7a8de8453fa05717c232a4446bc62fcd22fbc66721490b"
+    ],
+    "Beat/ConcertPitchStemOrientation": [
+      "0397becceb12a649f6164340f54161f735fe93a28e25946e7465cc52042b7797"
+    ],
+    "Beat/TransposedPitchStemOrientation": [
+      "1b290d6d3179c179bcf89160940f0f14a5d898d949c5c75d11e39c63d5e156b6",
+      "a16a9cbdd443288cdf5bd8fb1d9f7001c1eff4eda1f31c416593da40c4532194",
+      "a6d4a5ffdc6f24b6acc4759fd6a4a67652ff758ed091d2eb8e1134719c34540a"
+    ],
+    "Beat/XProperties": [
+      "12cdd16134d9618ee7ff9a0ffbaec9373b06041e05129ab22b6f3c504f9dcd3a",
+      "340d50e98d428891d4a9887850580a7893ad3ac69df91fdf00d29fd3d6dcd628",
+      "5a25a1a879298bfccd0f11e4c68e5c6430b7acd159b2317a50cece5c80400ab5",
+      "9db67b62d1fc80c4b2cbdde1067d83ee7f9e9c10351e2fbb81460c6c74709862",
+      "a2e704c8d07361f9406ae2df4a3a4bda0d885c2f64d7abfd517245c3ba9676bc",
+      "a605383f07b0bbae7dc00ab36e7d92e75467e5a8fcacf463adebb5074c13450a",
+      "ac3f0e2165a73e869d6f0c7b884f6a9622c50162aea8d4e8bca21aa87446d794",
+      "aef20575ba458c6849a7e23770babdd05318d55612470650fea164a70bfb8077",
+      "d9e5777572c734cb82cb09d588dc0c2437d61a5783d0fa4d08df25b5200545bd",
+      "e8773291993459d1d6106bd27f2a4d6aef951c60679752d1937e81b2a5850a71",
+      "ebc31cca552e26db373d14f42abd29adc9f2f8b5913260936b17dbb33ad8f837",
+      "ee6309c3279600a0455573be598baacefbe61b71e42debdda89ee820f1d42f0e"
+    ],
+    "Beat:Property:PrimaryPickupTone/Property": [
+      "4ae2015be7e04e87bfe92ee5299c6551d448ef4b79d195cee945448692c2475a"
+    ],
+    "Beat:Property:PrimaryPickupVolume/Property": [
+      "cafb5b392d1ece0f4c62b9d5cd809a33e8abb9e910862d74ae3715b50e235fb4"
+    ],
+    "MasterBar/DoubleBar": [
+      "0624f050b107623946d83fe7b18a58f2f4e83d69dd9b2a8d6dd79e812fc6cd6c"
+    ],
+    "MasterBar/Key": [
+      "906c73c82048a9128de1d2140c0715016582e9819620a3ca6ddeb818fc05f7bc"
+    ],
+    "MasterBar/Section": [
+      "10070321977fe21279cff088bcd2b7a5fb5f2db06631d7f73cb8518343a0ffae",
+      "33ea4ad4e74962c882851762101c201d303f97145676c04bee8f271c9278a39c",
+      "405e6425e1e54c8c55a79dc70b533115ef25b0ce2a79525917701b2f21d859df",
+      "4c21dcf46ae035fe0311449751229afcd866cc67b7a2b905fcbd7086fd72d8a4",
+      "78a04cbed944e097bbf9dd35de7251ec635ace4f53ae6910522c46e98e960538",
+      "b3ac15019ea60d1996641791704567a41ebde447fca473c7b40359012cba330e"
+    ],
+    "Staff:Property:ChordCollection/Property": [
+      "4503c676260910e229d49993147484e3c7e77d7c1a2d1d4cb6ced022bd575fe0"
+    ],
+    "Staff:Property:ChordWorkingSet/Property": [
+      "8d58fb7f9eda2ee2e6b85a47eafa4d22cc129239dcc1d06182abc12281d03bc3"
+    ],
+    "Staff:Property:DiagramCollection/Property": [
+      "4645c7492f2f7f0ed5859b62d5274c0a55634c2ba284a0368472b631447e51e5"
+    ],
+    "Staff:Property:DiagramWorkingSet/Property": [
+      "8104ca2d198e2f3f0e931e05596ce7c374acf1bf558dbdbb51553ee0098f9020"
+    ],
+    "Staff:Property:None/Name": [
+      "7df55e3fc25de28a94ebf8c450625723b78d2efb599ade02d74a77484b543c3b"
+    ],
+    "Staff:Property:TuningFlat/Property": [
+      "94de6ba013ac369ba61f7e3fa60c95263a9e78099d21872c8cf368fc58deaf68"
+    ],
+    "Track/AudioEngineState": [
+      "80709ea1fe05e99e35d44801f9d7e4f9d9214bfbd106416facaecda62aefc594"
+    ],
+    "Track/AutoAccentuation": [
+      "d28677de18c5066a1835f3af20ae515c17642ee3c90ce79c9f536e43b0076f21"
+    ],
+    "Track/AutoBrush": [
+      "6ae285c01d1d71e0d1f73cf1cebec982cd526e40db70528c42bd72345362246e"
+    ],
+    "Track/Color": [
+      "a36bf275dc7bd00b57df9eab541817db7410a4fe5e3b9024fa60da33ceec5072"
+    ],
+    "Track/ForcedSound": [
+      "aec1b3560ebbba19d2317a5afbba3116689c66e79dbc1f59024d4ca0a070f0d8"
+    ],
+    "Track/IconId": [
+      "2ceccad32809ed5fe6a93f8b6e9ed8cb40c25050cdb33393abf797add732fb70"
+    ],
+    "Track/InstrumentSet": [
+      "dc4891a3cb7adb42c1b5b62d87111f2482d1c90b9a4cbf01f335f236e1524640"
+    ],
+    "Track/Lyrics": [
+      "17439d766ac449baccfc0d0c089e725834a44a8ae01de56a2d7c1c4fc8193f7c"
+    ],
+    "Track/MidiConnection": [
+      "65bc404349bd22e5986fab6d390d92f1ca6b20624d86208150b1c4b8f33df9fb",
+      "f7441809264d655ad5fe913b1fb2b94ad8bfc68d66ce4faed2a3117ceed93b07"
+    ],
+    "Track/PalmMute": [
+      "f8eeb000cb7665b561ff585236ebc3c2dc7f7005769d047c17116a6ff753f91c"
+    ],
+    "Track/PlaybackState": [
+      "9e7ed466f460a542e401fb56a78fefc50ca8992019d1818ccdb36fd599970e4f"
+    ],
+    "Track/PlayingStyle": [
+      "c5296098f6bb316177e71910623f51e8bfd19ad58ea9806315e63a8c8cba542f"
+    ],
+    "Track/RSE": [
+      "100e1f9203605b68dc2c390394fa68117e0e1ea03de4cfee7abbd94d98078e7c",
+      "2b283ae807410407eb67d76f31afcac4fde061929d7d62b33a7f3f060058c4b5",
+      "eb8d35144326123ca6df3d9caedaf6725a0dfd8975d5c32c6497f9051f35f0a0"
+    ],
+    "Track/ShortName": [
+      "a867d3ea3d53b397e3e992fbff67326635300e9a2b3c7452615a6aca9fca01cc"
+    ],
+    "Track/Sounds": [
+      "1a7c326da6e2b7ee4c0ccc684dde798063512cbe6ad3a720e72e41931cbcd0af",
+      "2a76f7a0ea668101b0b0e2206aba17a74e3b39c0899ecbe188dc0fd1a7cee9d0"
+    ],
+    "Track/SystemsDefautLayout": [
+      "955c94d0e1c80fee0e76f969a53e4395d45dba9decac561d2cc6b806e3cdc074"
+    ],
+    "Track/SystemsLayout": [
+      "b16393f84da01ec2ff679a291ab0e3f20dec277a7bb1b0487b3ba885c70c9b24"
+    ],
+    "Track/UseOneChannelPerString": [
+      "321424a3baf3bc2d3d482751055368350de9f0fecd8520619dcae5f9fd94ecaa"
+    ],
+    "Track:Automation:Sound/Automation": [
+      "371aeb3573c3776ea7fb969a2b231a4764d73e575b7b97c0524ad1bd0a85aedf",
+      "667535927afb44e33cc440737c07d654bf5f73016361b7ccf86ba89f1f4d5a23"
+    ],
+    "Track:Automation:SyncPoint/Automation": [
+      "b2cfa5961b67235ce061c33d93f559921ae7c114d9545ce392c4510b0a150b5e"
+    ],
+    "Root/Score": [
+      "f4cf8e90d6ae6f09593c26515fbca07322375d2025b67f8f1c8dd6e43c1d1d70"
+    ],
+    "Root/BackingTrack": [
+      "f41f992b85c91ad5e2971c2332e87e054eccbbc493d404ffbb6c60b76c9a6c3c"
+    ],
+    "Root/Assets": [
+      "c5552259a325bd233b66546a19d3b800001c046474ce03ad7a58d6935cb0bb7f"
+    ],
+    "Root/ScoreViews": [
+      "89737971ca5e37aa4263acce9147872606919fc6c823c5749eafbc4a14f73427"
+    ]
+  },
+  "kafka-v72": {
+    "Bar/Clef": [
+      "05899b6f50bb65d3f638ce9c96c3765fb36ee98959c493f7fd723131a281d097",
+      "3fdff1329394ae7dd0d00be94119146b5bdf64143316f2d5c7dcb97eff2286cc",
+      "d1c6712772d0c9a0a7636dbb2d672ba04edff01c40c38ef3c5a51f4898fdcd50"
+    ],
+    "Bar/SimileMark": [
+      "1aaee7dfc81ae55fd111005e39cb77651f01cd182857bea5454f38ab6847246b",
+      "33e552e62a6b2d00b306b8be17e513ce4a8cc64655d149c998e654667531d4b7",
+      "5600af0a59968a28849820058226e9e35a05f8d437048fe5e74d066daa6bd526"
+    ],
+    "Bar/XProperties": [
+      "0861c6ad50dbd547c7d217a4566ab44b4a2f9c374331eb5af74e6817eff19614",
+      "17bc94a4e36236153e9a60a7412384e49b86a9fff76d8ffb0bbbd512ef0755da",
+      "1d8fa9be29696d8f1cf5dcca3626d69b09f460ca2392999200e77888277dd698",
+      "365178e0495b539c3833b4ec6f44ce0648e931c85d7c644a628e2743b839f89c",
+      "7564219360459a43d03c1628ac9d1d7cefd66d2f65d5377953618b30b76876ee",
+      "d6b9d1fc771ef9301f68f69dac5f07c79a2a432dffeddc43d9395eecc3557306"
+    ],
+    "Beat/ConcertPitchStemOrientation": [
+      "0397becceb12a649f6164340f54161f735fe93a28e25946e7465cc52042b7797"
+    ],
+    "Beat/FreeText": [
+      "8ea422bcb838dae3226a30fbf6a7953889ec34e7e22093bbfc3b3e298ec89b9f",
+      "949ec1232005793dd1e530948f0114f2303c7493a6ac8239dff21243de3a6aaa"
+    ],
+    "Beat/Ottavia": [
+      "cdf6b607643db50babd5530f85c14c40652403ae3a70d9343ba648689e117d47"
+    ],
+    "Beat/Slashed": [
+      "bcc0071e1480d1cd8ffefb0bbbc86b4b09a1a0d29cc489640d2650e166e542af"
+    ],
+    "Beat/TransposedPitchStemOrientation": [
+      "1b290d6d3179c179bcf89160940f0f14a5d898d949c5c75d11e39c63d5e156b6",
+      "a16a9cbdd443288cdf5bd8fb1d9f7001c1eff4eda1f31c416593da40c4532194"
+    ],
+    "Beat/Variation": [
+      "e1453e6102d426fa80e80078d4674f563d32e63759ce44713cdf0f14f2ae3918"
+    ],
+    "Beat/XProperties": [
+      "dd0f9405194e7e48d42935de2f1e6620d28c6d86e2e08f24f666c49a9066c03a"
+    ],
+    "Beat:Property:PrimaryPickupTone/Property": [
+      "4ae2015be7e04e87bfe92ee5299c6551d448ef4b79d195cee945448692c2475a"
+    ],
+    "Beat:Property:PrimaryPickupVolume/Property": [
+      "cafb5b392d1ece0f4c62b9d5cd809a33e8abb9e910862d74ae3715b50e235fb4"
+    ],
+    "MasterBar/Key": [
+      "a4bffba5eed3b217670c0d6cc9edc82c145f4ca72222b5358c17266a9d23ff58",
+      "b75587870d0c5947e87a5001d1d98f9084f4074a92964b536ea034047a20c31a"
+    ],
+    "MasterBar/Section": [
+      "0e114249998e56c3a9898f7e87459932a0ef45496964233ba47d5ffd8efa5d4c",
+      "13d75de0dad7c9bbf8e1c90510f971de723f2b3aaa2b0b45e843d5403a79136a",
+      "268d8fa3a1c9840551aca50139b3f36affe22bd7e28b16e05f2c1fe771044ed1",
+      "3797eb487d62a4fa1eb8734814cbc0bb2c9d596c665bc2ec0fc5a80379123995",
+      "49f575fc7e86d923c7b1c582e9fa3071b8a7c16f55088627d73fdc09ca0ef6e7",
+      "875742e82d536b8d58f78985ea873ee35ebbefb80db32cdb7040925a01bca461",
+      "92817d91d2601f659ca6257c344049e1d8fb60f72fdcd590d39a76bf80b3f8ac",
+      "9540141b232d1f6c7e213ac199719db62658d3d3de6564aea875f12d3cf0d9c8",
+      "95d1f185452919b00f09eeb0dcfbbbdb7b250648d9bff79903877fbf6bf73a58",
+      "cdf90df418fafbfa10ab81da1e9b8fe12a153cf68c83df4cb8021730176ea7b4",
+      "d7a8fd87dc13b7e3d818a143cf4bee1df32d7ce474771fef481d79805abc13db",
+      "eac89433076ec93464452949ab4e177f17a6223d3d7330c19c14a8475cb37de2",
+      "f5ec27823e55681a338e89e5f0a82e59da9df7b6d2b60a503ed7e8a2f4795ac3"
+    ],
+    "MasterBar/XProperties": [
+      "25917116302899b109f9d8802a1494426b9ddf33c905073b0ecc8bdc694f651d",
+      "2a392b0fbf6c6c9c40d1c6095c475c8d970db3395f7cab9acf5aa83414d915ba"
+    ],
+    "Staff:Property:ChordCollection/Property": [
+      "4503c676260910e229d49993147484e3c7e77d7c1a2d1d4cb6ced022bd575fe0"
+    ],
+    "Staff:Property:ChordWorkingSet/Property": [
+      "8d58fb7f9eda2ee2e6b85a47eafa4d22cc129239dcc1d06182abc12281d03bc3"
+    ],
+    "Staff:Property:DiagramCollection/Property": [
+      "4645c7492f2f7f0ed5859b62d5274c0a55634c2ba284a0368472b631447e51e5"
+    ],
+    "Staff:Property:DiagramWorkingSet/Property": [
+      "8104ca2d198e2f3f0e931e05596ce7c374acf1bf558dbdbb51553ee0098f9020"
+    ],
+    "Staff:Property:None/Name": [
+      "7df55e3fc25de28a94ebf8c450625723b78d2efb599ade02d74a77484b543c3b"
+    ],
+    "Staff:Property:TuningFlat/Property": [
+      "94de6ba013ac369ba61f7e3fa60c95263a9e78099d21872c8cf368fc58deaf68"
+    ],
+    "Track/AudioEngineState": [
+      "80709ea1fe05e99e35d44801f9d7e4f9d9214bfbd106416facaecda62aefc594"
+    ],
+    "Track/AutoAccentuation": [
+      "d28677de18c5066a1835f3af20ae515c17642ee3c90ce79c9f536e43b0076f21"
+    ],
+    "Track/AutoBrush": [
+      "6ae285c01d1d71e0d1f73cf1cebec982cd526e40db70528c42bd72345362246e"
+    ],
+    "Track/Color": [
+      "6f3921a4cadfcd4a150b2d3cfb6fb64b39dba2e2c228cab4d640a4e96fce6c3a"
+    ],
+    "Track/ForcedSound": [
+      "51e7da6c556dde9f3ee57962c6b3c55b9db7685662311e493b78d3a90c27990c",
+      "aec1b3560ebbba19d2317a5afbba3116689c66e79dbc1f59024d4ca0a070f0d8"
+    ],
+    "Track/IconId": [
+      "2ceccad32809ed5fe6a93f8b6e9ed8cb40c25050cdb33393abf797add732fb70"
+    ],
+    "Track/InstrumentSet": [
+      "dc4891a3cb7adb42c1b5b62d87111f2482d1c90b9a4cbf01f335f236e1524640"
+    ],
+    "Track/Lyrics": [
+      "17439d766ac449baccfc0d0c089e725834a44a8ae01de56a2d7c1c4fc8193f7c"
+    ],
+    "Track/MidiConnection": [
+      "4f685c27e6c4649bebe2a441d2bab00ad0b96c6fe7ad19ff2f9715c225acd33e",
+      "56a22222b88d6240a12573ccd8df81a614d6378e7b6c628d90335a59f3fdbc63",
+      "65bc404349bd22e5986fab6d390d92f1ca6b20624d86208150b1c4b8f33df9fb"
+    ],
+    "Track/PalmMute": [
+      "f8eeb000cb7665b561ff585236ebc3c2dc7f7005769d047c17116a6ff753f91c"
+    ],
+    "Track/PlaybackState": [
+      "9e7ed466f460a542e401fb56a78fefc50ca8992019d1818ccdb36fd599970e4f"
+    ],
+    "Track/PlayingStyle": [
+      "c5296098f6bb316177e71910623f51e8bfd19ad58ea9806315e63a8c8cba542f"
+    ],
+    "Track/RSE": [
+      "301f24d32566888f7e97fc5a8e473520fdf583eba2c028a52524f9cd2cf5c989",
+      "61e264b47c7e575aaaf93355642fb40f191e4e07c2bf11d82f10bc706abf487e",
+      "b07f062b6f53a28659184dbd4b3cbe7a3c8e77e06aafe1cf2d4892aa2bd3a6c5",
+      "dd5357a916d1cb1487e475ead29342e38178979e741247fb14ccb09ac30356cf"
+    ],
+    "Track/ShortName": [
+      "02a1533e62e6c0e2f2132bebcc254d11316858c0d0c87a475a43bfdcf7b39e77",
+      "8290ca013c8fa88b4a28544aef0692df33eb88904c329a460e7d18e1b2765a42",
+      "8ed29ffc85fcfbb27a810167aaed3afdfa650ceba0c7506700e64e600f4f6cef"
+    ],
+    "Track/Sounds": [
+      "5916e11156e8a95dfd729d00838707dba252199b9b68a24f4128ca8bda1a8d61",
+      "c7b7480f00d5d83300d839c40175384d24e5bbf58c349be7ae7f2e15c570f4e1",
+      "c9d5b052154c4bfe142aa4b7327b287cfe7c1c2b0bf9ce200cede154c23d7d5b"
+    ],
+    "Track/SystemsDefautLayout": [
+      "f9e63976ce0adb799b65def56b5684af7e2b8c3ee642505a1e829c305b5fbe47"
+    ],
+    "Track/SystemsLayout": [
+      "5b77ab701249341261cde4814fb98f9c1719ec473dae53b1464af76f33e13667",
+      "c222fd1f9be33aebbb2db4d12720c7f7ab34655c040defd42a3bc5a6d1285b60",
+      "fa0a2f2ad85ef4ae11563091bac18ce5cbbdb19bd196ed45f5d5264ed720fa50"
+    ],
+    "Track/UseOneChannelPerString": [
+      "321424a3baf3bc2d3d482751055368350de9f0fecd8520619dcae5f9fd94ecaa"
+    ],
+    "Track:Automation:Sound/Automation": [
+      "60a574be588afda5ab5885602190bf3add362d7ffc830a3096a34363f6a74dc7",
+      "67d55dbbdda127812d08ed963a12da5cc1905ed4d6c2fdbb13abe4507176ef58",
+      "77987c77a53ed6ba9e6d4a8b757f9eed59e5048ac1e9fd6392981beca6e7ea32",
+      "d663db84919132e215bea46a62ff9dd8b6d56915a4a98c35eff508071098bcbc",
+      "ef203f6f44668597bea2e7a4965cf314fe93a1c8eb52423fdc4c127c0dcddad8"
+    ],
+    "Track:Automation:SyncPoint/Automation": [
+      "0ac43a5e4f73e20873c6607c4d46f5f621d9dfcc47edcf995b65e43dfda1e025",
+      "126c01932d30a0e1d890aba024a78ca1d2cab36aa09e41d023d52ed2d7d3dd0a",
+      "3525ae5f8204139a27e2a954d7b757145dcb756830a7745ffc74ba5eb92fe7db",
+      "380cd77bccc3ccf56680255e863c7b6cb907364dfc05451853ee1811a8d395b0",
+      "38d7e18b7c153c089800146e3c04183b89cc90ff644326d11515ebe10f274d4b",
+      "3dd40fe9664766b11964f7dd306bf5ed29b6609f1069fb494a21a87eac225def",
+      "589ec88442ab431056d91e35978b826d8d23ac16d8048baf946d8ac664f7b5db",
+      "73a73c0a51b2a6fce6046a67b45f17974963c50a3b355021f2188138ba9cf35a",
+      "8341417cbdc86d25e4716d9b26b08264fd05408b679a33cde0ef9a171ba6d0df",
+      "b2bbf9b85dbc8bc3f308f40cd404212e2184577bd5cc51976ebf47480fad7141",
+      "c357a42caf4256d5d564b686de77bce34a93e12f712fea847a78a16702557323",
+      "cdc8fd93cf7f721123753f7609df9ffc04944676178bde930b3568811e3c4625",
+      "cfc2fa2c8ad5702cf4e1af43f9b694afcc6e92fa80df616bb2f7158d04264c2b",
+      "d955d0bd8453d0865f5ddc39d3492a95c40c4ce9615fcc68303018de1c6dc279",
+      "effa692e67f282e0880248986eebe96d9c56f5b0856ca937bb8c7cb4db72cf6d",
+      "fca18f19cb356c769a55065d1d2a1b829b7f1973026f182c65430dfa4448420b",
+      "ffa755110de9ea517c114559e0536323f6f6a74cddd58bed35cf49ee992a9634"
+    ],
+    "Root/Score": [
+      "f02490df7b74a9f2419903b25c1312dc32ef85e8b6a5c338fb95ee8e8b2e40d9"
+    ],
+    "Root/BackingTrack": [
+      "98ebc413f2a3faaccac3d9c34abaee45f5c1dc37b2fe6dec3edad0ee4666ae65"
+    ],
+    "Root/Assets": [
+      "37beb85e9f993caba736d9ba32205f229f8d31ae77e529475eef263cec9d3a4e"
+    ],
+    "Root/ScoreViews": [
+      "59ff34c5ee1cb662c5159c13b2f2eec96ff9b56656d0da009bb96807f4e62cfe"
+    ]
+  }
+}

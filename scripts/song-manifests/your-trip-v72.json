@@ -1,0 +1,104 @@
+{
+  "songId": "YOUR-TRIP",
+  "profile": "reviewed-pdf",
+  "source": {
+    "format": "reviewed-pdf",
+    "sha256": "3293c583569de637fa69396bd3280a483e3d1cef42a3645c7c31e03349406bc7"
+  },
+  "tracks": [
+    "od.guit."
+  ],
+  "reviewedData": "scripts/score-data/your-trip.json",
+  "reviewedDataSha256": "56af047ea49267c9c76226270bf32b043a2acfbd577d077440effbf3161ab598",
+  "segments": [
+    {
+      "id": "YT-GROOVE",
+      "track": "od.guit.",
+      "start": {
+        "bar": 1,
+        "tick": 0
+      },
+      "end": {
+        "bar": 10,
+        "tick": 12
+      },
+      "outsideWindow": "practicePadding"
+    },
+    {
+      "id": "YT-ARPEGGIO",
+      "track": "od.guit.",
+      "start": {
+        "bar": 10,
+        "tick": 18
+      },
+      "end": {
+        "bar": 25,
+        "tick": 48
+      },
+      "outsideWindow": "practicePadding"
+    },
+    {
+      "id": "YT-LEGATO",
+      "track": "od.guit.",
+      "start": {
+        "bar": 26,
+        "tick": 0
+      },
+      "end": {
+        "bar": 33,
+        "tick": 24
+      },
+      "outsideWindow": "practicePadding"
+    },
+    {
+      "id": "YT-RIFF",
+      "track": "od.guit.",
+      "start": {
+        "bar": 33,
+        "tick": 24
+      },
+      "end": {
+        "bar": 49,
+        "tick": 48
+      },
+      "outsideWindow": "practicePadding"
+    },
+    {
+      "id": "YT-RING",
+      "track": "od.guit.",
+      "start": {
+        "bar": 98,
+        "tick": 0
+      },
+      "end": {
+        "bar": 116,
+        "tick": 48
+      },
+      "outsideWindow": "practicePadding"
+    },
+    {
+      "id": "YT-END",
+      "track": "od.guit.",
+      "start": {
+        "bar": 136,
+        "tick": 0
+      },
+      "end": {
+        "bar": 141,
+        "tick": 48
+      },
+      "outsideWindow": "practicePadding"
+    }
+  ],
+  "catalogue": [
+    "YT-GROOVE",
+    "YT-ARPEGGIO",
+    "YT-LEGATO",
+    "YT-RIFF",
+    "YT-RING",
+    "YT-END"
+  ],
+  "protectedOutputs": {
+    "app/src/main/java/com/a3322505a/guitarlearning/practice/YourTrip.kt": "4c452aaaf1f4d0525a7c5763d03696101f8cc4a9a6838abc22268bbb6bf7912c"
+  }
+}

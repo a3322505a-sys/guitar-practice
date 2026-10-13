@@ -8,13 +8,15 @@ from fractions import Fraction
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+from song_assets.common import gp_graph, rhythm_ticks, positions
+from song_assets.gp import audit_gp
+
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=Path(r'C:\Users\b3322\Desktop\谱子\卡夫卡\始発とカブカ.gp')
 OUT=ROOT/'work/kafka-v70'
 NAMES=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B']
 def prop(n,name): return n.find(f"Properties/Property[@name='{name}']")
 def number(n,name,child): return prop(n,name).findtext(child)
-def positions(ps): return 'listOf('+','.join(f'Position({s},{f})' for s,f in ps)+')' if ps else 'emptyList()'
 def floats(x): return str(float(x))
 def expression_value(kind,value):
  if kind in ('ring','palm','accent','short'): return '1'
@@ -23,10 +25,8 @@ def expression_value(kind,value):
  return str(value)
 
 def read(source):
- with zipfile.ZipFile(source) as z: root=ET.fromstring(z.read('Content/score.gpif'))
- tables={n:{e.get('id'):e for e in root.find(n)} for n in ('Bars','Voices','Beats','Notes','Rhythms')}
- masters=list(root.find('MasterBars'));order=root.findtext('MasterTrack/Tracks').split()
- tracks={t.get('id'):t for t in root.find('Tracks')}
+ audit_gp(source,'kafka-v72',[1,2,3])
+ root,tables,masters,tracks,order=gp_graph(source)
  changes={int(a.findtext('Bar')):int(a.findtext('Value').split()[0]) for a in root.findall('MasterTrack/Automations/Automation') if a.findtext('Type')=='Tempo'}
  assert root.find('MasterTrack/Anacrusis') is not None
  assert len(masters)==149
@@ -34,11 +34,7 @@ def read(source):
  sections=[(i,m.findtext('Section/Letter').strip()) for i,m in enumerate(masters) if m.find('Section') is not None]+[(len(masters),'END')]
  def rhythm(b):
   r=tables['Rhythms'][b.find('Rhythm').get('ref')]
-  d=Fraction({'Whole':48,'Half':24,'Quarter':12,'Eighth':6,'16th':3,'32nd':Fraction(3,2)}[r.findtext('NoteValue')])
-  dots=r.find('AugmentationDot');tup=r.find('PrimaryTuplet')
-  if dots is not None: d*=sum(Fraction(1,2)**i for i in range(int(dots.get('count'))+1))
-  if tup is not None: d*=Fraction(int(tup.get('den')),int(tup.get('num')))
-  return d,tup is not None
+  return rhythm_ticks(r)
  parts=[];raw=[];expr=[];coverage=[]
  for track_id in (1,2,3):
   track=tracks[str(track_id)]
