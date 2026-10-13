@@ -9,7 +9,7 @@ data class Phrase(
     val conditions: String, val sequence: Sequence,
     val tempoLabel: String = "原速",
     val goal: String = "保持拍点，按谱面完整弹奏一轮。", val suggestedBpm: Int = 60,
-    val use: String = "单音", val relatedId: String? = null,
+    val use: String = "单音", val relatedId: String? = null, val version: String? = null,
 )
 
 object Phrases {
@@ -45,7 +45,15 @@ object Phrases {
     )
     val mozart = MozartK265.phrases
     val shayou = Shayou.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou).also(::validatePhrases)
+    val kafka = Kafka.phrases
+    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases).also(::validatePhrases)
+    val catalogue=all.filter { !it.id.startsWith("KAF-") }+KafkaPractice.core
+    fun practiceNamed(id: String)=named(KafkaPractice.replacement(id) ?: id)
+    fun family(phrase: Phrase)=if(phrase.id in KafkaPractice.all.map { it.id }) named(phrase.relatedId ?: phrase.id) else phrase
+    fun versions(phrase: Phrase): List<Phrase> {
+        val base=family(phrase)
+        return if(base in KafkaPractice.core) listOf(base)+KafkaPractice.all.filter { it.relatedId==base.id } else emptyList()
+    }
     fun named(id: String): Phrase {
         // Activity saved state from v61 can still contain any of the six former IDs.
         val current=when(id) {
@@ -72,7 +80,7 @@ fun validatePhrases(phrases: List<Phrase>) {
         valid(phrase.goal.isNotBlank() && phrase.suggestedBpm in 30..180,"missing goal or invalid starting BPM")
         val expression=runCatching { seq.validateExpression() }
         valid(expression.isSuccess,expression.exceptionOrNull()?.message ?: "invalid expression")
-        valid(seq.length%seq.barTicks==0 && seq.events.isNotEmpty(),"length must contain complete bars and events")
+        valid((seq.barMeters.isNotEmpty() || seq.length%seq.barTicks==0) && seq.events.isNotEmpty(),"length must contain complete bars and events")
         valid(seq.events.any { !it.rest },"no sounding notes")
         var end=0
         seq.events.forEachIndexed { index,event ->

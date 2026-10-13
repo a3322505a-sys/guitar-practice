@@ -55,7 +55,7 @@ fun Tablature(sequence: Sequence, hint: Hint, key: Tonality?, cursor: Cursor?, f
 private fun visible(segment: TabSegment, hint: Hint, key: Tonality?): List<Position> = when (hint) {
     Hint.FULL -> segment.positions
     Hint.HIDDEN -> emptyList()
-    Hint.ROOTS -> segment.positions.filter { p -> key?.isRoot(p) ?: (segment.chord?.let { Chords.named(it).root == p.midi % 12 } == true) }
+    Hint.ROOTS -> segment.positions.filter { p -> key?.isRoot(p) ?: (segment.chord?.let { Chords.named(it).isRoot(p) } == true) }
 }
 
 @Composable
@@ -72,7 +72,8 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
     val height=beamY+if(segments.any { it.tuplet!=null }) 32f else 14f
     val measurer = rememberTextMeasurer()
     val description = buildString {
-        append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。$beatsPerBar/4 拍。上方 1 弦，下方 6 弦。")
+        append("六线谱，第 ${bars.first().index+sequence.originalBar+1} 至 ${bars.last().index+sequence.originalBar+1} 小节。${bars.map { sequence.meter(it.index) }.distinct().joinToString("、") { "$it/4" }} 拍。上方 1 弦，下方 6 弦。")
+        if(sequence.swing!=Swing.NONE) append("${sequence.swing.title}；")
         if(sequence.capoFret>0) append("变调夹${sequence.capoFret}品，数字为相对品位。")
         if(hint != Hint.HIDDEN) bars.forEach { bar -> bar.segments.forEach { s ->
                 if(s.rest) append("休止 ${s.value.ticks/12.0} 拍；")
@@ -95,10 +96,10 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
         val usable=size.width-left-8*u
         val total=bars.sumOf { it.readableWidth() }
         fun rowX(tick: Int): Float? {
-            val target=bars.firstOrNull { it.index==tick/(beatsPerBar*QUARTER) } ?: return null
+            val target=bars.firstOrNull { it.index==sequence.barAt(tick.toDouble()) } ?: return null
             val preceding=bars.takeWhile { it.index!=target.index }.sumOf { it.readableWidth() }
             val width=usable*target.readableWidth()/total
-            return left+usable*preceding/total+27*u+(tick%(beatsPerBar*QUARTER)).toFloat()/(beatsPerBar*QUARTER)*(width-49*u)
+            return left+usable*preceding/total+27*u+(tick-sequence.barStart(target.index)).toFloat()/(sequence.meter(target.index)*QUARTER)*(width-49*u)
         }
         var x0=left
         text(measurer,"TAB",13*u,top+2.5f*gap,Muted,11)
@@ -109,12 +110,14 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
             val current=cursor?.pre == false && cursor.bar == bar.index
             if(current) drawRoundRect(Mint,Offset(x0-3*u,4*u),Size(width,(height-12)*u),androidx.compose.ui.geometry.CornerRadius(12*u))
             text(measurer,"${bar.index+sequence.originalBar+1}",x0+10*u,16*u,if(current) Green else Muted,12)
+            if(bar.index>0 && sequence.meter(bar.index)!=sequence.meter(bar.index-1)) text(measurer,"${sequence.meter(bar.index)}/4",x0+30*u,16*u,Ink,12)
+            if(bar.index==0 && sequence.swing!=Swing.NONE) text(measurer,sequence.swing.title,x0+width/2,16*u,PurpleInk,10)
             for(i in 0..5) drawLine(Color(0xFFA0B4A9),Offset(x0,top+i*gap),Offset(x0+width,top+i*gap),u*.8f)
             drawLine(Ink,Offset(x0,top),Offset(x0,top+5*gap),u)
             val start=x0+27*u
             val span=width-49*u
-            val barTicks=beatsPerBar*QUARTER
-            fun at(s: TabSegment) = start + (s.tick%barTicks).toFloat()/barTicks*span
+            val barTicks=sequence.meter(bar.index)*QUARTER
+            fun at(s: TabSegment) = start + (s.tick-sequence.barStart(bar.index)).toFloat()/barTicks*span
             for((i,s) in bar.segments.withIndex()) {
                 val x=at(s)
                 val active=current && cursor!!.localTick >= s.tick && cursor.localTick < s.end
@@ -145,6 +148,15 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                             val y=top+(p.string-1)*gap
                             drawRoundRect(if(active) Pink else if(current) Mint else Color.White,Offset(x-9*u,y-9*u),Size(18*u,18*u),androidx.compose.ui.geometry.CornerRadius(4*u))
                             text(measurer,p.fret.toString(),x,y,if(active) RoseInk else Ink,15,true)
+                            if(s.tick==s.eventId) s.expression?.stringExpression?.get(p.string)?.let { expression ->
+                                if(expression.short) drawCircle(PurpleInk,1.6f*u,Offset(x,y-13*u))
+                                expression.grace?.let { grace ->
+                                    text(measurer,"${grace.fret}${grace.kind.mark}",x-19*u,y-6*u,PurpleInk,10,true)
+                                    drawLine(PurpleInk,Offset(x-22*u,y+5*u),Offset(x-16*u,y-3*u),u)
+                                }
+                                val mark=if(expression.bend.isNotEmpty()) "b${expression.bend.maxOf { it.semitones }}" else when(expression.slide) { 4->"↘";8,16->"↗";else->"" }
+                                if(mark.isNotEmpty()) text(measurer,mark,x+15*u,y-9*u,PurpleInk,9,true)
+                            }
                             if(s.tieOut) {
                                 // Continue one arc across an in-system barline. Split it
                                 // only at a real system break, never into a second tie.
@@ -158,11 +170,13 @@ private fun TabSystem(bars: List<TabBar>, hint: Hint, key: Tonality?, cursor: Cu
                     if(s.tick==s.eventId && !s.rest) {
                         val expression=s.expression
                         val previousVelocity=sequence.events.lastOrNull { it.tick<s.eventId && !it.rest }?.velocity ?: 1f
-                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,if(expression?.velocity!=null && expression.velocity<1f && expression.velocity!=previousVelocity) "弱" else null,
+                        val previousRingEnd=sequence.events.lastOrNull { it.tick<s.eventId && !it.rest }?.ringEndTick
+                        val marks=listOfNotNull(if(expression?.accent==true) ">" else null,expression?.dynamicMark ?: if(expression?.velocity!=null && expression.velocity<previousVelocity) "弱" else null,
+                            if(expression?.ringEndTick!=null && expression.ringEndTick!=previousRingEnd) "let ring" else null,
                             expression?.positions?.filter { expression.muted(it.string) }?.takeIf { it.isNotEmpty() }?.let { "P.M." },if(expression?.short==true) "·" else null,
                             if(expression?.vibrato==true) "~" else null,
                             if(expression?.stroke==Pick.UP) "↑" else if(expression?.stroke==Pick.DOWN && !s.strum) "↓" else null).joinToString(" ")
-                        if(marks.isNotEmpty()) text(measurer,marks,x,top-43*u,PurpleInk,10)
+                        if(marks.isNotEmpty()) text(measurer,marks,x,top-24*u,PurpleInk,10)
                     }
                     s.tuplet?.takeIf { s.tick==it.tick }?.let { group ->
                         val right=rowX(group.end-group.unit) ?: x
