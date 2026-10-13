@@ -222,7 +222,7 @@ fun PracticeApp(player: Player) {
     var note by rememberSaveable { mutableStateOf("") }
     val hint=Hint.entries[hintIndex]
     val first=Chords.named(firstName)
-    val phrase=Phrases.named(phraseId)
+    val phrase=Phrases.practiceNamed(phraseId)
     val wholeRange=BarRange(0,phrase.sequence.barCount-1)
     val range=BarRange(firstBar,lastBar).takeIf { it.valid(phrase.sequence) } ?: wholeRange
     LaunchedEffect(page,chordPhrases,phrase.id,bpm,repeats,firstBar,lastBar) {
@@ -547,9 +547,18 @@ fun PracticeApp(player: Player) {
                     }
                 } else if(chordPhrases) {
                     Label("选择短句") {
-                        Phrases.all.groupBy { it.use }.forEach { (use,items) ->
+                        Phrases.catalogue.groupBy { it.use }.forEach { (use,items) ->
                             Text(use,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
-                            Choices(items.map { it.title },items.indexOf(phrase),Pink) { phraseChange(items[it]) }
+                            Choices(items.map { it.title },items.indexOf(Phrases.family(phrase)),Pink) { phraseChange(items[it]) }
+                        }
+                        val versions=Phrases.versions(phrase)
+                        if(versions.size>1) {
+                            val base=Phrases.family(phrase)
+                            var versionsOpen by remember(base.id) { mutableStateOf(phrase.relatedId!=null) }
+                            PracticeTextButton(onClick={versionsOpen=!versionsOpen},modifier=Modifier.testTag("phrase-versions-toggle")) {
+                                Text(if(versionsOpen) "收起更多版本 ▴" else "更多版本 ▾")
+                            }
+                            if(versionsOpen) Choices(versions.map { it.version ?: it.title },versions.indexOf(phrase),Sky) { phraseChange(versions[it]) }
                         }
                         Text("${phrase.passage} · ${phrase.conditions}",style=MaterialTheme.typography.bodySmall,color=Muted)
                         Text("${phrase.technique} · ${phrase.tempoLabel} ${phrase.sourceBpm} BPM · ${phrase.difficulty}",style=MaterialTheme.typography.bodySmall,color=Muted)

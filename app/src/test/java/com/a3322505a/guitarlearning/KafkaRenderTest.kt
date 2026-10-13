@@ -25,13 +25,20 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class KafkaRenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
-    private fun capture(name: String) {
+    private fun capture(name: String, dialog: Boolean=false) {
         compose.waitForIdle()
         compose.runOnIdle {
-            val view=compose.activity.window.decorView
+            val view=if(dialog) {
+                val globalClass=Class.forName("android.view.WindowManagerGlobal")
+                val global=globalClass.getDeclaredMethod("getInstance").invoke(null)
+                val field=globalClass.getDeclaredField("mViews").apply { isAccessible=true }
+                @Suppress("UNCHECKED_CAST")
+                val views=field.get(global) as List<android.view.View>
+                views.last()
+            } else compose.activity.window.decorView
             val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
-            val out=File("../.local/kafka-v70/$name.png");out.parentFile!!.mkdirs()
+            val out=File("../.local/kafka-v71/$name.png");out.parentFile!!.mkdirs()
             out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
         }
     }
@@ -76,15 +83,41 @@ class KafkaRenderTest {
             capture("high-chord")
             compose.onNodeWithText("短句应用").performClick()
             compose.onNodeWithTag("config-summary").performClick()
-            val phrase=Phrases.named("KAF-H-77-G2")
+            val phrase=Phrases.named("KAF-P-SOLO")
             compose.onNodeWithText(phrase.title).performScrollTo().performClick()
-            compose.onNodeWithTag("phrase-range").performScrollTo().assertTextEquals("当前范围：77–81 小节；完整经过范围一次计一轮。")
+            compose.onNodeWithTag("phrase-range").performScrollTo().assertTextEquals("当前范围：82–89 小节；完整经过范围一次计一轮。")
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithText("开始跟练").performClick()
-            assertEquals(BarRange(0,4),player.session!!.range)
-            assertEquals(216,player.session!!.practiceLength)
+            assertEquals(BarRange(0,7),player.session!!.range)
+            assertEquals(384,player.session!!.practiceLength)
             player.stop()
             capture("whole-phrase")
+        } finally { player.release() }
+    }
+    @Test fun coreMenuShowsSevenExercisesAndOnlyExpandsVersionsForTheSelectedGoal() {
+        val player=Player(compose.activity)
+        try {
+            compose.activity.setContent { PracticeApp(player) }
+            compose.onNodeWithText("和弦").performClick()
+            compose.onNodeWithText("短句应用").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
+            val melody=Phrases.named("KAF-P-MELODY")
+            compose.onNodeWithText(melody.title).performScrollTo().performClick()
+            compose.onNodeWithText("卡夫卡 · A类完整乐段").assertDoesNotExist()
+            compose.onNodeWithText("第二次收尾").assertDoesNotExist()
+            compose.onNodeWithText("转调完整版").assertDoesNotExist()
+            compose.onNodeWithText("卡夫卡 · 伴奏练习").performScrollTo()
+            capture("curated-core-menu",dialog=true)
+            compose.onNodeWithTag("phrase-versions-toggle").performScrollTo().performClick()
+            compose.onNodeWithText("转调完整版").performScrollTo().performClick()
+            compose.onNodeWithTag("phrase-range").performScrollTo().assertTextEquals("当前范围：117–136 小节；完整经过范围一次计一轮。")
+            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithText("开始跟练").performClick()
+            assertEquals(BarRange(0,19),player.session!!.range)
+            player.stop()
+            capture("curated-melody-variant")
+            compose.activity.setContent { PracticeTheme { Tablature(Phrases.named("KAF-P-SOLO").sequence,Hint.FULL,null,null,false) } }
+            capture("curated-solo-tab")
         } finally { player.release() }
     }
 }
