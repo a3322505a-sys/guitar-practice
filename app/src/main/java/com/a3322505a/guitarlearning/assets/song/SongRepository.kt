@@ -32,7 +32,8 @@ class ImportCancellation {
 }
 
 /** Single-writer repository. The immutable catalogue owns no player/session. */
-class SongRepository(private val root: File,private val reader: SongReader) {
+class SongRepository(private val root: File,private val reader: SongReader,
+    bundled: Map<String,()->java.io.InputStream> = emptyMap()) {
     companion object {
         // Process-local ownership also protects a preview during another repository's reload.
         private val candidates=Collections.synchronizedSet(mutableSetOf<String>())
@@ -48,6 +49,12 @@ class SongRepository(private val root: File,private val reader: SongReader) {
     @Volatile private var history=listOf<Entry>()
     private var active=listOf<Entry>()
     @Volatile private var prepared: Map<String,Phrase> = emptyMap()
+    private val bundledSongs by lazy { bundled.toSortedMap().map { (_,open) ->
+        val bytes=reader.readInput(open()); bytes to reader.read(bytes)
+    }.also { songs -> musicCheck(songs.map { it.second.identity.packageId }.distinct().size==songs.size,
+        "BUNDLE","/bundled","Duplicate bundled package") } }
+    private var seeding=false
+    private fun trusted(packageId: String)=bundledSongs.any { it.second.identity.packageId==packageId }
     private fun entry(map: Map<String,Any?>): Entry {
         val id=map.s("packageId");val digest=map.s("digest")
         musicCheck(id.matches(Regex("[a-z][a-z0-9]*(\\.[a-z0-9][a-z0-9-]*)+")) && !id.startsWith("builtin.") &&
@@ -75,6 +82,19 @@ class SongRepository(private val root: File,private val reader: SongReader) {
                     diagnostics+="曲目索引损坏："+error.message;null } }
             } catch(e: Exception) { diagnostics+="曲库索引不可读："+e.message;active=emptyList();history=emptyList() }
         }
+        // Seed through the same reviewed import transaction. History remembers disabled seeds,
+        // so restarting does not re-enable them or replace a user's newer revision.
+        if(!seeding) {
+            seeding=true
+            try {
+                bundledSongs.forEach { (bytes,song) ->
+                    val pin=song.identity
+                    val known=history.filter { it.packageId==pin.packageId }
+                    if(known.any { it.revision>=pin.revision }) return@forEach
+                    commit(prepare(bytes.inputStream()))
+                }
+            } finally { seeding=false }
+        }
         val external=mutableListOf<Phrase>();val packages=mutableListOf<SongRevision>();val visible=mutableSetOf<String>()
         val aliases=mutableMapOf<String,String>();val chords=mutableListOf<Chord>()
         active.distinctBy { it.packageId }.forEach { e ->
@@ -95,11 +115,17 @@ class SongRepository(private val root: File,private val reader: SongReader) {
                 val teaching=if(metadata.containsKey("voicings")) metadata else StrictJson.parse(StrictJson.encode(metadata(reader.read(bytes)))).objectValue()
                 val tracks=teaching.objects("tracks").map { Track(it.s("id"),it.s("name"),it.list("openStringMidi").map { n -> n.intValue() },it.i("capo")) }
                 val songChords=teaching.objects("voicings").map { v ->
-                    val voicing=GuitarVoicing(v.s("id"),v.s("name"),v.s("trackId"),v.list("frets").map { it.intValue() },v.list("fingers").map { it.intValue() })
+                    val voicing=SongCodec.voicing(v)
                     voicing.chord(tracks.first { it.id==voicing.trackId },metadata.s("title"),metadata.s("source"),PracticeKey(e.packageId,voicing.id).encoded)
                 }
+                val legacyBindings=if(trusted(e.packageId)) metadata.objects("practices").flatMap { p ->
+                    p.strings("legacyIds").map { old -> old to PracticeKey(e.packageId,p.s("id")).encoded }
+                }.toMap() else emptyMap()
+                musicCheck(legacyBindings.all { (old,target) -> Phrases.all.none { it.id==old } && (aliases[old]==null || aliases[old]==target) },
+                    "ALIAS","/practices/legacyIds","Legacy ID conflicts with an existing practice")
                 external+=phrases;chords+=songChords
                 metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
+                aliases+=legacyBindings
                 metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
                 packages+=SongRevision(e.pin,metadata.s("title"))
             } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
@@ -239,16 +265,19 @@ class SongRepository(private val root: File,private val reader: SongReader) {
         val key=PracticeKey(song.identity.packageId,p.id)
         val plan=PracticeCompiler.compile(song.score,p,song.identity.packageId+"/"+song.identity.revision+"/"+song.identity.digest)
         val sections=plan.harmonies.map { Section((it.start.value()*QUARTER).toInt(),it.symbol.name,it.voicing?.id) }
+        val t=p.teaching
         val sequence=Sequence(emptyList(),ceil(plan.length.value()*QUARTER).toInt(),
-            p.goal+" "+song.summary+" "+song.warnings.joinToString(" "),sections=sections,capoFret=plan.mainTrack.capo,runtimePlan=plan)
-        return Phrase(key.encoded,p.title,song.title,"曲包修订 "+song.identity.revision,song.sourceDescription,
+            (t?.explanation ?: p.goal+" "+song.summary)+" "+song.warnings.joinToString(" "),sections=sections,capoFret=plan.mainTrack.capo,runtimePlan=plan)
+        return Phrase(key.encoded,p.title,t?.category?.ifBlank { null } ?: song.title,t?.passage?.ifBlank { null } ?: ("曲包修订 "+song.identity.revision),
+            t?.source?.ifBlank { null } ?: song.sourceDescription,
             (song.score.tempos.first().bpm*song.score.tempos.first().beatUnit.value()).toInt(),p.difficulty,p.tags.joinToString(" · "),
             if(plan.mainTrack.openStringMidi==Music.openMidi) {
                 if(plan.mainTrack.capo==0) "标准调弦 · 无变调夹" else "标准调弦 · 变调夹"+plan.mainTrack.capo+"品"
             } else plan.mainTrack.name+" · 调弦 "+plan.mainTrack.openStringMidi.joinToString()+" · 夹"+plan.mainTrack.capo+"品",sequence,
-            goal=p.goal,suggestedBpm=p.suggestedTempo,use="本地曲库 · "+song.title,relatedId=p.variantOf?.let { PracticeKey(song.identity.packageId,it).encoded },
-            version=if(p.variantOf!=null) p.title else null,assetKey=key,familyKey=p.familyId?.let { PracticeKey(song.identity.packageId,it).encoded },
-            defaultSourceTempo=p.tempoMode=="source",tempoLabel="原谱 · 四分音符等值",legacyId=MigratedPracticeIds.legacy(key.encoded))
+            goal=p.goal,suggestedBpm=p.suggestedTempo,use=t?.use?.ifBlank { null } ?: ("本地曲库 · "+song.title),relatedId=p.variantOf?.let { PracticeKey(song.identity.packageId,it).encoded },
+            version=t?.version ?: if(p.variantOf!=null) p.title else null,assetKey=key,familyKey=p.familyId?.let { PracticeKey(song.identity.packageId,it).encoded },
+            defaultSourceTempo=p.tempoMode=="source",tempoLabel=t?.tempoLabel?.ifBlank { null } ?: "原谱 · 四分音符等值",
+            legacyId=MigratedPracticeIds.legacy(key.encoded),legacyIds=if(trusted(song.identity.packageId)) p.legacyIds else emptyList())
     }
     private fun metadata(song: SongPackage): Map<String,Any?> = mapOf(
         "packageId" to song.identity.packageId,"revision" to song.identity.revision,"digest" to song.identity.digest,
@@ -256,12 +285,16 @@ class SongRepository(private val root: File,private val reader: SongReader) {
         "warnings" to song.warnings.joinToString(" "),
         "summary" to song.summary,
         "tracks" to song.score.tracks.map { mapOf("id" to it.id,"name" to it.name,"openStringMidi" to it.openStringMidi,"capo" to it.capo) },
-        "voicings" to song.score.voicings.map { mapOf("id" to it.id,"name" to it.name,"trackId" to it.trackId,"frets" to it.frets,"fingers" to it.fingers) },
+        "voicings" to song.score.voicings.map { v -> mapOf("id" to v.id,"name" to v.name,"trackId" to v.trackId,"frets" to v.frets,"fingers" to v.fingers,
+            "teaching" to v.teaching?.let { t -> mapOf("root" to t.root,"third" to t.third,"soundingName" to t.soundingName,"group" to t.group,"source" to t.source,
+                "intervalRoles" to t.intervalRoles.mapKeys { it.key.toString() },"toneNames" to t.toneNames.mapKeys { it.key.toString() }) }) },
         "aliases" to song.aliases.map { (from,to) -> mapOf("from" to from,"to" to to) },
         "practices" to song.practices.sortedBy { it.order }.map { p -> mapOf(
             "id" to p.id,"title" to p.title,"goal" to p.goal,"suggestedTempo" to p.suggestedTempo,
             "difficulty" to p.difficulty,"tags" to p.tags.joinToString(" · "),"visibility" to p.visibility,
-            "variantOf" to p.variantOf,"familyId" to p.familyId,"tempoMode" to p.tempoMode) })
+            "variantOf" to p.variantOf,"familyId" to p.familyId,"tempoMode" to p.tempoMode,"legacyIds" to p.legacyIds,
+            "teaching" to p.teaching?.let { t -> mapOf("category" to t.category,"passage" to t.passage,"source" to t.source,"technique" to t.technique,
+                "use" to t.use,"version" to t.version,"tempoLabel" to t.tempoLabel,"explanation" to t.explanation) }) })
     private fun writeMetadata(e: Entry,value: Map<String,Any?>) {
         val target=File(file(e).parentFile,"catalogue.json")
         if(!target.exists()) {
@@ -274,13 +307,16 @@ class SongRepository(private val root: File,private val reader: SongReader) {
     }
     private fun descriptor(e: Entry,p: Map<String,Any?>,metadata: Map<String,Any?>): Phrase {
         val key=PracticeKey(e.packageId,p.s("id"))
-        return Phrase(key.encoded,p.s("title"),metadata.s("title"),"修订 "+e.revision,metadata.s("source"),
+        val t=SongCodec.teaching(p["teaching"])
+        return Phrase(key.encoded,p.s("title"),t?.category?.ifBlank { null } ?: metadata.s("title"),t?.passage?.ifBlank { null } ?: ("修订 "+e.revision),
+            t?.source?.ifBlank { null } ?: metadata.s("source"),
             metadata.i("sourceBpm",60),p.s("difficulty"),p.s("tags"),"准备后显示轨道与调弦",
             Sequence(emptyList(),48,p.s("goal")+" "+metadata.s("summary")+" "+metadata.s("warnings"),catalogueOnly=true),
-            goal=p.s("goal"),suggestedBpm=p.i("suggestedTempo",60),use="本地曲库 · "+metadata.s("title"),
+            goal=p.s("goal"),suggestedBpm=p.i("suggestedTempo",60),use=t?.use?.ifBlank { null } ?: ("本地曲库 · "+metadata.s("title")),
             relatedId=(p["variantOf"] as? String)?.let { PracticeKey(e.packageId,it).encoded },
-            version=if(p["variantOf"]!=null) p.s("title") else null,assetKey=key,
+            version=t?.version ?: if(p["variantOf"]!=null) p.s("title") else null,assetKey=key,
             familyKey=(p["familyId"] as? String)?.let { PracticeKey(e.packageId,it).encoded },
-            unprepared=true,defaultSourceTempo=p.s("tempoMode","source")=="source",legacyId=MigratedPracticeIds.legacy(key.encoded))
+            unprepared=true,defaultSourceTempo=p.s("tempoMode","source")=="source",legacyId=MigratedPracticeIds.legacy(key.encoded),
+            legacyIds=if(trusted(e.packageId)) p.strings("legacyIds") else emptyList())
     }
 }

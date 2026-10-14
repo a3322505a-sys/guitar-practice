@@ -19,7 +19,7 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
     }
     fun selected(): Phrase {
         val pending=runCatching { prefs.getString("phrase-pending-import",null) }.getOrNull()
-        if(pending!=null && resolve(pending).id==MigratedPracticeIds.targets[pending]) return resolve(pending)
+        if(pending!=null && resolve(pending).assetKey!=null) return resolve(pending)
         val id=runCatching { prefs.getString("phrase-selected","M01") }.getOrNull() ?: "M01"
         val selected=resolve(id)
         if(id in MigratedPracticeIds.targets && selected.id!=MigratedPracticeIds.targets[id])
@@ -32,16 +32,13 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
             migrate(phrase,fallbackBpm,fallbackRepeats)
             return loadAsset(phrase)
         }
-        val previous=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
-            ?.takeIf { KafkaPractice.replacement(it)==phrase.id } ?: KafkaPractice.previousSelection(phrase.id)
-        val settingsId=if(previous!=null && !prefs.contains("phrase.${phrase.id}.bpm")) previous else phrase.id
+        val settingsId=phrase.id
         fun read(key: String,default: Int)=runCatching { prefs.getInt("phrase.$settingsId.$key",default) }.getOrDefault(default)
         val whole=BarRange(0,phrase.sequence.barCount-1)
         val bpm=read("bpm",fallbackBpm).takeIf { it in 30..180 } ?: fallbackBpm
         val repeats=read("repeats",fallbackRepeats).takeIf { it in listOf(0,1,4,8) } ?: fallbackRepeats
         val saved=BarRange(read("first",whole.first),read("last",whole.last))
-        val previousWhole=if(settingsId!=phrase.id) Phrases.named(settingsId).sequence.let { BarRange(0,it.barCount-1) } else null
-        return PhraseSettings(bpm,repeats,if(saved==previousWhole || !saved.valid(phrase.sequence)) whole else saved)
+        return PhraseSettings(bpm,repeats,if(!saved.valid(phrase.sequence)) whole else saved)
     }
     fun save(phrase: Phrase,bpm: Int,repeats: Int,range: BarRange) {
         require(bpm in 30..180 && repeats in listOf(0,1,4,8) && range.valid(phrase.sequence))
@@ -64,7 +61,11 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         return v.measure.id+":"+v.occurrence+":"+offset+":"+v.duration
     }
     private fun migrate(phrase: Phrase,fallbackBpm: Int,fallbackRepeats: Int) {
-        val legacy=phrase.legacyId ?: return
+        val ids=listOfNotNull(phrase.legacyId)+phrase.legacyIds
+        if(ids.isEmpty()) return
+        val selected=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
+        val legacy=selected?.takeIf { it in ids && prefs.contains("phrase.$it.bpm") }
+            ?: ids.firstOrNull { prefs.contains("phrase.$it.bpm") } ?: ids.first()
         val prefix="asset."+phrase.assetKey!!.encoded+"."
         if(phrase.unprepared || prefs.contains(prefix+"bpm")) return
         fun number(key: String,default: Int)=runCatching { prefs.getInt("phrase.$legacy.$key",default) }.getOrDefault(default)

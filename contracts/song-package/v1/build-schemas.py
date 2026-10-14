@@ -67,18 +67,24 @@ defs["jump"] = obj(dict(id=ID,at=ID,target=ID,kind=enum("dc","ds","to-coda"),occ
     ["id","at","target","kind"])
 defs["form"] = obj(dict(repeats=arr(ref("repeat"),1000),endings=arr(ref("ending"),1000),
     markers=arr(ref("marker"),1000),jumps=arr(ref("jump"),1000),repeatsAfterJump=BOOL))
+tone_labels = dict(type="object",patternProperties={"^(?:[0-9]|1[01])$":TEXT},additionalProperties=False,maxProperties=12)
+defs["voicingTeaching"] = obj(dict(root=integer(-1,11),third=integer(0,11),soundingName=TEXT,
+    group=TEXT,source=TEXT,intervalRoles=tone_labels,toneNames=tone_labels),["root","soundingName","group","source"])
 defs["voicing"] = obj(dict(id=ID,name=TEXT,trackId=ID,frets=arr(integer(-1,36),6,6),
-    fingers=arr(integer(0,4),6,6)),["id","name","trackId","frets","fingers"])
+    fingers=arr(integer(0,4),6,6),teaching=ref("voicingTeaching")),["id","name","trackId","frets","fingers"])
 defs["harmony"] = obj(dict(id=ID,measureId=ID,onset=ref("q"),name=TEXT,voicingId=ID,condition=ref("condition")),
     ["id","measureId","onset","name"])
 defs["coordinate"] = obj(dict(measureId=ID,offset=ref("q"),occurrence=integer(1,50000)),["measureId"])
 defs["segment"] = obj(dict(start=ref("coordinate"),end=ref("coordinate"),formPolicy=enum("written","performed"),
     entry=enum("reject","carryIn","reattack","truncate"),exit=enum("reject","truncate"),
     affectedNoteIds=arr(ID)),["start","end"])
+defs["practiceTeaching"] = obj(dict(category=TEXT,passage=TEXT,source=TEXT,technique=TEXT,
+    use=TEXT,version=TEXT,tempoLabel=TEXT,explanation=TEXT))
 defs["practice"] = obj(dict(id=ID,title=TEXT,goal=TEXT,mainTrackId=ID,mixTrackIds=arr(ID,8,1),
     segments=arr(ref("segment"),256,1),suggestedTempo=integer(30,180),familyId=ID,variantOf=ID,
     relatedIds=arr(ID,256),visibility=enum("core","variant","source","hidden"),order=integer(0,100000),
-    tags=arr(TEXT,64),padding=ref("q"),paddingReason=TEXT,tempoMode=enum("source","fixed"),difficulty=TEXT),
+    tags=arr(TEXT,64),padding=ref("q"),paddingReason=TEXT,tempoMode=enum("source","fixed"),difficulty=TEXT,
+    teaching=ref("practiceTeaching"),legacyIds=arr(ID,32)),
     ["id","title","goal","mainTrackId","mixTrackIds","segments"])
 defs["source"] = obj(dict(id=ID,name=TEXT,sha256=HASH,format=TEXT,version=TEXT,license=TEXT,origin=TEXT),
     ["id","name","sha256","format","license","origin"])

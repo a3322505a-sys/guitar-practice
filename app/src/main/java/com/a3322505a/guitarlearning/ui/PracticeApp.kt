@@ -57,7 +57,9 @@ fun PracticeApp(player: Player) {
     val context=LocalContext.current
     val preferences=remember { context.getSharedPreferences("practice-settings",0) }
     val repository=remember { SongRepository(File(context.filesDir,"songs"),
-        SongReader(SongSchema { name -> context.assets.open("song-contract/"+name).use { it.readBytes() } })) }
+        SongReader(SongSchema { name -> context.assets.open("song-contract/"+name).use { it.readBytes() } }),
+        context.assets.list("song-packages").orEmpty().filter { it.endsWith(".gpractice") }.associateWith { name ->
+            { context.assets.open("song-packages/"+name) } }) }
     var librarySnapshot by remember { mutableStateOf(repository.snapshot) }
     var libraryReady by remember { mutableStateOf(false) }
     var preparedEpoch by remember { mutableIntStateOf(0) }

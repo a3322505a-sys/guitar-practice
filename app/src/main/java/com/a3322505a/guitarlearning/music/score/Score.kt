@@ -112,7 +112,10 @@ data class Jump(val id: String, val at: String, val target: String, val kind: St
 data class Form(val repeats: List<Repeat> = emptyList(), val endings: List<Ending> = emptyList(),
     val markers: List<Marker> = emptyList(), val jumps: List<Jump> = emptyList(),
     val repeatsAfterJump: Boolean = false)
-data class GuitarVoicing(val id: String, val name: String, val trackId: String, val frets: List<Int>, val fingers: List<Int>)
+data class VoicingTeaching(val root: Int,val third: Int?,val soundingName: String,val group: String,val source: String,
+    val intervalRoles: Map<Int,String> = emptyMap(),val toneNames: Map<Int,String> = emptyMap())
+data class GuitarVoicing(val id: String, val name: String, val trackId: String, val frets: List<Int>, val fingers: List<Int>,
+    val teaching: VoicingTeaching? = null)
 data class HarmonySymbol(val id: String, val measureId: String, val onset: Q, val name: String, val voicingId: String? = null,
     val condition: VisitCondition? = null)
 data class ScoreDocument(val documentId: String, val measures: List<Measure>, val tracks: List<Track>,
@@ -126,12 +129,16 @@ data class ScoreDocument(val documentId: String, val measures: List<Measure>, va
 data class Coordinate(val measureId: String, val offset: Q = Q.ZERO, val occurrence: Int? = null)
 data class PracticeSegment(val start: Coordinate, val end: Coordinate, val formPolicy: String = "written",
     val entry: String = "reject", val exit: String = "reject", val affectedNoteIds: List<String> = emptyList())
+data class PracticeTeaching(val category: String = "",val passage: String = "",val source: String = "",
+    val technique: String = "",val use: String = "",val version: String? = null,val tempoLabel: String = "",
+    val explanation: String = "")
 data class PracticeSpec(val id: String, val title: String, val goal: String, val mainTrackId: String,
     val mixTrackIds: List<String>, val segments: List<PracticeSegment>,
     val suggestedTempo: Int = 60, val familyId: String? = null, val variantOf: String? = null,
     val relatedIds: List<String> = emptyList(), val visibility: String = "core", val order: Int = 0,
     val tags: List<String> = emptyList(), val padding: Q = Q.ZERO, val paddingReason: String? = null,
-    val tempoMode: String = "source", val difficulty: String = "自行调整")
+    val tempoMode: String = "source", val difficulty: String = "自行调整",
+    val teaching: PracticeTeaching? = null,val legacyIds: List<String> = emptyList())
 data class PracticeKey(val packageId: String, val practiceId: String) {
     val encoded get() = packageId.length.toString()+":"+packageId+practiceId
 }

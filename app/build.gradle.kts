@@ -10,8 +10,8 @@ android {
         applicationId = "com.a3322505a.guitarlearning"
         minSdk = 26
         targetSdk = 35
-        versionCode = 76
-        versionName = "4.0.0-local28"
+        versionCode = 77
+        versionName = "4.0.0-local29"
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

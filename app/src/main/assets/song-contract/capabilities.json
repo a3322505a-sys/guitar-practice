@@ -5,6 +5,7 @@
     "minor": 0
   },
   "capabilities": [
+    "catalogue.teaching.v1",
     "form.condition.v1",
     "form.jump.v1",
     "form.repeat.v1",
@@ -243,6 +244,13 @@
       "timingPitch": "implemented",
       "timbre": "not applicable",
       "validation": "SongKernelTest / SongAdvancedTest; device acceptance pending"
+    },
+    "catalogue.teaching.v1": {
+      "model": "implemented",
+      "tablature": "existing voicing projection",
+      "timingPitch": "not applicable",
+      "timbre": "not applicable",
+      "validation": "BundledSongsTest; device acceptance pending"
     }
   }
 }

@@ -149,7 +149,7 @@ class SongRepositoryTest {
         val store=PhraseSettingsStore(prefs,repo::named)
         assertEquals("M01",store.selected().id)
         store.save(Phrases.singleNote,60,4,BarRange(0,0))
-        val input=javaClass.getResourceAsStream("/usotsuki-v1.gpractice")!!
+        val input=File("src/main/assets/song-packages/usotsuki-v1.gpractice").inputStream()
         repo.commit(repo.prepare(input))
         val phrase=repo.resolve(store.selected().id)
         assertEquals("S01",phrase.legacyId)
@@ -178,6 +178,6 @@ class SongRepositoryTest {
         assertArrayEquals(Pcm(a,sampler).block(0,frames,true,false),Pcm(b,sampler).block(0,frames,true,false))
         val restarted=SongRepository(root,reader());restarted.reload();val restored=restarted.resolve(phrase.id)
         assertEquals(PhraseSettings(73,8,BarRange(1,1)),PhraseSettingsStore(prefs,restarted::named).load(restored))
-        assertTrue(Phrases.all.none { it.id=="S01" });assertTrue(repo.snapshot.phrases.any { it.id=="SHA-INTRO" })
+        assertTrue(Phrases.all.none { it.id=="S01" || it.id=="SHA-INTRO" })
     }
 }

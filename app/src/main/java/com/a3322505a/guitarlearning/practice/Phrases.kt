@@ -14,9 +14,10 @@ data class Phrase(
     val familyKey: String? = null,
     val unprepared: Boolean = false,val defaultSourceTempo: Boolean = true,
     val legacyId: String? = null,
+    val legacyIds: List<String> = emptyList(),
 )
 
-/** Controlled compatibility IDs only; no song data or automatic installation. */
+/** v76's accepted S01 package predates legacyIds; retain its identity bridge, without music data. */
 object MigratedPracticeIds {
     val targets=mapOf("S01" to com.a3322505a.guitarlearning.music.score.PracticeKey("local.usotsuki","bass-treble").encoded)
     fun legacy(id: String)=targets.entries.firstOrNull { it.value==id }?.key
@@ -31,27 +32,12 @@ object Phrases {
             Event(i*12,12,listOf(p))
         },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
     )
-    val mozart = MozartK265.phrases
-    val shayou = Shayou.phrases
-    val kafka = Kafka.phrases
-    val all=(listOf(singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases+SevenBlocks.phrases).also(::validatePhrases)
-    val catalogue=all.filter { !it.id.startsWith("KAF-") }+KafkaPractice.core
-    fun practiceNamed(id: String)=named(KafkaPractice.replacement(id) ?: id)
-    fun family(phrase: Phrase)=if(phrase.id in KafkaPractice.all.map { it.id }) named(phrase.relatedId ?: phrase.id) else phrase
-    fun versions(phrase: Phrase): List<Phrase> {
-        val base=family(phrase)
-        return if(base in KafkaPractice.core) listOf(base)+KafkaPractice.all.filter { it.relatedId==base.id } else emptyList()
-    }
-    fun named(id: String): Phrase {
-        // Activity saved state from v61 can still contain any of the six former IDs.
-        val current=when(id) {
-            "K265-1","K265-2" -> "K265-A"
-            "K265-3","K265-4" -> "K265-B"
-            "K265-5","K265-6" -> "K265-C"
-            else -> id
-        }
-        return all.firstOrNull { it.id==current } ?: all.first()
-    }
+    val all=(listOf(singleNote)+KernelPhrases.all+SevenBlocks.phrases).also(::validatePhrases)
+    val catalogue=all
+    fun practiceNamed(id: String)=named(id)
+    fun family(phrase: Phrase)=phrase
+    fun versions(phrase: Phrase): List<Phrase> = emptyList()
+    fun named(id: String)=all.firstOrNull { it.id==id } ?: all.first()
 }
 
 /** Content registration is the boundary: no new player or notation path per phrase. */

@@ -41,10 +41,16 @@ object SongCodec {
             root.objects("swing").map { SwingSpec(it.q("start"),it.q("end"),it.q("unit"),it.list("ratio").map { v -> v.intValue() },
                 it.strings("trackIds"),it.strings("voiceIds")) },
             form(root["form"].objectValue()),
-            root.objects("voicings").map { GuitarVoicing(it.s("id"),it.s("name"),it.s("trackId"),
-                it.list("frets").map { f -> f.intValue() },it.list("fingers").map { f -> f.intValue() }) },
+            root.objects("voicings").map(::voicing),
             root.objects("harmonies").map { HarmonySymbol(it.s("id"),it.s("measureId"),it.q("onset"),it.s("name"),it["voicingId"] as? String,condition(it["condition"])) })
     }
+    fun voicing(v: Map<String,Any?>) = GuitarVoicing(v.s("id"),v.s("name"),v.s("trackId"),
+        v.list("frets").map { it.intValue() },v.list("fingers").map { it.intValue() },
+        v["teaching"]?.objectValue()?.let { t -> VoicingTeaching(t.i("root",-1),t["third"]?.intValue(),
+            t.s("soundingName"),t.s("group"),t.s("source"),labels(t["intervalRoles"]),labels(t["toneNames"])) })
+    private fun labels(value: Any?) = value?.objectValue()?.map { (k,v) -> k.toInt() to v.textValue() }?.toMap().orEmpty()
+    fun teaching(value: Any?) = value?.objectValue()?.let { t -> PracticeTeaching(t.s("category"),t.s("passage"),
+        t.s("source"),t.s("technique"),t.s("use"),t["version"] as? String,t.s("tempoLabel"),t.s("explanation")) }
     private fun event(e: Map<String,Any?>): ScoreEvent {
         val written=e["written"].objectValue()
         return ScoreEvent(e.s("id"),e.s("measureId"),e.q("onset"),e.q("duration"),
@@ -81,6 +87,6 @@ object SongCodec {
                 it.s("entry","reject"),it.s("exit","reject"),it.strings("affectedNoteIds")) },
             p.i("suggestedTempo",60),p["familyId"] as? String,p["variantOf"] as? String,p.strings("relatedIds"),
             p.s("visibility","core"),p.i("order"),p.strings("tags"),p.q("padding"),p["paddingReason"] as? String,
-            p.s("tempoMode","source"),p.s("difficulty","自行调整"))
+            p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),p.strings("legacyIds"))
     }
 }

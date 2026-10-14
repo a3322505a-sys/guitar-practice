@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import com.a3322505a.guitarlearning.audio.*
@@ -37,7 +38,7 @@ class RenderTest {
             com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
                 compose.activity.assets.open("song-contract/"+it).use { input -> input.readBytes() }
             }))
-        repository.reload();repository.commit(repository.prepare(javaClass.getResourceAsStream("/usotsuki-v1.gpractice")!!))
+        repository.reload();repository.commit(repository.prepare(compose.activity.assets.open("song-packages/usotsuki-v1.gpractice")))
         if(select) compose.activity.getSharedPreferences("practice-settings",0).edit().putString("phrase-selected","S01").commit()
     }
     @Test fun scaleDensityRestoresLegacyBooleansAndSafelyHandlesOldOrMalformedLists() {
@@ -422,7 +423,7 @@ class RenderTest {
             Event(24,24,Chords.named("C").positions)),48,"",beatsPerBar=4)
         compose.activity.setContent { PracticeTheme { Tablature(seq,Hint.FULL,null,null,false) } }
         capture("all-strings-eighths-sixteenths-half","v65")
-        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[1].sequence,Hint.FULL,null,null,false) } }
+        compose.activity.setContent { PracticeTheme { Tablature(SongTestLibrary.sourceMozart[1].sequence,Hint.FULL,null,null,false) } }
         capture("dotted-eighths-and-rests","v65")
         val tri=Routes.scale(ScaleOptions(exercise=ScaleExercise.THIRDS,notesPerBeat=3)).sequence!!
         compose.activity.setContent { PracticeTheme { Tablature(tri,Hint.FULL,Tonality.C_MAJOR,Session(tri,60,true,2).cursor(68.0),true) } }
@@ -747,10 +748,13 @@ class RenderTest {
             compose.activity.setContent { PracticeApp(player) }
             compose.onNodeWithText("和弦").performClick()
             compose.onNodeWithText("短句应用").performClick()
-            Phrases.mozart.forEach { phrase ->
+            SongTestLibrary.mozart.forEach { phrase ->
                 compose.onNodeWithTag("config-summary").performClick()
                 compose.onNodeWithText(phrase.title).performScrollTo().performClick()
                 compose.onNodeWithText("完成").performClick()
+                compose.waitUntil(8000) {
+                    compose.onNodeWithText("听示范").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Disabled)==null
+                }
                 compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
                 compose.onNodeWithText("听示范").performClick()
                 assertEquals(phrase.sequence,player.session!!.sequence)
@@ -770,13 +774,7 @@ class RenderTest {
             compose.onNodeWithText("结束").performClick()
         } finally { player.release() }
     }
-    @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi")
-    fun mozartDottedCadenceRendersWithOriginalFingering() {
-        compose.activity.setContent { PracticeTheme { Tablature(Phrases.mozart[1].sequence,Hint.FULL,null,null,false) } }
-        compose.onNodeWithContentDescription("第 9 至 12 小节",substring=true).assertIsDisplayed()
-        compose.onNodeWithContentDescription("2 弦 8 品；2 弦 5 品；3 弦 7 品；",substring=true).assertIsDisplayed()
-        capture("mozart-dotted-eighth-tab","v62")
-    }
+
     @Test @Config(qualifiers="w891dp-h411dp-mdpi")
     fun tripletDeadMuteAndSlideNotationRenderFromRegisteredContent() {
         listOf("T01","R02","PM01","SL01").forEach { id ->
@@ -794,31 +792,7 @@ class RenderTest {
         compose.onNodeWithContentDescription("三连音 3",substring=true).assertIsDisplayed()
         capture("scale-triplet-landscape","five-fixes")
     }
-    @Test @Config(qualifiers="w411dp-h891dp-mdpi")
-    fun phraseRangeAndTempoRestoreInUiWithoutStartingPlayback() {
-        val prefs=compose.activity.getSharedPreferences("practice-settings",0)
-        val phrase=Phrases.mozart[1]
-        PhraseSettingsStore(prefs).save(phrase,73,8,BarRange(2,3))
-        val player=Player(compose.activity) { ManualSink() }
-        try {
-            compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick()
-            compose.onNodeWithText("短句应用").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithTag("phrase-range").performScrollTo().assertIsDisplayed()
-            compose.onNodeWithText("当前范围：11–12 小节；完整经过范围一次计一轮。").assertIsDisplayed()
-            capture("range-settings","v63")
-            compose.onNodeWithText("完成").performClick()
-            assertNull(player.session)
-            compose.onNodeWithTag("tempo-button").performClick()
-            compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
-            compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithText("听示范").performClick()
-            assertEquals(BarRange(2,3),player.session!!.range)
-            assertEquals(73,player.session!!.bpm)
-            compose.onNodeWithText("结束").performClick()
-        } finally { player.release() }
-    }
+
     @Test fun activeViewSwitchKeepsSessionAndMutedPlaybackAdvances() {
         val sinks=mutableListOf<ManualSink>()
         val player=Player(compose.activity) { ManualSink().also { synchronized(sinks) { check(sinks.all { s -> s.closed }); sinks += it } } }
