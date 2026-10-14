@@ -1,6 +1,8 @@
 # 吉他练习
 
-离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v78 / 4.0.0-local30**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。最新交付包：[v78 APK](output/guitar-practice-4.0.0-local30-v78.apk)；[预装曲包](app/src/main/assets/song-packages/)；[本轮迁移记录](docs/剩余曲包迁移与硬编码清理-v78.md)。
+离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v79 / 4.0.0-local31**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。最新交付包：[v79 APK](output/guitar-practice-4.0.0-local31-v79.apk)；[预装曲包](app/src/main/assets/song-packages/)；[六线谱修复记录](docs/六线谱统一与高亮-v79.md)。
+
+v79 将音阶、内置练习和曲包统一到同一套六线谱布局与绘制。粉色当前音光条、小节高亮和谱行/密集小节跟随全部使用既有 Session/Cursor；结束时清除高亮。品位数字优先，符干与连梁移到下方，连续延响和 P.M. 使用保留弦号范围的奏法标记。旧渲染分支已在迁移回归后移除；手机/平板模拟渲染与播放状态验证见记录，真机尚待验收。
 
 2026-10-13 完成局部UI职责搬迁及资产流程标准化：现有歌曲、目录、设置、播放与图示语义保持；没有增加产品功能、模型层或新发行版本。结果与设备证据见 [施工/兼容记录](docs/v72兼容与施工记录.md)。
 
@@ -29,7 +31,7 @@ Kotlin目录：`app/src/main/java/com/a3322505a/guitarlearning/`。
 | `assets/song/`、`contracts/song-package/v1/`、`ui/SongLibrary.kt` | 五文件共同协议、来源审核、动态目录、不可变修订/原子索引及导入管理 |
 | `practice/Sequence.kt`、`Expression.kt`、`TabNotation.kt` | 保留内置素材与原谱面投影的兼容；运行时统一消费PerformancePlan与Session |
 | `audio/Player.kt`、`PlaybackSink.kt`、`Pcm.kt`、`PlanPcm.kt`、`SoundBank.kt` | 唯一会话、采样器和流式输出；单调Long设备帧推进Cursor，音色保留采样近似 |
-| `ui/Diagrams.kt`、`Tablature.kt`、`ChordDeck.kt`、`Style.kt` | 同一弦品/实音的图示、点击、谱行跟随、整卡横滑与样式 |
+| `ui/Diagrams.kt`、`Tablature.kt`、`PlanTablature.kt`、`TabLayout.kt`、`TabHighlight.kt`、`TabSymbols.kt`、`ChordDeck.kt`、`Style.kt` | 同一弦品/实音的图示、唯一TAB布局/高亮、点击、谱行跟随、整卡横滑与样式 |
 
 来源事实 → 教学选材/变体 → 可见目录 → 用户选择恢复保持独立。通用/七个Block内置素材经可信legacy provider接入；迁移歌曲和新增歌曲使用审核曲包。莫扎特历史6个ID及其他迁移ID保留，旧设置按来源锚点迁移；原键不删除。历史v72契约见 [兼容表](docs/v72兼容与施工记录.md)，当前协议见 [曲包v1](contracts/song-package/v1/README.md)。
 

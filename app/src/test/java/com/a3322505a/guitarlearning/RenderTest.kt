@@ -783,7 +783,7 @@ class RenderTest {
             compose.activity.setContent { PracticeTheme { Tablature(seq,Hint.FULL,null,null,false) } }
             compose.onNodeWithTag("tablature").assertIsDisplayed()
             if(id=="T01") compose.onNodeWithContentDescription("三连音 3",substring=true).assertIsDisplayed()
-            if(id=="R02") compose.onNodeWithContentDescription("弦 x",substring=true).assertIsDisplayed()
+            if(id=="R02") compose.onAllNodesWithContentDescription("弦 x",substring=true).onFirst().assertIsDisplayed()
             if(id=="PM01") compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
             if(id=="SL01") compose.onNodeWithContentDescription("5/7",substring=true).assertIsDisplayed()
             capture("$id-tab","five-fixes")

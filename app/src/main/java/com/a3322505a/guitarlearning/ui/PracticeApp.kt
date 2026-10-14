@@ -120,7 +120,7 @@ fun PracticeApp(player: Player) {
     val displayedSequence=if(showingSession) practiceSession!!.sequence else sequence
     val beatsPerBar=if(showingSession && cursor?.pre==true) session!!.preBeats
         else displayedSequence?.meter(if(showingSession) cursor?.bar ?: 0 else if(page==1 && chordPhrases) range.first else 0) ?: 4
-    val renderCursor=cursor?.takeIf { showingSession }
+    val renderCursor=notationCursor(cursor?.takeIf { showingSession },progress.phase)
     val event=if(showingSession && cursor?.pre==false) displayedSequence?.eventAt(cursor.localTick) else null
     val phraseNow=if(showingSession && cursor?.pre==false) event else displayedSequence?.events?.firstOrNull()
     val nextEvent=phraseNow?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }

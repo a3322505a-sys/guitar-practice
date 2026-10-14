@@ -67,7 +67,19 @@ object LegacySequenceAdapter {
                 entry="carryIn",exit="truncate",affectedNoteIds=writtenEvents.flatMap { it.notes }.map { it.id })),tempoMode="fixed")
         val plan=PracticeCompiler.compile(score,practice)
         val occurrences=mutableMapOf<Int,Int>()
-        return plan.copy(visits=plan.visits.mapIndexed { i,v ->
+        val originalEvents=sequence.events.associateBy { "e-"+it.tick }
+        val notationEvents=plan.events.map { mapped ->
+            val e=originalEvents.getValue(mapped.event.id)
+            val previous=sequence.events.lastOrNull { it.tick<e.tick && !it.rest }
+            mapped.copy(notationMarks=buildList {
+                if(e.accent) add(">")
+                else e.stringExpression.filterValues { it.accent }.keys.takeIf { it.isNotEmpty() }?.let { add("> (${it.sorted().joinToString(",")}弦)") }
+                if(e.short) add("·")
+                e.dynamicMark?.let { add(it) } ?: if(e.velocity<(previous?.velocity ?: 1f)) add("弱") else Unit
+            })
+        }
+        val notationById=notationEvents.associateBy { it.id }
+        return plan.copy(events=notationEvents,notes=plan.notes.map { it.copy(event=notationById.getValue(it.event.id)) },visits=plan.visits.mapIndexed { i,v ->
             val original=sequence.barNumber(i)
             val occurrence=occurrences.getOrDefault(original,0)+1
             occurrences[original]=occurrence
