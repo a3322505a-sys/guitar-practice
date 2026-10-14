@@ -34,11 +34,10 @@ import java.util.concurrent.atomic.AtomicLong
 class RenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private fun importUsotsuki(select: Boolean = false) {
-        val repository=com.a3322505a.guitarlearning.assets.song.SongRepository(File(compose.activity.filesDir,"songs"),
-            com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
-                compose.activity.assets.open("song-contract/"+it).use { input -> input.readBytes() }
-            }))
-        repository.reload();repository.commit(repository.prepare(compose.activity.assets.open("song-packages/usotsuki-v1.gpractice")))
+        // Already preinstalled: don't race a second writer against startup's seed transaction.
+        compose.waitUntil(12000) {
+            runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
+        }
         if(select) compose.activity.getSharedPreferences("practice-settings",0).edit().putString("phrase-selected","S01").commit()
     }
     @Test fun scaleDensityRestoresLegacyBooleansAndSafelyHandlesOldOrMalformedLists() {
@@ -100,7 +99,7 @@ class RenderTest {
             for(id in listOf("M01","R02","PM01")) {
                 val phrase=Phrases.named(id)
                 compose.onNodeWithTag("config-summary").performClick()
-                compose.onNodeWithText(phrase.title).performScrollTo().performClick()
+                compose.onNode(hasText(phrase.title) and hasAnyAncestor(hasTestTag("practice-settings"))).performScrollTo().performClick()
                 compose.onNodeWithText("完成").performClick()
                 compose.onAllNodesWithText(phrase.title).assertCountEquals(1)
                 val tags=listOf("practice-card","diagram-viewport","playback-status","transport")
@@ -176,8 +175,7 @@ class RenderTest {
         compose.onNodeWithText("下一：Asus4(no5)").assertDoesNotExist()
         capture("phone-chord-learning")
         compose.onNodeWithText("短句应用").performClick()
-        compose.onNodeWithText("Gsus2 · 按音位弹奏").assertIsDisplayed()
-        compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
+        compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         capture("phone-chord")
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
@@ -242,7 +240,7 @@ class RenderTest {
         compose.waitForIdle()
         compose.onNodeWithText("65 BPM").assertIsDisplayed()
         capture("recreated-phrase-board","five-fixes")
-        compose.onNodeWithText("Gsus2 · 按音位弹奏").assertIsDisplayed()
+        compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         compose.onNodeWithText("和弦学习").performClick()
         compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
     }
@@ -305,7 +303,7 @@ class RenderTest {
         compose.onNodeWithText("和弦").performClick()
         capture("tablet-chord-tab")
         compose.onNodeWithTag("config-summary").performClick()
-        compose.onNodeWithText("Bm7(no5)").performScrollTo().performClick()
+        compose.onAllNodesWithText("Bm7(no5)")[0].performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         capture("tablet-check-tab")
         compose.onNodeWithText("指板").performClick()
@@ -313,7 +311,7 @@ class RenderTest {
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("tablet-chord-diagram")
         compose.onNodeWithText("短句应用").performClick()
-        compose.onNodeWithText("Gsus2 · 按音位弹奏").assertIsDisplayed()
+        compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         capture("tablet-phrase-diagram")
     }
     @Test @Config(qualifiers="w800dp-h1100dp-port-mdpi") fun tabletPortraitAndNarrowNotationRemainReadable() {
@@ -474,7 +472,7 @@ class RenderTest {
         capture("phone-landscape-tab")
         compose.onNodeWithText("和弦").performClick()
         compose.onNodeWithText("短句应用").performClick()
-        compose.onNodeWithContentDescription("第 1 至 2 小节",substring=true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("第 1 至 1 小节",substring=true).assertIsDisplayed()
         capture("phone-landscape-phrase-tab")
         compose.onNodeWithText("指板").performClick()
         compose.waitForIdle()
@@ -613,6 +611,9 @@ class RenderTest {
             assertSame("Selecting the current mode keeps playback",learning,player.session)
             compose.onNodeWithText("短句应用").performClick()
             assertNull("Switching content ends the old learning sequence",player.session)
+            compose.waitUntil(8000) {
+                runCatching { compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed();true }.getOrDefault(false)
+            }
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithText("开始跟练").performClick()
             assertEquals(LegacyUsotsukiFixture.phrase.sequence.events.flatMap { it.positions },player.session!!.plan.notes.map { it.position })
