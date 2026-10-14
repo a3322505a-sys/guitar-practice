@@ -226,10 +226,10 @@ fun PracticeApp(player: Player) {
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
                 {sequence?.let { note="";player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.barCount-1),
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
-                {player.stop();note=""})
+                {player.stop();note=""},availableHeight=windowHeight)
         }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=12.dp)) {
-                val compactHeader=windowHeight<520.dp
+                val compactHeader=windowHeight<520.dp*LocalDensity.current.fontScale.coerceAtLeast(1f)
                 val views: @Composable ()->Unit = { ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it } }
                 PracticeNavigation(summary,{settingsTab=0;overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
                 if(!compactHeader) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { views() }

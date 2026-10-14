@@ -40,7 +40,7 @@ internal fun tabNoteLabel(n: ScoreNote) = if(n.dead) "x" else n.harmonic?.let {
 } ?: n.fret.toString()
 
 internal fun tabNoteVisible(plan: PerformancePlan, event: PlanEvent, note: ScoreNote, hint: Hint, key: Tonality?): Boolean {
-    if(hint==Hint.HIDDEN) return false
+    if(hint==Hint.HIDDEN || note.id in event.suppressedNoteIds) return false
     if(hint==Hint.FULL) return true
     if(note.dead) return false
     val harmony=plan.harmonies.lastOrNull { it.start<=event.start }
@@ -55,7 +55,7 @@ internal fun tabMarks(plan: PerformancePlan, bar: PlanTabBar): List<TabMark> {
     bar.glyphs.groupBy { it.event.voiceId }.forEach { (voice,glyphs) ->
         val last=mutableMapOf<String,Int>()
         glyphs.forEach { g ->
-            val notes=g.event.event.notes
+            val notes=g.event.effectiveNotes
             val arts=notes.map { it.articulation.over(g.event.event.articulation).over(Articulation.DEFAULT) }
             fun scoped(label: String, indices: List<Int>): String = label+if(indices.size==notes.size) "" else
                 " (${indices.map { notes[it].string }.sorted().joinToString(",")}弦)"
@@ -83,7 +83,7 @@ internal fun tabMarks(plan: PerformancePlan, bar: PlanTabBar): List<TabMark> {
                 marks.forEach { labels.getOrPut(it) { mutableListOf() }.add(i) }
             }
             val text=(labels.entries.map { scoped(it.key,it.value) }+
-                if(!g.tieIn || g.event.adaptation=="reattack") g.event.notationMarks else emptyList()).distinct().joinToString(" ")
+                if(notes.isNotEmpty() && (!g.tieIn || g.event.adaptation=="reattack")) g.event.notationMarks else emptyList()).distinct().joinToString(" ")
             if(text.isNotEmpty()) result+=TabMark(text,g.start,g.start,false,voice)
             g.event.adaptation?.let { result+=TabMark("窗口："+when(it) { "carryIn" -> "恢复持续状态";"reattack" -> "重新起音";else -> "截音" },g.start,g.start,false,voice) }
         }
@@ -106,7 +106,7 @@ internal fun tabMarks(plan: PerformancePlan, bar: PlanTabBar): List<TabMark> {
 
 internal fun tabMinimumWidth(bar: PlanTabBar, textWidth: (String,Int)->Float): Float {
     val columns=bar.glyphs.groupBy { it.start }
-    val heads=columns.mapValues { (_,gs) -> maxOf(22f,gs.flatMap { it.event.event.notes }.maxOfOrNull { textWidth(tabNoteLabel(it),16)+12 } ?: 22f) }
+    val heads=columns.mapValues { (_,gs) -> maxOf(22f,gs.flatMap { it.event.effectiveNotes }.maxOfOrNull { textWidth(tabNoteLabel(it),16)+12 } ?: 22f) }
     val onsets=(columns.keys+listOf(bar.visit.start+bar.visit.duration)).distinct().sorted()
     val needed=onsets.zipWithNext().maxOfOrNull { (a,b) ->
         bar.visit.duration.value().toFloat()/(b-a).value().toFloat()*((heads[a] ?: 22f)/2+(heads[b] ?: 22f)/2+10f)
@@ -115,7 +115,7 @@ internal fun tabMinimumWidth(bar: PlanTabBar, textWidth: (String,Int)->Float): F
 }
 
 private fun tabLeftPadding(bar: PlanTabBar,textWidth: (String,Int)->Float) = maxOf(34f,
-    (bar.glyphs.firstOrNull()?.event?.event?.notes?.maxOfOrNull { textWidth(tabNoteLabel(it),16)/2+27 } ?: 34f))
+    (bar.glyphs.firstOrNull()?.event?.effectiveNotes?.maxOfOrNull { textWidth(tabNoteLabel(it),16)/2+27 } ?: 34f))
 
 internal fun tabLayoutSystems(plan: PerformancePlan, projection: List<PlanTabBar>, viewport: Float,
     textWidth: (String,Int)->Float): List<TabSystemLayout> {
@@ -160,7 +160,7 @@ internal fun tabLayoutSystems(plan: PerformancePlan, projection: List<PlanTabBar
         val bars=prelim.map { b -> b.copy(staffTop=staffTop,events=b.bar.glyphs.map { g ->
             val at=b.x(g.start.value());val voice=voices.indexOf(g.event.voiceId).coerceAtLeast(0)
             TabEventPosition(g,at,b.x(g.end.value()),staffTop+90+22+voice*voiceHeight,
-                g.event.event.notes.map { n -> TabNotePosition(g.event.id+"/"+n.id,n,at,staffTop+(n.string-1)*18,tabNoteLabel(n)) },
+                g.event.effectiveNotes.map { n -> TabNotePosition(g.event.id+"/"+n.id,n,at,staffTop+(n.string-1)*18,tabNoteLabel(n)) },
                 max(0,log2(g.written.baseDenominator.toDouble()).toInt()-2))
         }) }
         TabSystemLayout(bars,width,staffTop+90+22+max(0,voices.size-1)*voiceHeight+14+depth*16)

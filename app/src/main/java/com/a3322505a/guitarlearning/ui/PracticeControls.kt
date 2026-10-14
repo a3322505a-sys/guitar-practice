@@ -104,14 +104,18 @@ internal fun ViewSwitch(tab: Boolean, onSelect: (Int)->Unit) {
 internal fun PracticeNavigation(summary: String,onSettings: ()->Unit,onManagement: ()->Unit,
     compact: Boolean = false,views: @Composable ()->Unit = {}) {
     Row(Modifier.fillMaxWidth().testTag("practice-navigation"),verticalAlignment=Alignment.CenterVertically) {
-        Surface(onClick=onSettings,modifier=Modifier.weight(1f).heightIn(min=if(LocalLargePracticeControls.current) 64.dp else 48.dp).testTag("config-summary"),color=Color.Transparent) {
-            Column(Modifier.padding(horizontal=8.dp,vertical=8.dp)) {
-                Text("当前内容 · 点此选择",style=MaterialTheme.typography.labelSmall,color=Muted)
-                Text("$summary ›",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.Bold,
-                    maxLines=1,overflow=TextOverflow.Ellipsis,color=PurpleInk)
+        Surface(onClick=onSettings,modifier=Modifier.weight(1f).heightIn(min=if(LocalLargePracticeControls.current && !compact) 64.dp else 48.dp).testTag("config-summary"),
+            shape=RoundedCornerShape(16.dp),color=Color.White.copy(alpha=.75f),border=BorderStroke(1.dp,Lavender)) {
+            Row(Modifier.padding(horizontal=12.dp,vertical=6.dp),verticalAlignment=Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    if(!compact) Text("当前内容",style=MaterialTheme.typography.labelSmall,color=Muted)
+                    Text(summary,style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.Bold,
+                        maxLines=1,overflow=TextOverflow.Ellipsis,color=PurpleInk)
+                }
+                Text("⌄",color=PurpleInk,fontSize=20.sp,modifier=Modifier.padding(start=8.dp))
             }
         }
-        if(compact) views()
+        if(compact) { Spacer(Modifier.width(6.dp));views() }
         PracticeTextButton(onClick=onManagement,modifier=Modifier.testTag("management-button").semantics { contentDescription="管理与帮助" }) { Text("⚙",fontSize=24.sp) }
     }
 }

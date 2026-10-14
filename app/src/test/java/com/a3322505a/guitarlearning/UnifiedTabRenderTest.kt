@@ -31,6 +31,19 @@ import java.io.File
 class UnifiedTabRenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
     private fun usotsuki()=SongTestLibrary.repository.resolve("S01").sequence
+    @Test fun suppressedTieShowsBoundaryExplanationWithoutGhostFretOrFalseRest() {
+        val contract=File("../contracts/song-package/v1")
+        val song=com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
+            File(contract,it).readBytes() }).read(File(contract,"fixtures/ties.gpractice").readBytes())
+        val segment=com.a3322505a.guitarlearning.music.score.PracticeSegment(
+            com.a3322505a.guitarlearning.music.score.Coordinate("tie-b"),
+            com.a3322505a.guitarlearning.music.score.Coordinate("tie-b",com.a3322505a.guitarlearning.music.score.Q(4)),
+            entry="truncate",affectedNoteIds=listOf("tie-origin","tie-target"))
+        val plan=com.a3322505a.guitarlearning.practice.compile.PracticeCompiler.compile(song.score,song.practices.single().copy(segments=listOf(segment)))
+        render(Sequence(emptyList(),48,"",runtimePlan=plan),null,"truncated-tie-no-ghost")
+        val text=compose.onNodeWithContentDescription("窗口：截音",substring=true).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].joinToString()
+        assertFalse(text.contains("休止"));assertFalse(text.contains(" 品"))
+    }
     private fun image(name: String): Bitmap {
         var result: Bitmap?=null
         compose.runOnIdle {
