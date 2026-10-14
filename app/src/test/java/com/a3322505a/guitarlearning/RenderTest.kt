@@ -608,9 +608,16 @@ class RenderTest {
             compose.activity.setContent { PracticeApp(player) }
             compose.waitForIdle()
             category("和弦学习")
-            compose.onNodeWithText("听和弦").performClick()
-            assertTrue(player.session!!.preview)
-            assertEquals(listOf(48,52,55,60,64),player.session!!.sequence.events.single().positions.map { it.midi })
+            val audition=compose.onNode(hasText("听和弦") and hasAnyAncestor(hasTestTag("practice-card")))
+            compose.waitUntil(8000) {
+                runCatching { audition.assertIsDisplayed().assertIsEnabled();true }.getOrDefault(false)
+            }
+            // This check targets the selected card's audio callback, independently of pointer layout.
+            audition.performSemanticsAction(SemanticsActions.OnClick) { assertTrue(it()) }
+            val preview=compose.runOnIdle { player.session }
+            assertNotNull("The selected chord's audition must create a real session",preview)
+            assertTrue(preview!!.preview)
+            assertEquals(listOf(48,52,55,60,64),preview.sequence.events.single().positions.map { it.midi })
             compose.onNodeWithText("结束").performClick()
             compose.onNodeWithTag("chord-diagram").performTouchInput {
                 // C's fifth string, third fret, on the centered square grid.
@@ -752,6 +759,9 @@ class RenderTest {
             openContent()
             compose.onNodeWithText(LegacyUsotsukiFixture.phrase.title).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
+            compose.waitUntil(8000) {
+                runCatching { compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed();true }.getOrDefault(false)
+            }
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
         } finally { player.release() }
