@@ -82,6 +82,10 @@ def migrate(snapshot, kind, title, author):
                     original_id = n["id"]
                     n["id"] = prefix + original_id + "-" + str(index)
                     n["sourceRef"] = event["sourceRef"] + " string " + str(n["string"])
+                    if kind == "shayou" and n.get("dead"):
+                        raw = next(row for row in beats[start] if int(row["string"]) == n["string"])
+                        n["fret"] = int(raw["fret"])
+                        n["midi"] = int(raw["midi"])
                     if index:
                         n["articulation"] = dict(pick="none")
                         score["relations"].append(dict(id="tie-" + n["id"], kind="tie",
@@ -129,9 +133,10 @@ def migrate(snapshot, kind, title, author):
         mappings=mappings, exclusions=["仅迁移原有教学选材；未收录原曲的其他小节或声部。", "原练习按完整书面乐句循环，不补入未展开的原谱反复。"])
     review = dict(status="approved", reviewer="Codex / v77 content migration", tool="legacy-migration-v77",
         method="原始来源哈希与独立来源CSV/已审核PDF转录逐事件核对；保留原教学窗口、技巧、调弦与变调夹；来源续写改为显式tie。", assumptions=[], diagnostics=[], coverage=coverage(score, practices))
-    payloads = package_files("local." + kind.replace("-", ""), 1, title, author, score, practices, provenance, review)
+    revision = 2 if kind == "shayou" else 1
+    payloads = package_files("local." + kind.replace("-", ""), revision, title, author, score, practices, provenance, review)
     validate_payloads(payloads)
-    path = ROOT / "app/src/main/assets/song-packages" / (kind + "-v1.gpractice")
+    path = ROOT / "app/src/main/assets/song-packages" / (kind + f"-v{revision}.gpractice")
     sha = write_zip(payloads, path)
     return dict(path=str(path.relative_to(ROOT)), bytes=path.stat().st_size, sha256=sha, practices=len(practices), voicings=len(score["voicings"]), coverage=review["coverage"])
 

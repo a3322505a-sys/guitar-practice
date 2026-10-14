@@ -64,6 +64,9 @@ def audit():
                     else:
                         n=next(n for n in e["notes"] if n["string"]==string)
                         assert bool(n.get("dead"))==bool(int(row["dead"])),(p["id"],bar,tick,"dead")
+                        if shayou:
+                            assert n["fret"]==int(row["fret"]),(p["id"],bar,tick,"fret including dead head")
+                            assert n["midi"]==int(row["midi"]),(p["id"],bar,tick,"stored MIDI including dead head")
                         if not n.get("dead"):
                             assert n["fret"]==int(row["fret"]),(p["id"],bar,tick,"fret")
                             if shayou:assert n["midi"]==int(row["midi"])

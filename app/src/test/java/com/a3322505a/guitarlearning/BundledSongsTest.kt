@@ -81,6 +81,9 @@ class BundledSongsTest {
         assertEquals("减七音",dim.role(Position(3,0)))
         assertEquals("B♭",dim.noteName(Position(3,0)))
         assertEquals("A♭",grips[9].noteName(Position(6,1)))
+        val dead=repo.resolve("SHA-CHORUS").sequence.performance.notes.filter { it.note.dead }
+        assertTrue(dead.isNotEmpty())
+        assertTrue(dead.all { it.note.fret==10 && it.note.midi==it.track.midi(it.note.string,10) })
         val trip=repo.resolve("YT-RING").sequence.performance
         assertTrue(trip.notes.any { it.articulation.letRing==true })
         assertTrue(trip.score.relations.any { it.kind=="tie" })
