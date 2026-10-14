@@ -32,6 +32,14 @@ import java.util.concurrent.atomic.AtomicLong
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    private fun importUsotsuki(select: Boolean = false) {
+        val repository=com.a3322505a.guitarlearning.assets.song.SongRepository(File(compose.activity.filesDir,"songs"),
+            com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
+                compose.activity.assets.open("song-contract/"+it).use { input -> input.readBytes() }
+            }))
+        repository.reload();repository.commit(repository.prepare(javaClass.getResourceAsStream("/usotsuki-v1.gpractice")!!))
+        if(select) compose.activity.getSharedPreferences("practice-settings",0).edit().putString("phrase-selected","S01").commit()
+    }
     @Test fun scaleDensityRestoresLegacyBooleansAndSafelyHandlesOldOrMalformedLists() {
         assertEquals(1,ScaleSaver.restore(listOf(0,0,0,1,6,true,false,1,false))!!.notesPerBeat)
         assertEquals(2,ScaleSaver.restore(listOf(0,0,0,1,6,true,true,1,false))!!.notesPerBeat)
@@ -88,7 +96,7 @@ class RenderTest {
             compose.activity.setContent { PracticeApp(player) }
             compose.onNodeWithText("和弦").performClick()
             compose.onNodeWithText("短句应用").performClick()
-            for(id in listOf("M01","R02","PM01","S01")) {
+            for(id in listOf("M01","R02","PM01")) {
                 val phrase=Phrases.named(id)
                 compose.onNodeWithTag("config-summary").performClick()
                 compose.onNodeWithText(phrase.title).performScrollTo().performClick()
@@ -579,6 +587,7 @@ class RenderTest {
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,compose.activity.requestedOrientation)
     }
     @Test fun chordLearningAuditionsRealChordTonesAndSwitchesToSecondaryPhrase() {
+        importUsotsuki(select=true)
         val player=Player(compose.activity) { ManualSink() }
         try {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
@@ -605,7 +614,7 @@ class RenderTest {
             assertNull("Switching content ends the old learning sequence",player.session)
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithText("开始跟练").performClick()
-            assertEquals(Phrases.usotsuki.sequence,player.session!!.sequence)
+            assertEquals(LegacyUsotsukiFixture.phrase.sequence.events.flatMap { it.positions },player.session!!.plan.notes.map { it.position })
             compose.onNodeWithText("和弦学习").performClick()
             assertNull(player.session)
             compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
@@ -680,6 +689,7 @@ class RenderTest {
         assertWholeChordDiagram()
     }
     @Test fun emptyHarmonyPhraseUsesNotesAndOriginalPlaybackAcrossLoopsAndViews() {
+        importUsotsuki()
         val sinks=mutableListOf<ManualSink>()
         val player=Player(compose.activity) { ManualSink().also { sinks+=it } }
         try {
@@ -688,7 +698,7 @@ class RenderTest {
             compose.onNodeWithText("和弦").performClick()
             compose.onNodeWithText("短句应用").performClick()
             compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithText(Phrases.singleNote.title).performScrollTo().performClick()
+            compose.onNode(hasText(Phrases.singleNote.title) and hasClickAction()).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
             compose.onNodeWithText("下一：Asus4(no5)").assertDoesNotExist()
@@ -723,7 +733,7 @@ class RenderTest {
             assertSame(session,player.session)
             compose.onNodeWithText("结束").performClick()
             compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithText(Phrases.usotsuki.title).performScrollTo().performClick()
+            compose.onNodeWithText(LegacyUsotsukiFixture.phrase.title).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithTag("chord-diagram").assertIsDisplayed()

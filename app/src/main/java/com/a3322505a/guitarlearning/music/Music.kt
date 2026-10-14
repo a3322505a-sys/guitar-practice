@@ -37,7 +37,7 @@ object Patterns {
 data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>,
     val capoFret: Int = 0, val soundingName: String = name, val group: String = "基础和弦", val source: String = "",
     val intervalRoles: Map<Int,String> = emptyMap(), val toneNames: Map<Int,String> = emptyMap(),
-    val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null) {
+    val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null,val id: String = name) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
     val baseFret get() = if(positions.maxOf { it.fret }<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
@@ -59,6 +59,17 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
         }
     }
     fun label(index: Int) = frets[index]?.let { noteName(Position(6-index,it)) } ?: "X"
+}
+
+/** Package frets/fingers are authoritative; reuse known analysis only for the exact same grip. */
+fun com.a3322505a.guitarlearning.music.score.GuitarVoicing.chord(
+    track: com.a3322505a.guitarlearning.music.score.Track,group: String = "本地曲包",source: String = "",id: String = this.id): Chord {
+    val frets=frets.reversed().map { it.takeIf { fret -> fret>=0 } }
+    val known=Chords.all.firstOrNull { it.name==name && it.frets==frets && it.capoFret==track.capo && it.openStringMidi==track.openStringMidi }
+    return (known ?: Chord(name,-1,null,frets,fingers.reversed())).copy(
+        frets=frets,fingers=fingers.reversed(),capoFret=track.capo,openStringMidi=track.openStringMidi,
+        group="本地曲库 · "+group,source=source,id=id,
+        conditionsLabel=if(track.openStringMidi==Music.openMidi && track.capo==0) "标准调弦 · 无变调夹" else track.name+" · 夹"+track.capo+"品")
 }
 
 object Chords {

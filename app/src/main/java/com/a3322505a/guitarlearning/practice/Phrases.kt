@@ -13,31 +13,16 @@ data class Phrase(
     val assetKey: com.a3322505a.guitarlearning.music.score.PracticeKey? = null,
     val familyKey: String? = null,
     val unprepared: Boolean = false,val defaultSourceTempo: Boolean = true,
+    val legacyId: String? = null,
 )
 
+/** Controlled compatibility IDs only; no song data or automatic installation. */
+object MigratedPracticeIds {
+    val targets=mapOf("S01" to com.a3322505a.guitarlearning.music.score.PracticeKey("local.usotsuki","bass-treble").encoded)
+    fun legacy(id: String)=targets.entries.firstOrNull { it.value==id }?.key
+}
+
 object Phrases {
-    // Printed bars 10–11 = zero-based GP master bars 10–11 (un-numbered pickup).
-    // Rhythm Guitar, standard tuning, capo 0. Straight eighths: Triplet16th does
-    // not swing these eighth notes. Chord names describe these reduced grips.
-    val usotsuki = Phrase(
-        id="S01", title="嘘月 · 低音与高音分解", category="伴奏短句", passage="10–11 小节",
-        source="嘘月.gp · Rhythm Guitar · master index 10–11", sourceBpm=80,
-        difficulty="入门（暂定）", technique="低音分解", conditions="标准调弦 · 无变调夹",
-        sequence=Sequence(
-            events=listOf(
-                Position(6,3), Position(4,0), Position(3,2), Position(4,0),
-                Position(5,0), Position(4,0), Position(3,2), Position(4,0),
-                Position(5,2), Position(4,0), Position(3,2), Position(4,0),
-                Position(6,2), Position(4,0), Position(3,2), Position(4,0),
-            ).mapIndexed { index, position ->
-                val chord=listOf("Gsus2","Asus4(no5)","Bm7(no5)","D/F♯")[index/4]
-                Event(index*6,6,listOf(position),chord,ring=true)
-            },
-            length=2*BAR,
-            explanation="《嘘月》10–11 小节 · 伴奏改编练习。八分音符低音与高音交替；让音延续至同弦再拨或换指法，句尾收音后循环。no5 表示省略五音，只弹图中有效弦。标准调弦，无变调夹；原速 80 BPM，练习速度自行调整。",
-            sections=listOf(Section(0,"Gsus2"),Section(24,"Asus4(no5)"),Section(48,"Bm7(no5)"),Section(72,"D/F♯")),
-        ),
-    )
     val singleNote = Phrase(
         id="M01",title="单音短句 · C 大调小句",category="单音旋律",passage="1 小节",
         source="原创入门练习",sourceBpm=60,difficulty="入门",technique="单音拨弦",
@@ -49,7 +34,7 @@ object Phrases {
     val mozart = MozartK265.phrases
     val shayou = Shayou.phrases
     val kafka = Kafka.phrases
-    val all=(listOf(usotsuki.copy(use="和弦分解",goal="低音与高音交替，换指法时整齐收音。",suggestedBpm=40),singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases+SevenBlocks.phrases).also(::validatePhrases)
+    val all=(listOf(singleNote)+mozart+KernelPhrases.all+shayou+kafka+KafkaPractice.all+YourTrip.phrases+SevenBlocks.phrases).also(::validatePhrases)
     val catalogue=all.filter { !it.id.startsWith("KAF-") }+KafkaPractice.core
     fun practiceNamed(id: String)=named(KafkaPractice.replacement(id) ?: id)
     fun family(phrase: Phrase)=if(phrase.id in KafkaPractice.all.map { it.id }) named(phrase.relatedId ?: phrase.id) else phrase

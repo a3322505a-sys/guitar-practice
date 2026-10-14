@@ -70,9 +70,7 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
         if(runtimePlan==null) return Chords.named(section.chord)
         val v=runtimePlan.score.voicings.firstOrNull { it.id==section.voicingId && it.trackId==runtimePlan.practice.mainTrackId } ?: return null
         val track=runtimePlan.mainTrack
-        return Chord(section.chord,-1,null,v.frets.reversed().map { it.takeIf { fret -> fret>=0 } },v.fingers.reversed(),
-            capoFret=track.capo,group="本地曲包",openStringMidi=track.openStringMidi,
-            conditionsLabel=track.name+" · 夹"+track.capo+"品")
+        return v.chord(track).copy(name=section.chord)
     }
     // Let-ring audio lasts until the same string is picked or the grip changes.
     // Engraved duration stays the original rhythmic value; this is not a tied onset.

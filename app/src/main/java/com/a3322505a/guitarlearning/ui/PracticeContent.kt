@@ -36,7 +36,7 @@ internal data class PracticeContentState(
     val renderCursor: Cursor?,val cursor: Cursor?,val showingSession: Boolean,
     val event: Event?,val phraseNow: Event?,val nextEvent: Event?,val moving: MovingPosition?,
     val current: List<Position>,val shownChord: Chord?,val nextChord: String,
-    val status: String,val note: String,val beatsPerBar: Int)
+    val status: String,val note: String,val beatsPerBar: Int,val chords: List<Chord> = Chords.all)
 
 @Composable
 internal fun PracticeContent(state: PracticeContentState,modifier: Modifier,
@@ -81,7 +81,7 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
               Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                   Box(Modifier.size(7.dp).background(PurpleInk,RoundedCornerShape(4.dp)))
                   if(page==1 && !chordPhrases) {
-                      ChordSteps(first,onChord)
+                      ChordSteps(first,onChord,chords)
                   } else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
               }
               Spacer(Modifier.weight(1f))
@@ -158,7 +158,7 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
               } else if(selected && note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
           }
           }
-          if(page==1 && !chordPhrases) ChordDeck(Chords.all.indexOf(first),Chords.all.size,{onChord(Chords.all[it])},Modifier.weight(1f).fillMaxWidth()) { index,selected -> cardContent(Chords.all[index],selected) }
+          if(page==1 && !chordPhrases) ChordDeck(chords.indexOf(first),chords.size,{onChord(chords[it])},Modifier.weight(1f).fillMaxWidth()) { index,selected -> cardContent(chords[index],selected) }
           else Box(Modifier.weight(1f).fillMaxWidth()) { cardContent(shownChord ?: first,true) }
           if(!compact && !wide && !active && page==0) Surface(color=Color.Transparent,shape=RoundedCornerShape(18.dp),border=BorderStroke(1.dp,Color.White)) {
               Row(Modifier.background(candyBrush(Warm)).padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {

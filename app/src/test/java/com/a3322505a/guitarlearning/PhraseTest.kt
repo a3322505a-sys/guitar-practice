@@ -33,7 +33,7 @@ class PhraseTest {
         assertEquals("三音",Chords.named("D/F♯").role(Position(6,2)))
     }
     @Test fun phraseHasExactEighthNotesHarmonyAndNoCapoPitchShift() {
-        val phrase=Phrases.named("S01")
+        val phrase=LegacyUsotsukiFixture.phrase
         val seq=phrase.sequence
         assertEquals("标准调弦 · 无变调夹",phrase.conditions)
         assertEquals(80,phrase.sourceBpm)
@@ -55,7 +55,7 @@ class PhraseTest {
         assertEquals(0.0,Session(seq,60,false,4).cursor(96.0).localTick,0.0)
     }
     @Test fun ringStopsAtRepickedStringGripChangeAndLoopEndAndPcmIsChunkInvariant() {
-        val seq=Phrases.usotsuki.sequence
+        val seq=LegacyUsotsukiFixture.phrase.sequence
         assertEquals(listOf(24,12,12,6,24,12,12,6,24,12,12,6,24,12,12,6),seq.events.map { seq.soundDuration(it,it.positions.single()) })
         val sampler=Sampler(SoundBank.NYLON) { root -> File("src/main/assets/guitar-nylon/$root.pcm").readBytes() }
         val session=Session(seq,80,false,1)

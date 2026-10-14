@@ -18,38 +18,82 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
     val context=LocalContext.current;val scope=rememberCoroutineScope()
     var candidate by remember { mutableStateOf<ImportCandidate?>(null) }
     var message by remember { mutableStateOf("") };var busy by remember { mutableStateOf(false) }
+    var committing by remember { mutableStateOf(false) }
+    var cancellation by remember { mutableStateOf<ImportCancellation?>(null) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var snapshot by remember { mutableStateOf(repository.snapshot) }
-    fun action(block: suspend ()->LibrarySnapshot) {
+    fun discard(preview: ImportCandidate?) {
+        if(preview!=null) scope.launch(NonCancellable+Dispatchers.IO) { repository.cancel(preview) }
+    }
+    fun close() {
+        if(committing || cancellation?.cancel()==false) return
+        operation?.cancel();discard(candidate);candidate=null;onClose()
+    }
+    fun action(block: ()->LibrarySnapshot) {
+        busy=true;message="";committing=true
         operation=scope.launch {
-            busy=true;message=""
-            try { snapshot=withContext(Dispatchers.IO) { block() };onChanged(snapshot) }
-            catch(e: CancellationException) { throw e }
-            catch(e: Exception) { message=e.message ?: "曲包操作失败" }
-            finally { busy=false }
+            // Short index operations must deliver their actual result after disposal too.
+            withContext(NonCancellable) {
+                try { snapshot=withContext(Dispatchers.IO) { block() };onChanged(snapshot) }
+                catch(e: Exception) { message=e.message ?: "曲包操作失败" }
+                finally { busy=false;committing=false }
+            }
+        }
+    }
+    fun import(preview: ImportCandidate,rollback: Boolean) {
+        val gate=ImportCancellation();cancellation=gate;busy=true;message=""
+        operation=scope.launch {
+            val job=currentCoroutineContext()
+            // Keep the IO result when returning to a cancelled UI job. Only validation checks cancellation.
+            withContext(NonCancellable) {
+                try {
+                    snapshot=withContext(Dispatchers.IO) {
+                        repository.commit(preview,rollback,{job.ensureActive()},gate,{committing=true})
+                    }
+                    onChanged(snapshot);message="导入完成"
+                } catch(e: CancellationException) { message="已取消导入" }
+                catch(e: Exception) { message=e.message ?: "曲包导入失败" }
+                finally {
+                    withContext(Dispatchers.IO) { repository.cancel(preview) }
+                    candidate=null;busy=false;committing=false;cancellation=null
+                }
+            }
         }
     }
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if(uri!=null) operation=scope.launch {
+        if(uri!=null) {
             busy=true;message=""
-            try {
-                val job=currentCoroutineContext()
-                candidate=withContext(Dispatchers.IO) {
-                    val input=context.contentResolver.openInputStream(uri) ?: error("无法读取所选文件")
-                    repository.prepare(input) { job.ensureActive() }
+            val gate=ImportCancellation();cancellation=gate
+            operation=scope.launch {
+                var held: ImportCandidate?=null
+                try {
+                    val job=currentCoroutineContext()
+                    val preview=withContext(Dispatchers.IO) {
+                        val input=context.contentResolver.openInputStream(uri) ?: error("无法读取所选文件")
+                        repository.prepare(input) { gate.check();job.ensureActive() }.also { held=it }
+                    }
+                    candidate=preview;held=null
+                } catch(e: CancellationException) { message="已取消检查" }
+                catch(e: Exception) { message=e.message ?: "曲包读取失败" }
+                finally {
+                    withContext(NonCancellable) {
+                        withContext(Dispatchers.IO) { held?.let { repository.cancel(it) } }
+                        busy=false;cancellation=null
+                    }
                 }
-            } catch(e: CancellationException) { throw e }
-            catch(e: Exception) { message=e.message ?: "曲包读取失败" }
-            finally { busy=false }
+            }
         }
     }
-    DisposableEffect(Unit) { onDispose { operation?.cancel() } }
-    AlertDialog(onDismissRequest={operation?.cancel();onClose()},title={Text("本地曲库")},
+    DisposableEffect(Unit) { onDispose { cancellation?.cancel();operation?.cancel();discard(candidate) } }
+    AlertDialog(onDismissRequest={close()},title={Text("本地曲库")},
         text={
             Column(Modifier.heightIn(max=520.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 Text("选择经过审核的 .gpractice 文件；导入后可离线使用。")
                 Button(onClick={picker.launch(arrayOf("*/*"))},enabled=!busy && candidate==null) { Text("选择曲包") }
-                if(busy) { Text("正在检查曲包…");TextButton(onClick={operation?.cancel()}) { Text("取消检查") } }
+                if(busy) {
+                    Text(if(committing) "正在完成导入，请稍候…" else "正在检查曲包…")
+                    if(!committing) TextButton(onClick={if(cancellation?.cancel()!=false) operation?.cancel()}) { Text("取消检查") }
+                }
                 if(message.isNotBlank()) Text(message)
                 candidate?.let { preview ->
                     val song=preview.song
@@ -58,10 +102,10 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                     song.warnings.forEach { Text(it) }
                     val current=snapshot.packages.firstOrNull { it.identity.packageId==song.identity.packageId }
                     if(current!=null) Text("当前修订 "+current.identity.revision+"；正在播放的会话继续使用原修订。")
-                    Button(enabled=!busy,onClick={
-                        action { repository.commit(preview,current!=null && song.identity.revision<current.identity.revision).also { candidate=null } }
-                    }) { Text(if(current==null) "导入" else if(song.identity.revision<current.identity.revision) "导入并回退到修订 "+song.identity.revision else "应用更新") }
-                    TextButton(enabled=!busy,onClick={action { repository.cancel(preview);candidate=null;repository.snapshot }}) { Text("取消导入") }
+                    Button(enabled=!busy,onClick={import(preview,current!=null && song.identity.revision<current.identity.revision)}) {
+                        Text(if(current==null) "导入" else if(song.identity.revision<current.identity.revision) "导入并回退到修订 "+song.identity.revision else "应用更新")
+                    }
+                    TextButton(enabled=!busy,onClick={candidate=null;discard(preview)}) { Text("取消导入") }
                 }
                 snapshot.packages.forEach { pkg ->
                     HorizontalDivider();Text(pkg.title+" · 修订 "+pkg.identity.revision)
@@ -74,5 +118,5 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                 }
                 snapshot.diagnostics.forEach { Text(it) }
             }
-        },confirmButton={TextButton(onClick={operation?.cancel();onClose()}) { Text("完成") }})
+        },confirmButton={TextButton(enabled=!committing,onClick={close()}) { Text("完成") }})
 }
