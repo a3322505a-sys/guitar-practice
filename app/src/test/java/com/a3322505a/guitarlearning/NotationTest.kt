@@ -2,6 +2,8 @@ package com.a3322505a.guitarlearning
 
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
+import com.a3322505a.guitarlearning.practice.compile.tabProjection
+import com.a3322505a.guitarlearning.ui.tabLayoutSystems
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -65,9 +67,10 @@ class NotationTest {
         }
     }
     @Test fun layoutUsesReadableDynamicSystemsAndCursorKeepsLoopPosition() {
-        val bars=Routes.scale(ScaleOptions(exercise=ScaleExercise.THREE,notesPerBeat=2)).sequence!!.tabBars()
-        assertTrue(tabSystems(bars,360).all { it.size==1 })
-        assertTrue(tabSystems(bars,1200).any { it.size>1 })
+        val plan=Routes.scale(ScaleOptions(exercise=ScaleExercise.THREE,notesPerBeat=2)).sequence!!.performance
+        fun rows(width: Float)=tabLayoutSystems(plan,plan.tabProjection(),width) { s,size -> s.length*size*.6f }
+        assertTrue(rows(360f).all { it.bars.size==1 })
+        assertTrue(rows(1200f).any { it.bars.size>1 })
         val session=Session(Routes.scale(ScaleOptions()).sequence!!,60,true,4)
         assertTrue(session.cursor(30.0).pre)
         val c=session.cursor(306.0)

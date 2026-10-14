@@ -99,64 +99,19 @@ internal fun ViewSwitch(tab: Boolean, onSelect: (Int)->Unit) {
     }
 }
 
-/** Domain, secondary chord content, and editing have distinct visual roles in every layout. */
+/** The summary is the sole content selector; management has one fixed entry. */
 @Composable
-internal fun PracticeNavigation(page: Int, phrases: Boolean, compact: Boolean, tablet: Boolean,
-    onPage: (Int)->Unit, onMode: (Boolean)->Unit, onSettings: ()->Unit,
-    chordSteps: @Composable ()->Unit, trailing: @Composable ()->Unit) {
-    val domains: @Composable ()->Unit = {
-        listOf("音阶","和弦").forEachIndexed { index,title ->
-            CandyChip(title,page==index,if(index==0) Mint else Pink,Modifier.testTag("domain-$index")) { onPage(index) }
-        }
-    }
-    val modes: @Composable ()->Unit = {
-        if(page==1) listOf("和弦学习","短句应用").forEachIndexed { index,title ->
-            val checked=phrases==(index==1)
-            PracticeTextButton(onClick={onMode(index==1)},modifier=Modifier.testTag("chord-mode-$index").semantics { selected=checked },
-                contentPadding=PaddingValues(horizontal=8.dp)) {
-                Text(title,color=if(checked) PurpleInk else Muted,fontWeight=if(checked) FontWeight.Bold else FontWeight.Normal)
+internal fun PracticeNavigation(summary: String,onSettings: ()->Unit,onManagement: ()->Unit,
+    compact: Boolean = false,views: @Composable ()->Unit = {}) {
+    Row(Modifier.fillMaxWidth().testTag("practice-navigation"),verticalAlignment=Alignment.CenterVertically) {
+        Surface(onClick=onSettings,modifier=Modifier.weight(1f).heightIn(min=if(LocalLargePracticeControls.current) 64.dp else 48.dp).testTag("config-summary"),color=Color.Transparent) {
+            Column(Modifier.padding(horizontal=8.dp,vertical=8.dp)) {
+                Text("当前内容 · 点此选择",style=MaterialTheme.typography.labelSmall,color=Muted)
+                Text("$summary ›",style=MaterialTheme.typography.titleSmall,fontWeight=FontWeight.Bold,
+                    maxLines=1,overflow=TextOverflow.Ellipsis,color=PurpleInk)
             }
         }
-    }
-    val settings: @Composable ()->Unit = {
-        PracticeTextButton(onClick=onSettings,modifier=Modifier.testTag("config-summary"),contentPadding=PaddingValues(horizontal=8.dp)) {
-            Text("练习设置 ›",color=Muted,style=MaterialTheme.typography.labelLarge)
-        }
-    }
-    Column(Modifier.fillMaxWidth().testTag("practice-navigation"),verticalArrangement=Arrangement.spacedBy(if(tablet) 4.dp else 0.dp)) {
-        if(tablet) {
-            Row(Modifier.fillMaxWidth().testTag("navigation-primary"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                Text("吉他练习",modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
-                domains()
-                settings()
-            }
-            Row(Modifier.fillMaxWidth().testTag("navigation-secondary"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    if(page==1) modes() else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
-                    if(page==1 && !phrases) chordSteps()
-                }
-                trailing()
-            }
-        } else {
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-            if(compact) {
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    domains()
-                    if(page==1) { Box(Modifier.width(1.dp).height(20.dp).background(Outline)); modes() }
-                }
-                settings()
-                trailing()
-            } else {
-                Text("吉他练习",modifier=Modifier.weight(1f),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis)
-                domains()
-                trailing()
-            }
-        }
-        if(!compact) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-            modes(); Spacer(Modifier.weight(1f)); settings()
-        }
-        }
+        if(compact) views()
+        PracticeTextButton(onClick=onManagement,modifier=Modifier.testTag("management-button").semantics { contentDescription="管理与帮助" }) { Text("⚙",fontSize=24.sp) }
     }
 }
-
-

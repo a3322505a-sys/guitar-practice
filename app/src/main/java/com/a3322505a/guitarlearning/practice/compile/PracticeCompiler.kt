@@ -11,7 +11,9 @@ data class MeasureVisit(val id: String, val measure: Measure, val occurrence: In
 data class PlanEvent(val id: String, val event: ScoreEvent, val track: Track, val voiceId: String,
     val start: Q, val duration: Q, val sourceStart: Q, val visit: Int,
     val activation: Q = start,val sourceOffset: Q = Q.ZERO,val adaptation: String? = null,
-    val suppressedNoteIds: Set<String> = emptySet()) {
+    val suppressedNoteIds: Set<String> = emptySet(),
+    /** Trusted legacy display hints that were already folded into velocity/soundEnd. */
+    val notationMarks: List<String> = emptyList()) {
     val end get() = start+duration
 }
 data class PlanNote(val id: String, val note: ScoreNote, val event: PlanEvent, val start: Q, val soundEnd: Q,

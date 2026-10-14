@@ -20,7 +20,7 @@ class SongKernelTest {
             val song=fixture(name)
             assertEquals(1,song.identity.revision)
             val plan=PracticeCompiler.compile(song.score,song.practices.single())
-            assertTrue(plan.tabProjection().all { it.readableWidth>=330 })
+            assertTrue(plan.tabProjection().all { bar -> bar.glyphs.all { it.start>=bar.visit.start && it.end<=bar.visit.start+bar.visit.duration } })
             val pcm=Pcm(Session(Sequence(emptyList(),ceil(plan.length.value()*12).toInt(),"test",runtimePlan=plan),60,false,1),sampler())
             assertTrue(pcm.block(0,4096,true,false).any { it!=0.toShort() })
         }

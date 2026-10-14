@@ -33,6 +33,24 @@ import java.util.concurrent.atomic.AtomicLong
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RenderTest {
     @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    private fun expandSettings() {
+        val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
+        if(compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty()) compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
+        compose.waitForIdle()
+    }
+    private fun openContent() {
+        compose.onNodeWithTag("config-summary").performClick()
+        expandSettings()
+        compose.onNodeWithText("内容").performClick()
+    }
+    private fun advanced() {
+        if(compose.onAllNodesWithText("高级 ▾").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("advanced-toggle").performScrollTo().performClick()
+    }
+    private fun category(title: String) {
+        openContent()
+        compose.onNodeWithText(title).performScrollTo().performClick()
+        compose.onNodeWithText("完成").performClick()
+    }
     private fun importUsotsuki(select: Boolean = false) {
         // Already preinstalled: don't race a second writer against startup's seed transaction.
         compose.waitUntil(12000) {
@@ -55,7 +73,7 @@ class RenderTest {
         fullscreen()
         repeat(3) {
             compose.onNodeWithText("六线谱").performClick();fullscreen()
-            compose.onNodeWithTag("config-summary").performClick()
+            openContent()
             compose.runOnIdle {
                 val globalClass=Class.forName("android.view.WindowManagerGlobal")
                 val global=globalClass.getDeclaredMethod("getInstance").invoke(null)
@@ -72,7 +90,8 @@ class RenderTest {
         compose.activityRule.scenario.recreate();compose.waitForIdle();fullscreen()
     }
     @Test fun scaleThreePerBeatIsSelectableSavedAndUsesTheOriginalPlayer() {
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
+        advanced()
         compose.onNodeWithText("每拍3音").performScrollTo().performClick()
         capture("scale-triplet-settings","five-fixes")
         compose.onNodeWithText("完成").performClick()
@@ -94,11 +113,11 @@ class RenderTest {
         try {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick()
-            compose.onNodeWithText("短句应用").performClick()
+            category("和弦学习")
+            category("短句练习")
             for(id in listOf("M01","R02","PM01")) {
                 val phrase=Phrases.named(id)
-                compose.onNodeWithTag("config-summary").performClick()
+                openContent()
                 compose.onNode(hasText(phrase.title) and hasAnyAncestor(hasTestTag("practice-settings"))).performScrollTo().performClick()
                 compose.onNodeWithText("完成").performClick()
                 compose.onAllNodesWithText(phrase.title).assertCountEquals(1)
@@ -164,17 +183,17 @@ class RenderTest {
         compose.onNodeWithTag("config-summary").assertIsDisplayed()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("phone-scale")
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onNodeWithText("指型连接").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         capture("phone-connection")
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
         compose.onNodeWithText("根音 C · 三音 E · 五音 G").assertIsDisplayed()
         compose.onNodeWithText("听和弦").assertIsDisplayed()
         compose.onNodeWithText("下一：Asus4(no5)").assertDoesNotExist()
         capture("phone-chord-learning")
-        compose.onNodeWithText("短句应用").performClick()
+        category("短句练习")
         compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         capture("phone-chord")
         compose.onNodeWithText("六线谱").performClick()
@@ -187,8 +206,8 @@ class RenderTest {
         compose.onNodeWithText("指板").performClick()
         compose.onNodeWithText("已撤提示").assertIsDisplayed()
         compose.onNodeWithText("恢复提示").performClick()
-        compose.onNodeWithText("和弦学习").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
+        category("和弦学习")
+        openContent()
         compose.onAllNodesWithText("D")[0].performScrollTo().performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
         compose.onNodeWithText("点音与和弦说明").assertDoesNotExist()
@@ -198,67 +217,53 @@ class RenderTest {
         capture("phone-d-chord")
     }
     @Test fun practiceAndTempoPanelsAreSeparateAndKeepSelections() {
-        compose.onNodeWithTag("tempo-button").performClick()
-        compose.onNodeWithText("速度与播放").assertIsDisplayed()
-        compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
-        compose.onNodeWithText("选音阶与指型").assertDoesNotExist()
         compose.onNodeWithTag("tempo-faster").performClick()
-        compose.onNode(hasText("65 BPM") and hasAnyAncestor(hasTestTag("tempo-settings"))).assertIsDisplayed()
-        compose.onNodeWithText("1 次").performScrollTo().performClick()
-        capture("phone-tempo-settings")
-        compose.onNodeWithText("完成").performClick()
         compose.onNodeWithText("65 BPM").assertIsDisplayed()
-        compose.onNodeWithTag("config-summary").performClick()
-        compose.onNodeWithText("练习设置").assertIsDisplayed()
+        compose.onNodeWithTag("tempo-button").performClick()
+        compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
+        compose.onNodeWithTag("tempo-button").performClick()
+        openContent()
+        compose.onNodeWithText("跟练").performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
+        compose.onNodeWithText("1 次").performScrollTo().performClick()
+        compose.onNodeWithText("声音").performClick()
+        compose.onNodeWithTag("guitar-switch").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("内容").performClick()
         compose.onNodeWithTag("guitar-switch").assertDoesNotExist()
-        compose.onNodeWithText("完整提示").assertDoesNotExist()
-        compose.onNodeWithText("起始弦").assertDoesNotExist()
-        compose.onNodeWithTag("advanced-toggle").assertDoesNotExist()
-        compose.onNodeWithText("范围与显示").assertDoesNotExist()
-        compose.onNodeWithText("高 → 低 → 高").assertDoesNotExist()
+        listOf("起始弦","范围与显示","高 → 低 → 高").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
-        compose.onNodeWithText("选择和弦").assertIsDisplayed()
+        category("和弦学习");openContent()
         compose.onNodeWithText("Gsus2").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("more-chord-toggle").assertDoesNotExist()
-        capture("phone-check-settings")
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithText("短句应用").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
+        category("短句练习");openContent()
         compose.onNodeWithText("选择短句").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("两和弦转换").assertDoesNotExist()
-        compose.onNodeWithText("规则下拨").assertDoesNotExist()
-        compose.onNodeWithText("简单分解").assertDoesNotExist()
-        compose.onNodeWithText("检查和弦发音").assertDoesNotExist()
-        capture("phone-phrase-settings")
-        compose.onNodeWithText("第二个和弦").assertDoesNotExist()
-        compose.onNodeWithText("每个和弦的长度").assertDoesNotExist()
+        listOf("两和弦转换","规则下拨","简单分解","第二个和弦","每个和弦的长度").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
         compose.onNodeWithText("完成").performClick()
-        compose.activityRule.scenario.recreate()
-        compose.waitForIdle()
+        compose.activityRule.scenario.recreate();compose.waitForIdle()
         compose.onNodeWithText("65 BPM").assertIsDisplayed()
-        capture("recreated-phrase-board","five-fixes")
         compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
-        compose.onNodeWithText("和弦学习").performClick()
+        category("和弦学习")
         compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
     }
     @Test fun scaleSettingsFoldSpecialtiesAndRestoreApplicableParameters() {
-        compose.onNodeWithTag("config-summary").performClick()
-        compose.onNodeWithText("练习方式").assertIsDisplayed()
-        listOf("音阶往返","三度跳进","指型连接").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        openContent()
+        compose.onNodeWithText("练习方式").performScrollTo().assertIsDisplayed()
+        listOf("音阶往返","三度跳进","指型连接").forEach { compose.onNodeWithText(it).performScrollTo().assertIsDisplayed() }
         listOf("主音与八度","三音模进","换起点","起点级数","起始弦").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
-        compose.onNodeWithText("一八度").assertIsDisplayed()
-        compose.onNodeWithText("每拍1音").assertIsDisplayed()
+        advanced()
+        compose.onNodeWithText("一八度").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
         capture("phone-scale-settings")
         compose.onNodeWithText("la · G").performClick()
-        compose.onNodeWithText("la 指型三弦 4 品 B：可伸指或轻微移位。").assertIsDisplayed()
+        compose.onNodeWithText("la 指型三弦 4 品 B：可伸指或轻微移位。").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("more-exercises-toggle").performScrollTo().performClick()
         compose.onNodeWithText("主音与八度").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("一八度").assertDoesNotExist()
+        advanced()
         compose.onNodeWithText("整型音域").assertDoesNotExist()
         compose.onNodeWithText("换起点").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("每拍2音").performScrollTo().performClick()
         compose.onNodeWithText("起点级数").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("3").performScrollTo().performClick()
@@ -268,12 +273,15 @@ class RenderTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         compose.onNodeWithText("换起点 · 每拍2音").assertIsDisplayed()
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
+        advanced()
         compose.onNodeWithText("起点级数").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("三度跳进").performScrollTo().performClick()
         compose.onNodeWithText("起点级数").assertDoesNotExist()
         compose.onNodeWithText("指型连接").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("一八度").assertDoesNotExist()
+        advanced()
         compose.onNodeWithText("整型音域").assertDoesNotExist()
         compose.onNodeWithText("re · D").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
@@ -294,15 +302,16 @@ class RenderTest {
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,compose.activity.requestedOrientation)
         capture("tablet-scale-tab")
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onNodeWithTag("more-exercises-toggle").performScrollTo().performClick()
         compose.onNodeWithText("三音模进").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("整型音域").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         capture("tablet-multiline-tab")
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         capture("tablet-chord-tab")
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onAllNodesWithText("Bm7(no5)")[0].performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         capture("tablet-check-tab")
@@ -310,7 +319,7 @@ class RenderTest {
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,compose.activity.requestedOrientation)
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("tablet-chord-diagram")
-        compose.onNodeWithText("短句应用").performClick()
+        category("短句练习")
         compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         capture("tablet-phrase-diagram")
     }
@@ -320,10 +329,10 @@ class RenderTest {
         capture("tablet-portrait-tab")
     }
     private fun assertTabletControlsVisible(tab: Boolean = false) {
-        val first=compose.onNodeWithTag("navigation-primary").fetchSemanticsNode().boundsInRoot
-        val second=compose.onNodeWithTag("navigation-secondary").fetchSemanticsNode().boundsInRoot
-        assertTrue("The navigation uses two separate rows",second.top>=first.bottom)
-        listOf("domain-0","domain-1","config-summary").forEach { tag ->
+        val first=compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot
+        val second=compose.onNodeWithTag("view-switch").fetchSemanticsNode().boundsInRoot
+        assertTrue("Summary and view controls have separate rows",second.top>=first.bottom)
+        listOf("config-summary","management-button").forEach { tag ->
             val node=compose.onNodeWithTag(tag).assertIsDisplayed().fetchSemanticsNode()
             assertTrue("$tag has a visible 64dp target",node.boundsInRoot.height>=63.5f)
             assertEquals("$tag is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
@@ -339,9 +348,8 @@ class RenderTest {
         }
         val transport=compose.onNodeWithTag("transport").fetchSemanticsNode().boundsInRoot
         val tempo=compose.onNodeWithTag("tempo-button").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
-        if(tab) assertTrue("TAB keeps tempo inside the original single footer row",tempo.top>=transport.top && tempo.bottom<=transport.bottom)
-        else assertTrue("The board keeps tempo above the original transport row",tempo.bottom<=transport.top)
-        compose.onNodeWithText("结束").assertHeightIsEqualTo(48.dp)
+        assertTrue("Speed stays above the transport on both views",tempo.bottom<=transport.top)
+        compose.onNodeWithText("结束").assertDoesNotExist()
         compose.onAllNodesWithTag("view-switch").assertCountEquals(1)
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletControlsUseTwoRowsAcrossBoardChordAndTab() {
@@ -349,14 +357,14 @@ class RenderTest {
         compose.onNodeWithTag("playback-status").assertIsDisplayed()
         val navigation=compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot
         capture("tablet-scale-board","v67")
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         assertTabletControlsVisible()
         compose.onNodeWithTag("playback-status").assertIsDisplayed()
         assertWholeChordDiagram()
         compose.onNodeWithTag("next-chord").performClick()
         compose.onNodeWithText("Am · 逐弦检查").assertIsDisplayed()
         capture("tablet-chord-board","v67")
-        compose.onNodeWithText("短句应用").performClick()
+        category("短句练习")
         assertTabletControlsVisible()
         capture("tablet-phrase-board","v67")
         compose.onNodeWithText("六线谱").performClick()
@@ -372,27 +380,27 @@ class RenderTest {
         @Suppress("DEPRECATION")
         compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
         compose.activityRule.scenario.recreate();compose.waitForIdle()
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         assertTabletControlsVisible()
-        compose.onNodeWithText("短句应用").performClick()
+        category("短句练习")
         assertTabletControlsVisible()
         capture("tablet-portrait-large-text","v67")
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onNodeWithText(Phrases.named("PM01").title).performScrollTo().performClick()
         capture("tablet-portrait-practice-settings","v67")
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("tempo-button").performClick()
         compose.onNodeWithTag("tempo-faster").performClick()
-        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithTag("tempo-button").performClick()
         compose.onNodeWithText("65 BPM").assertIsDisplayed()
         compose.onNodeWithText("六线谱").performClick()
         assertTabletControlsVisible(tab=true)
         capture("tablet-portrait-large-tab","v67")
     }
     @Test fun openStringPracticeUsesCompactTargetsAndPreservesAuditionAndHints() {
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithText("短句应用").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
+        category("和弦学习")
+        category("短句练习")
+        openContent()
         compose.onNodeWithText(Phrases.named("PM01").title).performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         val viewport=compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().boundsInRoot
@@ -430,10 +438,12 @@ class RenderTest {
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun notationShowsEighthBeamsRestsAndAcrossBarTies() {
         compose.onNodeWithText("六线谱").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onNodeWithTag("more-exercises-toggle").performScrollTo().performClick()
         compose.onNodeWithText("三音模进").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("整型音域").performScrollTo().performClick()
+        advanced()
         compose.onNodeWithText("每拍2音").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(1)
@@ -447,7 +457,7 @@ class RenderTest {
         capture("tablet-downstroke")
     }
     @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun phoneLandscapeKeepsTransportReachable() {
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         compose.onNodeWithText("听示范").assertIsDisplayed()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("phone-landscape")
@@ -470,8 +480,8 @@ class RenderTest {
         listOf("开始跟练","听示范","撤提示","60 BPM").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
         compose.onNodeWithTag("config-summary").assertIsDisplayed()
         capture("phone-landscape-tab")
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithText("短句应用").performClick()
+        category("和弦学习")
+        category("短句练习")
         compose.onNodeWithContentDescription("第 1 至 1 小节",substring=true).assertIsDisplayed()
         capture("phone-landscape-phrase-tab")
         compose.onNodeWithText("指板").performClick()
@@ -481,13 +491,13 @@ class RenderTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,compose.activity.requestedOrientation)
-        compose.onNodeWithText("短句应用").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertIsDisplayed()
         compose.onNodeWithText("指板").performClick()
         compose.waitForIdle()
         assertEquals(original,compose.activity.requestedOrientation)
     }
     @Test @Config(qualifiers="w320dp-h640dp-port-mdpi") fun smallPhoneKeepsPracticeAndSettingsReachable() {
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
         compose.onNodeWithText("听示范").assertIsDisplayed()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
@@ -495,7 +505,7 @@ class RenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("small-phone-tab")
-        compose.onNodeWithTag("config-summary").performClick()
+        openContent()
         compose.onNodeWithText("选择和弦").assertIsDisplayed()
         compose.onNodeWithText("完成").assertIsDisplayed()
         capture("small-phone-settings")
@@ -506,7 +516,7 @@ class RenderTest {
         compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("large-text-chord")
         compose.onNodeWithText("六线谱").performClick()
@@ -532,9 +542,9 @@ class RenderTest {
         compose.onNodeWithTag("chord-page").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f,delta) }
     }
     @Test @Config(qualifiers="w360dp-h800dp-port-mdpi") fun representativeChordsFitWithoutDiagramScrolling() {
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         listOf("D","C","G","D/F♯","Asus4(no5)").forEach { name ->
-            compose.onNodeWithTag("config-summary").performClick()
+            openContent()
             compose.onAllNodesWithText(name)[0].performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             assertWholeChordDiagram()
@@ -549,14 +559,14 @@ class RenderTest {
         compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithText("和弦学习").assertIsDisplayed()
-        compose.onNodeWithText("短句应用").assertIsDisplayed()
+        category("和弦学习")
+        compose.onNodeWithTag("config-summary").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertIsDisplayed()
         scrollChordDiagramIntoView()
         assertWholeChordDiagram()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("small-large-text-chord-fit")
-        compose.onNodeWithText("六线谱").performScrollTo().performClick()
+        compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         compose.onNodeWithText("指板").performClick()
         scrollChordDiagramIntoView()
@@ -564,8 +574,8 @@ class RenderTest {
     }
     @Test fun activityRecreationKeepsPlayerAndSelectedPractice() {
         val original=ViewModelProvider(compose.activity)[PracticeModel::class.java].player
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithTag("config-summary").performClick()
+        category("和弦学习")
+        openContent()
         compose.onAllNodesWithText("D")[0].performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithText("六线谱").performClick()
@@ -592,7 +602,7 @@ class RenderTest {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
             compose.waitForIdle()
-            compose.onNodeWithText("和弦").performClick()
+            category("和弦学习")
             compose.onNodeWithText("听和弦").performClick()
             assertTrue(player.session!!.preview)
             assertEquals(listOf(48,52,55,60,64),player.session!!.sequence.events.single().positions.map { it.midi })
@@ -607,9 +617,9 @@ class RenderTest {
             compose.onNodeWithText("开始跟练").performClick()
             val learning=player.session!!
             assertEquals(listOf(48,52,55,60,64),learning.sequence.events.flatMap { it.positions }.map { it.midi })
-            compose.onNodeWithText("和弦学习").performClick()
+            category("和弦学习")
             assertSame("Selecting the current mode keeps playback",learning,player.session)
-            compose.onNodeWithText("短句应用").performClick()
+            category("短句练习")
             assertNull("Switching content ends the old learning sequence",player.session)
             compose.waitUntil(8000) {
                 runCatching { compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed();true }.getOrDefault(false)
@@ -617,7 +627,7 @@ class RenderTest {
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
             compose.onNodeWithText("开始跟练").performClick()
             assertEquals(LegacyUsotsukiFixture.phrase.sequence.events.flatMap { it.positions },player.session!!.plan.notes.map { it.position })
-            compose.onNodeWithText("和弦学习").performClick()
+            category("和弦学习")
             assertNull(player.session)
             compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
             compose.onNodeWithText("撤提示").performClick()
@@ -642,7 +652,7 @@ class RenderTest {
         try {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick()
+            category("和弦学习")
             compose.onNodeWithTag("previous-chord").assertIsNotEnabled()
             compose.onNodeWithText("开始跟练").performClick()
             val old=player.session
@@ -683,7 +693,7 @@ class RenderTest {
     }
     @Test fun selectedWholeCardSurvivesRealActivityRecreation() {
         // Use MainActivity's real saved-state tree, rather than replacing it with an injected player.
-        compose.onNodeWithText("和弦").performClick()
+        category("和弦学习")
         repeat(3) { compose.onNodeWithTag("next-chord").performClick() }
         compose.onNodeWithText("Em · 逐弦检查").assertIsDisplayed()
         compose.activityRule.scenario.recreate()
@@ -697,9 +707,9 @@ class RenderTest {
         try {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick()
-            compose.onNodeWithText("短句应用").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
+            category("和弦学习")
+            category("短句练习")
+            openContent()
             compose.onNode(hasText(Phrases.singleNote.title) and hasClickAction()).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
@@ -734,7 +744,7 @@ class RenderTest {
             compose.onNodeWithText("继续").performClick()
             assertSame(session,player.session)
             compose.onNodeWithText("结束").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
+            openContent()
             compose.onNodeWithText(LegacyUsotsukiFixture.phrase.title).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithText("下一：Asus4(no5)").assertIsDisplayed()
@@ -747,10 +757,10 @@ class RenderTest {
         try {
             org.robolectric.Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick()
-            compose.onNodeWithText("短句应用").performClick()
+            category("和弦学习")
+            category("短句练习")
             SongTestLibrary.mozart.forEach { phrase ->
-                compose.onNodeWithTag("config-summary").performClick()
+                openContent()
                 compose.onNodeWithText(phrase.title).performScrollTo().performClick()
                 compose.onNodeWithText("完成").performClick()
                 compose.waitUntil(8000) {
@@ -783,7 +793,7 @@ class RenderTest {
             compose.activity.setContent { PracticeTheme { Tablature(seq,Hint.FULL,null,null,false) } }
             compose.onNodeWithTag("tablature").assertIsDisplayed()
             if(id=="T01") compose.onNodeWithContentDescription("三连音 3",substring=true).assertIsDisplayed()
-            if(id=="R02") compose.onNodeWithContentDescription("弦 x",substring=true).assertIsDisplayed()
+            if(id=="R02") compose.onAllNodesWithContentDescription("弦 x",substring=true).onFirst().assertIsDisplayed()
             if(id=="PM01") compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
             if(id=="SL01") compose.onNodeWithContentDescription("5/7",substring=true).assertIsDisplayed()
             capture("$id-tab","five-fixes")
@@ -815,12 +825,12 @@ class RenderTest {
             sink.head.set(s.frame(120.0))
             compose.waitUntil(8000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); player.progress.tick>=119.9 }
             val tick=player.progress.tick
-            compose.onNodeWithTag("config-summary").performClick()
+            openContent()
             assertSame(s,player.session)
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("tempo-button").performClick()
             assertSame(s,player.session)
-            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithTag("tempo-button").performClick()
             compose.onNodeWithText("六线谱").performClick()
             compose.waitForIdle()
             assertSame(s,player.session)
@@ -842,12 +852,12 @@ class RenderTest {
             compose.onNodeWithTag("tempo-button").performClick()
             compose.onNodeWithTag("tempo-faster").performClick()
             assertNull("Changing tempo must end the old session",player.session)
-            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithTag("tempo-button").performClick()
             compose.onNodeWithText("开始跟练").performClick()
             assertEquals(65,player.session!!.bpm)
             assertEquals(s.sequence,player.session!!.sequence)
             val updated=player.session!!
-            compose.onNodeWithTag("config-summary").performClick()
+            openContent()
             compose.onNodeWithText("音阶往返").performScrollTo().performClick()
             assertSame("Selecting the existing exercise must keep the session",updated,player.session)
             compose.onNodeWithTag("more-exercises-toggle").performScrollTo().performClick()

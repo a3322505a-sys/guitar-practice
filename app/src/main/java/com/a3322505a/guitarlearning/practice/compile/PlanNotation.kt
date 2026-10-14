@@ -1,23 +1,25 @@
 package com.a3322505a.guitarlearning.practice.compile
 
 import com.a3322505a.guitarlearning.music.score.*
-import kotlin.math.*
 
-data class PlanGlyph(val event: PlanEvent,val start: Q,val end: Q,val tieIn: Boolean,val tieOut: Boolean)
-data class PlanTabBar(val index: Int,val visit: MeasureVisit,val glyphs: List<PlanGlyph>) {
-    val onsets = glyphs.map { (it.start-visit.start).value() }.distinct().sorted()
-    val readableWidth: Int get() {
-        val gaps=onsets.zipWithNext().map { it.second-it.first }.filter { it>0 }
-        val headWidth=if(glyphs.any { g -> g.event.event.notes.any { it.harmonic!=null } }) 54.0 else 28.0
-        return ceil(maxOf(330.0,90+onsets.size*34.0,if(gaps.isEmpty()) 0.0 else visit.duration.value()*headWidth/gaps.min())).toInt()
-    }
-}
+data class PlanGlyph(val event: PlanEvent,val start: Q,val end: Q,val tieIn: Boolean,val tieOut: Boolean,
+    val written: WrittenValue = event.event.written)
+data class PlanTabBar(val index: Int,val visit: MeasureVisit,val glyphs: List<PlanGlyph>)
 fun PerformancePlan.tabProjection(): List<PlanTabBar> {
     val index=IntervalIndex(events.filter { it.track.id==practice.mainTrackId },{ it.start.value() },{ it.end.value() })
     return visits.mapIndexed { i,v ->
         val end=v.start+v.duration
         PlanTabBar(i,v,index.query(v.start.value(),end.value()).map { e ->
-            PlanGlyph(e,maxOf(e.start,v.start),minOf(e.end,end),(e.start < v.start),(e.end > end))
+            val a=maxOf(e.start,v.start);val b=minOf(e.end,end)
+            val original=e.event.written
+            val factor=original.tupletGroupIds.fold(Q.ONE) { q,id ->
+                val t=score.tuplets.first { it.id==id };q*Q(t.actual.toLong(),t.normal.toLong())
+            }
+            val fragment=(b-a)*factor
+            val written=if(a==e.start && b==e.end) original else
+                listOf(1,2,4,8,16,32,64).flatMap { base -> (0..3).map { dots -> WrittenValue(base,dots,original.tupletGroupIds) } }
+                    .firstOrNull { it.straight==fragment } ?: original
+            PlanGlyph(e,a,b,(e.start < v.start),(e.end > end),written)
         }.sortedWith(compareBy<PlanGlyph> { it.start }.thenBy { it.event.voiceId }))
     }
 }
