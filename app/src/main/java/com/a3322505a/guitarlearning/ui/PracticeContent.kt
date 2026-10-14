@@ -65,10 +65,7 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
       Column(Modifier.fillMaxSize().padding(vertical=4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
           Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
               Column(Modifier.weight(1f)) {
-                  Text(if(page==0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} · ${scale.exercise.title}"
-                      else if(chordPhrases) phrase.title else "${first.name} · 逐弦检查",
-                      maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelLarge,color=PurpleInk)
-                  Text(status,maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=if(phase==Phase.ERROR) RoseInk else Green)
+                  Text(status,modifier=Modifier.testTag("playback-status"),maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.labelSmall,color=if(phase==Phase.ERROR) RoseInk else Green)
               }
           }
           if(displayedSequence!=null) Tablature(displayedSequence,renderHint,if(page==0) scale.key else null,renderCursor,active || phase==Phase.PAUSED,
@@ -90,7 +87,7 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                   .background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                   Column(Modifier.weight(1f)) {
                       val headline=buildAnnotatedString {
-                          if(phraseCard) append(phrase.title)
+                          if(phraseCard) append("演奏提示 · ${phrase.passage}")
                           else if(page==1) {
                               withStyle(SpanStyle(color=RoseInk,fontWeight=FontWeight.ExtraBold,fontSize=if(compact || shownChord.name.length>5) 22.sp else 30.sp)) { append(shownChord.name) }
                               if(!chordPhrases) withStyle(SpanStyle(color=Ink,fontSize=14.sp)) { append(" · 逐弦检查") }

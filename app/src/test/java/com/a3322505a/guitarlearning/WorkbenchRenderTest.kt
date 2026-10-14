@@ -7,6 +7,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.ui.*
 import org.junit.Assert.*
@@ -38,8 +43,12 @@ class WorkbenchRenderTest {
             val manager=type.getDeclaredMethod("getInstance").invoke(null)
             @Suppress("UNCHECKED_CAST")
             val views=type.getDeclaredField("mViews").apply { isAccessible=true }.get(manager) as List<android.view.View>
-            views.filter { it!==base && it.visibility==android.view.View.VISIBLE }.forEach { it.draw(canvas) }
-            File("../.local/workbench-v80/$name.png").apply { parentFile!!.mkdirs();outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } }
+            val origin=IntArray(2);base.getLocationOnScreen(origin)
+            views.filter { it!==base && it.visibility==android.view.View.VISIBLE }.forEach {
+                val at=IntArray(2);it.getLocationOnScreen(at)
+                canvas.save();canvas.translate((at[0]-origin[0]).toFloat(),(at[1]-origin[1]).toFloat());it.draw(canvas);canvas.restore()
+            }
+            File("../.local/ui-v81/$name.png").apply { parentFile!!.mkdirs();outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } }
             bitmap.recycle()
         }
     }
@@ -65,6 +74,7 @@ class WorkbenchRenderTest {
         compose.onNodeWithText("三度跳进 · 每拍1音").assertIsDisplayed()
         compose.onNodeWithTag("management-button").performClick()
         compose.onNodeWithText("选择曲包").assertIsDisplayed()
+        capture("management-packages")
         compose.onNodeWithText("帮助说明").performClick()
         compose.onNodeWithText("x 为死音",substring=true).assertIsDisplayed()
         capture("management-help")
@@ -89,11 +99,52 @@ class WorkbenchRenderTest {
         compose.onNodeWithText("4 次").performScrollTo().assertIsDisplayed()
     }
     @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeTabKeepsNotationBesideConfiguration() {
-        compose.onNodeWithText("六线谱").performClick();sidePanel();capture("phone-landscape-side")
+        compose.onNodeWithText("六线谱").performClick();capture("phone-landscape-default");sidePanel();capture("phone-landscape-side")
         compose.activity.onBackPressedDispatcher.onBackPressed();compose.waitForIdle()
         compose.onNodeWithTag("practice-side-panel").assertDoesNotExist()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
     }
+    private fun transportBudget(fontScale: Float) {
+        var mode by mutableStateOf(TransportMode.IDLE)
+        compose.activity.setContent { CompositionLocalProvider(LocalDensity provides Density(1f,fontScale)) {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val height=maxHeight
+                Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+                    PracticeTransport(80,false,100,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},{},availableHeight=height)
+                }
+            }
+        } }
+        val heights=mutableMapOf<TransportMode,Float>()
+        TransportMode.entries.forEach { value ->
+            compose.runOnIdle { mode=value };compose.waitForIdle()
+            val bounds=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot
+            val root=compose.onRoot().fetchSemanticsNode().boundsInRoot
+            heights[value]=bounds.height
+            assertTrue("$value footer ${bounds.height}/${root.height}",bounds.height<=root.height/3)
+            listOf("tempo-slower","tempo-button","tempo-faster").forEach { tag ->
+                val button=compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+                assertTrue(button.height>=48 && button.width>=48)
+            }
+            val buttons=compose.onAllNodes(hasClickAction()).fetchSemanticsNodes().map { it.boundsInRoot }
+            buttons.forEach { assertTrue("$value touch bounds $it",it.height>=48 && it.width>=48 && it.left>=root.left && it.right<=root.right) }
+            buttons.forEachIndexed { index,a -> buttons.drop(index+1).forEach { b -> assertFalse("$value overlapping buttons",a.overlaps(b)) } }
+        }
+        assertEquals(heights[TransportMode.PLAYING]!!,heights[TransportMode.PAUSED]!!,.5f)
+        compose.runOnIdle { mode=TransportMode.IDLE };compose.waitForIdle()
+        val before=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot.height
+        listOf(IntRect(0,300,90,348),IntRect(800,300,891,348)).forEach { anchor ->
+            val at=TempoPopupPosition.calculatePosition(anchor,IntSize(891,411),LayoutDirection.Ltr,IntSize(360,104))
+            assertTrue(at.x>=0 && at.x+360<=891 && at.y>=0 && at.y+104<=411)
+        }
+        compose.onNodeWithTag("tempo-button").performClick()
+        compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
+        assertEquals("The popup must not consume more content height",before,compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot.height,.5f)
+        capture("transport-${fontScale}-expanded")
+        compose.onNodeWithText("收起").performClick()
+        compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
+    }
+    @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeTransportKeepsTouchTargetsAndContentAcrossEveryPhase()=transportBudget(1f)
+    @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun shortWindowLargeTextTransportKeepsItsBudget()=transportBudget(1.4f)
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletLargeTextKeepsTabAndSidePanelVisible() {
         compose.activity.resources.configuration.fontScale=1.3f
         @Suppress("DEPRECATION")

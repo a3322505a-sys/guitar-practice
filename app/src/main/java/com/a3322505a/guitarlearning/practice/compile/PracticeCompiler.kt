@@ -15,6 +15,8 @@ data class PlanEvent(val id: String, val event: ScoreEvent, val track: Track, va
     /** Trusted legacy display hints that were already folded into velocity/soundEnd. */
     val notationMarks: List<String> = emptyList()) {
     val end get() = start+duration
+    /** Shared by playback compilation and notation, including practice boundary suppression. */
+    val effectiveNotes get() = if(suppressedNoteIds.isEmpty()) event.notes else event.notes.filter { it.id !in suppressedNoteIds }
 }
 data class PlanNote(val id: String, val note: ScoreNote, val event: PlanEvent, val start: Q, val soundEnd: Q,
     val articulation: Articulation) {
@@ -254,7 +256,7 @@ object PracticeCompiler {
             at+=practice.padding
         }
         musicCheck(visits.size<=50000,"PLAN_LIMIT","/practices/"+practice.id,"Visit budget including padding")
-        val notes=events.flatMap { e -> e.event.notes.filter { it.id !in e.suppressedNoteIds }.map { n ->
+        val notes=events.flatMap { e -> e.effectiveNotes.map { n ->
             val art=n.articulation.over(e.event.articulation).over(Articulation.DEFAULT)
             PlanNote(e.id+"/"+n.id,n,e,e.start,minOf(e.end,musicEnd),art)
         } }.sortedBy { it.start }

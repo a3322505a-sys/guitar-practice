@@ -25,7 +25,8 @@ import com.a3322505a.guitarlearning.practice.compile.*
 
 @Composable
 internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,following: Boolean,modifier: Modifier,
-    ticksPerQuarter: Int = QUARTER,key: Tonality? = null) {
+    ticksPerQuarter: Int = QUARTER,key: Tonality? = null) = androidx.compose.runtime.key(plan) {
+    // New content owns both scroll axes; cursor/hint/view changes retain their existing semantics.
     val bars=remember(plan) { plan.tabProjection() }
     val list=rememberLazyListState()
     val measurer=rememberTextMeasurer()
@@ -45,7 +46,7 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
             if(following && target>=0) list.animateScrollToItem(target)
         }
         LazyColumn(state=list,verticalArrangement=Arrangement.spacedBy(12.dp)) {
-            itemsIndexed(rows) { _,layout ->
+            itemsIndexed(rows,key={ _,layout -> layout.bars.joinToString("|") { it.bar.visit.id } }) { _,layout ->
                 val playback=layout.playback(cursor,ticksPerQuarter)
                 val scroll=rememberScrollState()
                 // The playhead X also comes from layout; dense bars follow horizontally.
@@ -99,10 +100,10 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                                     val active=e.glyph.event.id in playback.eventIds
                                     val ink=if(active) RoseInk else Ink
                                     if(hint!=Hint.HIDDEN) {
-                                        if(e.notes.isEmpty()) {
+                                        if(e.glyph.event.event.notes.isEmpty()) {
                                             rest(rhythmValue(written),e.x*u,(e.beamY-9)*u,u)
                                             repeat(written.dots) { dot -> drawCircle(ink,1.5f*u,Offset((e.x+13+dot*5)*u,(e.beamY-9)*u)) }
-                                        } else {
+                                        } else if(e.notes.isNotEmpty()) {
                                             // Digits are the noteheads; no duplicate blue notehead row.
                                             val lowest=e.notes.maxOf { it.y }
                                             val strum=e.notes.map { it.note.articulation.over(e.glyph.event.event.articulation).over(Articulation.DEFAULT) }
@@ -190,7 +191,7 @@ private fun tabDescription(plan: PerformancePlan,layout: TabSystemLayout,hint: H
     append("${plan.score.voices.count { it.trackId==plan.practice.mainTrackId }}声部。")
     if(hint!=Hint.HIDDEN) layout.bars.forEach { b ->
         b.events.forEach { e ->
-            if(e.notes.isEmpty()) append("休止；")
+            if(e.glyph.event.event.notes.isEmpty()) append("休止；")
             val articulations=e.notes.map { it.note.articulation.over(e.glyph.event.event.articulation).over(Articulation.DEFAULT) }
             if(e.notes.size>1 && articulations.any { (it.strumDelayMs ?: 0.0)>0 }) {
                 append(if(articulations.first().pick=="up") "上拨，从有效高音弦到低音弦；" else "下拨，从有效低音弦到高音弦；")

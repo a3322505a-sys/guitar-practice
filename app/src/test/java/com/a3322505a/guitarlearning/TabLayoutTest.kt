@@ -18,6 +18,34 @@ class TabLayoutTest {
     private fun rows(plan: PerformancePlan,width: Float=800f)=tabLayoutSystems(plan,plan.tabProjection(),width) { s,size -> s.length*size*.6f }
     private fun usotsuki()=song("src/main/assets/song-packages/usotsuki-v1.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
 
+    @Test fun truncatedTieMustAgreeWithPlaybackWithoutInventingNoteMarks() {
+        val song=song("../contracts/song-package/v1/fixtures/ties.gpractice")
+        val segment=PracticeSegment(Coordinate("tie-b"),Coordinate("tie-b",Q(4)),
+            entry="truncate",affectedNoteIds=listOf("tie-origin","tie-target"))
+        val plan=PracticeCompiler.compile(song.score,song.practices.single().copy(segments=listOf(segment)))
+        assertTrue(plan.notes.isEmpty())
+        val layouts=rows(plan)
+        assertEquals("The silent plan must have no ghost fret digits",plan.notes.map { it.id }.toSet(),layouts.flatMap { it.notes.keys }.toSet())
+        val marks=layouts.flatMap { it.bars }.flatMap { it.marks }.map { it.label }
+        assertTrue(marks.contains("窗口：截音"))
+        assertTrue("Suppressed bends and vibrato must not survive",marks.none { "B" in it || "~" in it })
+    }
+    @Test fun partialSuppressionKeepsOnlyTheAudibleChordMemberAndItsMarks() {
+        val seq=Sequence(listOf(Event(0,48,listOf(Position(6,0),Position(1,3)),
+            stringExpression=mapOf(6 to StringExpression(palmMute=true)))),48,"")
+        val original=seq.performance
+        val muted=original.notes.single { it.note.string==6 }
+        val event=original.events.single().copy(suppressedNoteIds=setOf(muted.note.id),adaptation="truncate")
+        val plan=original.copy(events=listOf(event),notes=original.notes.filter { it.id!=muted.id }.map { it.copy(event=event) })
+        val layouts=rows(plan)
+        assertEquals(plan.notes.map { it.id }.toSet(),layouts.flatMap { it.notes.keys }.toSet())
+        assertEquals(listOf(1),layouts.flatMap { it.notes.values }.map { it.note.string })
+        val marks=layouts.flatMap { it.bars }.flatMap { it.marks }.map { it.label }
+        assertTrue(marks.none { it.startsWith("P.M.") })
+        assertTrue(marks.contains("窗口：截音"))
+        assertFalse(tabNoteVisible(plan,event,muted.note,Hint.FULL,null))
+    }
+
     @Test fun continuousRingHasOneScopedRangePerBarAndEveryOriginalNoteRemains() {
         val plan=usotsuki();val layouts=rows(plan)
         assertEquals(16,layouts.sumOf { it.notes.size })
