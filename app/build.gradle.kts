@@ -5,7 +5,7 @@ plugins {
 }
 android {
     namespace = "com.a3322505a.guitarlearning"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.a3322505a.guitarlearning"
         minSdk = 26
@@ -13,14 +13,31 @@ android {
         versionCode = 81
         versionName = "4.0.0-local33"
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    buildTypes {
+        release { isMinifyEnabled = false }
+        create("p0") {
+            initWith(getByName("release"))
+            isDebuggable = true
+            matchingFallbacks += "release"
+        }
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+    sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
     testOptions { unitTests.isIncludeAndroidResources = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
+androidComponents {
+    onVariants(selector().withBuildType("p0")) { variant ->
+        variant.outputs.forEach {
+            it.versionCode.set(83)
+            it.versionName.set("4.0.0-local35-alphatab-p0")
+        }
+    }
+}
 dependencies {
+    add("p0Implementation", "net.alphatab:alphaTab:1.8.4")
     constraints {
         implementation("androidx.annotation:annotation:1.9.1")
         listOf("lifecycle-common", "lifecycle-common-java8", "lifecycle-runtime", "lifecycle-runtime-ktx", "lifecycle-runtime-compose", "lifecycle-viewmodel", "lifecycle-viewmodel-ktx", "lifecycle-viewmodel-savedstate", "lifecycle-process").forEach {
