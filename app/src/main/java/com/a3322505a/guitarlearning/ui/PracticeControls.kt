@@ -34,11 +34,11 @@ internal fun PracticeTextButton(onClick: ()->Unit, modifier: Modifier = Modifier
 }
 
 @Composable
-internal fun ChordSteps(first: Chord, onSelect: (Chord)->Unit) {
+internal fun ChordSteps(first: Chord, onSelect: (Chord)->Unit,chords: List<Chord> = Chords.all) {
     val large=LocalLargePracticeControls.current
-    PracticeTextButton(onClick={onSelect(Chords.all[Chords.all.indexOf(first)-1])},enabled=first!=Chords.all.first(),
+    PracticeTextButton(onClick={onSelect(chords[chords.indexOf(first)-1])},enabled=first!=chords.first(),
         modifier=Modifier.width(if(large) 64.dp else 48.dp).testTag("previous-chord").semantics { contentDescription="上一和弦" },contentPadding=PaddingValues(0.dp)) { Text("‹",fontSize=if(large) 32.sp else 24.sp) }
-    PracticeTextButton(onClick={onSelect(Chords.all[Chords.all.indexOf(first)+1])},enabled=first!=Chords.all.last(),
+    PracticeTextButton(onClick={onSelect(chords[chords.indexOf(first)+1])},enabled=first!=chords.last(),
         modifier=Modifier.width(if(large) 64.dp else 48.dp).testTag("next-chord").semantics { contentDescription="下一和弦" },contentPadding=PaddingValues(0.dp)) { Text("›",fontSize=if(large) 32.sp else 24.sp) }
 }
 

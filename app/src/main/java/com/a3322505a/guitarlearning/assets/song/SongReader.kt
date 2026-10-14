@@ -22,7 +22,8 @@ object SongCapabilities {
         "rhythm.swing.v1","tempo.map.v1","form.repeat.v1","form.volta.v1","form.jump.v1","form.condition.v1",
         "technique.harmonic.v1","technique.tie.v1","technique.legato.v1","technique.bend.v1",
         "technique.vibrato.v1","technique.tremolo-bar.v1","technique.tapping.v1","technique.mute.v1",
-        "technique.sustain.v1","technique.strum.v1","technique.grace.v1","technique.repluck.v1","technique.dynamics.v1")
+        "technique.sustain.v1","technique.strum.v1","technique.grace.v1","technique.repluck.v1","technique.dynamics.v1",
+        "catalogue.teaching.v1")
 }
 fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 

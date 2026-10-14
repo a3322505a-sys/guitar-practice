@@ -58,25 +58,4 @@ class SongAssetsTest(unittest.TestCase):
         autos.append(ET.fromstring('<Automation><Type>Tempo</Type><Linear>true</Linear><Position>0.5</Position><Bar>0</Bar><Value>120 2</Value></Automation>'))
         with self.assertRaisesRegex(ImportBlocked,'ramp or intra-bar'):self.audit(root)
 
-    def test_new_reviewed_song_generates_separate_candidate_without_registration(self):
-        spec=importlib.util.spec_from_file_location('song_pipeline',ROOT/'scripts/song-assets.py');pipeline=importlib.util.module_from_spec(spec);spec.loader.exec_module(pipeline)
-        source=self.path/'synthetic-source.bin';source.write_bytes(b'Synthetic pipeline fixture, not an actual PDF transcription.')
-        data=dict(source=source.name,sha256=fingerprint(source),bpm=90,capo=0,meter='4/4',tickPerQuarter=12,
-            bars=[dict(number=1,page=1,events=[dict(tick=0,duration=48,notes=[[1,3]],dead=[],tied=[],pdfX=10)])],
-            parts=[dict(id='DEMO-INTRO',title='Synthetic example',first=1,last=1,start=0,end=48,use='Example',goal='Review source',technique='Single note',bpm=60,description='Fixture only')])
-        data_path=self.path/'reviewed.json';data_path.write_text(json.dumps(data),encoding='utf8')
-        manifest=dict(songId='DEMO',objectName='DemoSong',profile='reviewed-pdf',source=dict(format='reviewed-pdf',sha256=fingerprint(source)),tracks=['guitar'],
-            segments=[dict(id='DEMO-INTRO',start=dict(bar=1,tick=0),end=dict(bar=1,tick=48))])
-        manifest_path=self.path/'manifest.json';manifest_path.write_text(json.dumps(manifest),encoding='utf8')
-        output=self.path/'candidate';result=pipeline.run(manifest_path,source,output,data_path)
-        self.assertEqual(result['status'],'review-needed')
-        kotlin=(output/'app/src/main/java/com/a3322505a/guitarlearning/practice/DemoSong.kt').read_text(encoding='utf8')
-        self.assertIn('sourceBpm=90',kotlin);self.assertIn('capoFret=0',kotlin)
-        ir=json.loads((output/'source-practice.json').read_text(encoding='utf8'))
-        self.assertEqual(ir['practice'][0]['events'][0]['positions'],[[1,3]])
-        with self.assertRaisesRegex(ImportBlocked,'nonempty'):pipeline.run(manifest_path,source,output,data_path)
-        manifest['source']['sha256']='0'*64;manifest_path.write_text(json.dumps(manifest),encoding='utf8')
-        with self.assertRaisesRegex(ImportBlocked,'fingerprint differs'):pipeline.run(manifest_path,source,self.path/'bad',data_path)
-        self.assertEqual(json.loads((self.path/'bad/report.json').read_text(encoding='utf8'))['status'],'blocked')
-
 if __name__=='__main__': unittest.main()

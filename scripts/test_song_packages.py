@@ -105,10 +105,10 @@ class PackageTests(unittest.TestCase):
             a,b=Path(temporary)/"a.gpractice",Path(temporary)/"b.gpractice"
             self.assertEqual(write_zip(self.payloads,a),write_zip(self.payloads,b))
             with self.assertRaises(Blocked): write_zip(self.payloads,a)
-    def test_old_protected_emitters_and_source_csv_hashes_are_untouched(self):
-        for manifest in (CONTRACT.parents[2]/"scripts/song-manifests").glob("*-v72.json"):
-            data=json.loads(manifest.read_text(encoding="utf8"))
-            for name,hash in data["protectedOutputs"].items():
-                self.assertEqual(hash,digest((CONTRACT.parents[2]/name).read_bytes()),name)
+    def test_bundled_content_matches_independent_source_facts(self):
+        import importlib.util
+        spec=importlib.util.spec_from_file_location("bundled_audit",CONTRACT.parents[2]/"scripts/verify-bundled-songs.py")
+        audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+        self.assertEqual(4,len(audit.audit()))
 
 if __name__=="__main__": unittest.main(verbosity=2)

@@ -70,7 +70,7 @@ class KernelTest {
         }
     }
     @Test fun selectedBarsUseOriginalEventsResumeWithinRangeAndClearTheirEnd() {
-        val phrase=Phrases.mozart[1];val seq=phrase.sequence
+        val phrase=SongTestLibrary.sourceMozart[1];val seq=phrase.sequence
         val session=Session(seq,137,true,4,range=BarRange(2,3))
         assertSame(seq,session.sequence)
         assertEquals(24,session.preTicks)

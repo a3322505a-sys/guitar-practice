@@ -2,11 +2,8 @@
 contracts/song-package/v1/fixtures/**/*.json text eol=lf
 *.gpractice binary
 
-# These six legacy outputs were independently reviewed as CRLF bytes.
+# These independent legacy source CSVs were independently reviewed as CRLF bytes.
 # Preserve the recorded hashes on Linux and Windows without editing the data.
-app/src/main/java/com/a3322505a/guitarlearning/practice/Kafka.kt text eol=crlf
-app/src/main/java/com/a3322505a/guitarlearning/practice/Shayou.kt text eol=crlf
-app/src/main/java/com/a3322505a/guitarlearning/practice/YourTrip.kt text eol=crlf
 app/src/test/resources/kafka-gp.csv text eol=crlf
 app/src/test/resources/kafka-expressions.csv text eol=crlf
 app/src/test/resources/shayou-gp.csv text eol=crlf

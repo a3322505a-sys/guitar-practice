@@ -1094,6 +1094,62 @@
       "required": [],
       "additionalProperties": false
     },
+    "voicingTeaching": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 11
+        },
+        "third": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 11
+        },
+        "soundingName": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "group": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "intervalRoles": {
+          "type": "object",
+          "patternProperties": {
+            "^(?:[0-9]|1[01])$": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "additionalProperties": false,
+          "maxProperties": 12
+        },
+        "toneNames": {
+          "type": "object",
+          "patternProperties": {
+            "^(?:[0-9]|1[01])$": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "additionalProperties": false,
+          "maxProperties": 12
+        }
+      },
+      "required": [
+        "root",
+        "soundingName",
+        "group",
+        "source"
+      ],
+      "additionalProperties": false
+    },
     "voicing": {
       "type": "object",
       "properties": {
@@ -1128,6 +1184,9 @@
           },
           "minItems": 6,
           "maxItems": 6
+        },
+        "teaching": {
+          "$ref": "#/$defs/voicingTeaching"
         }
       },
       "required": [
@@ -1239,6 +1298,45 @@
       ],
       "additionalProperties": false
     },
+    "practiceTeaching": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "passage": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "technique": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "use": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "version": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "tempoLabel": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
     "practice": {
       "type": "object",
       "properties": {
@@ -1335,6 +1433,18 @@
         "difficulty": {
           "type": "string",
           "maxLength": 4096
+        },
+        "teaching": {
+          "$ref": "#/$defs/practiceTeaching"
+        },
+        "legacyIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 32
         }
       },
       "required": [

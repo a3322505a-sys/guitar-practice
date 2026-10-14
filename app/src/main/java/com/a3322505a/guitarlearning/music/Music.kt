@@ -37,7 +37,7 @@ object Patterns {
 data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>,
     val capoFret: Int = 0, val soundingName: String = name, val group: String = "基础和弦", val source: String = "",
     val intervalRoles: Map<Int,String> = emptyMap(), val toneNames: Map<Int,String> = emptyMap(),
-    val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null) {
+    val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null,val id: String = name) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
     val baseFret get() = if(positions.maxOf { it.fret }<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
@@ -61,6 +61,20 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
     fun label(index: Int) = frets[index]?.let { noteName(Position(6-index,it)) } ?: "X"
 }
 
+/** Package frets/fingers are authoritative; reuse known analysis only for the exact same grip. */
+fun com.a3322505a.guitarlearning.music.score.GuitarVoicing.chord(
+    track: com.a3322505a.guitarlearning.music.score.Track,group: String = "本地曲包",source: String = "",id: String = this.id): Chord {
+    val frets=frets.reversed().map { it.takeIf { fret -> fret>=0 } }
+    val known=Chords.all.firstOrNull { it.name==name && it.frets==frets && it.capoFret==track.capo && it.openStringMidi==track.openStringMidi }
+    val taught=teaching?.let { t -> Chord(name,t.root,t.third,frets,fingers.reversed(),track.capo,t.soundingName,
+        t.group,t.source,t.intervalRoles,t.toneNames,track.openStringMidi) }
+    return (taught ?: known ?: Chord(name,-1,null,frets,fingers.reversed())).copy(
+        frets=frets,fingers=fingers.reversed(),capoFret=track.capo,openStringMidi=track.openStringMidi,
+        group=teaching?.group ?: ("本地曲库 · "+group),source=teaching?.source ?: source,id=id,
+        conditionsLabel=if(teaching!=null && track.openStringMidi==Music.openMidi) null else
+            if(track.openStringMidi==Music.openMidi && track.capo==0) "标准调弦 · 无变调夹" else track.name+" · 夹"+track.capo+"品")
+}
+
 object Chords {
     val all = listOf(
         Chord("C", 0, 4, listOf(null,3,2,0,1,0), listOf(0,3,2,0,1,0)),
@@ -76,6 +90,6 @@ object Chords {
         Chord("Asus4(no5)", 9, null, listOf(null,0,0,2,null,null), listOf(0,0,0,2,0,0)),
         Chord("Bm7(no5)", 11, 2, listOf(null,2,0,2,null,null), listOf(0,1,0,2,0,0)),
         Chord("D/F♯", 2, 6, listOf(2,null,0,2,null,null), listOf(1,0,0,2,0,0)),
-    ) + ShayouChords.all + KafkaChords.all
+    )
     fun named(name: String) = all.first { it.name == name }
 }

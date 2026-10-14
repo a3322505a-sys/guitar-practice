@@ -57,7 +57,9 @@ fun PracticeApp(player: Player) {
     val context=LocalContext.current
     val preferences=remember { context.getSharedPreferences("practice-settings",0) }
     val repository=remember { SongRepository(File(context.filesDir,"songs"),
-        SongReader(SongSchema { name -> context.assets.open("song-contract/"+name).use { it.readBytes() } })) }
+        SongReader(SongSchema { name -> context.assets.open("song-contract/"+name).use { it.readBytes() } }),
+        context.assets.list("song-packages").orEmpty().filter { it.endsWith(".gpractice") }.associateWith { name ->
+            { context.assets.open("song-packages/"+name) } }) }
     var librarySnapshot by remember { mutableStateOf(repository.snapshot) }
     var libraryReady by remember { mutableStateOf(false) }
     var preparedEpoch by remember { mutableIntStateOf(0) }
@@ -86,7 +88,8 @@ fun PracticeApp(player: Player) {
     var moreExercisesOpen by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
     val hint=Hint.entries[hintIndex]
-    val first=Chords.named(firstName)
+    val chords=librarySnapshot.chords
+    val first=chords.firstOrNull { it.id==firstName } ?: chords.first()
     val phrase=remember(phraseId,librarySnapshot,preparedEpoch) { repository.named(phraseId) }
     val wholeRange=BarRange(0,phrase.sequence.barCount-1)
     val range=BarRange(firstBar,lastBar).takeIf { it.valid(phrase.sequence) } ?: wholeRange
@@ -131,7 +134,7 @@ fun PracticeApp(player: Player) {
     val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
     fun changed() { player.invalidate(); note="" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
-    fun firstChange(value: Chord) { if(firstName!=value.name) { changed();firstName=value.name } }
+    fun firstChange(value: Chord) { if(firstName!=value.id) { changed();firstName=value.id } }
     fun loadPhrase(value: Phrase) {
         if(value.unprepared) { note="正在准备曲目…";return }
         val saved=phraseStore.load(value,bpm,repeats);bpm=saved.bpm;repeats=saved.repeats;firstBar=saved.range.first;lastBar=saved.range.last
@@ -159,7 +162,7 @@ fun PracticeApp(player: Player) {
             catch(e: Exception) { note="曲目准备失败："+e.message }
         }
     }
-    fun phraseChange(value: Phrase) { if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
+    fun phraseChange(value: Phrase) { phraseStore.select(value);if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
     fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases;if(phrases) loadPhrase(phrase) } }
     fun tap(p: Position) {
         val capo=if(page==1) displayedSequence?.capoFret ?: 0 else 0
@@ -211,11 +214,11 @@ fun PracticeApp(player: Player) {
               Column(Modifier.fillMaxSize()) {
                 PracticeNavigation(page,chordPhrases,navigationCompact,tabletControls,
                     { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1},
-                    { if(!tab) ChordSteps(first,::firstChange) },
+                    { if(!tab) ChordSteps(first,::firstChange,chords) },
                     { if(tab || tabletControls) ViewSwitch(tab) { viewPreference=it } })
               PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
                   sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
-                  showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar),
+                  showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar,chords),
                   Modifier.weight(1f),::firstChange,{viewPreference=it},::tap,
                   { chord -> player.audition(chord.positions,capoFret=chord.capoFret,openStringMidi=chord.openStringMidi);note="${chord.name} · 整和弦试听" },{settingsPanel=3})
               }
@@ -223,7 +226,7 @@ fun PracticeApp(player: Player) {
         }
       }
         if(settingsPanel!=0) PracticeSettings(PracticeSettingsState(settingsPanel,page,chordPhrases,tabletControls,scale,first,phrase,
-            repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },Chords.all.groupBy { it.group },
+            repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },chords.groupBy { it.group },
             phrase.relatedId?.let { repository.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
             moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,
             selectedTrackId,soloTrack),
@@ -238,7 +241,8 @@ fun PracticeApp(player: Player) {
             {value -> changed();soloTrack=value;phrase.assetKey?.let { preferences.edit().putBoolean("asset."+it.encoded+".solo",value).apply() }})
         if(libraryOpen) SongLibrary(repository,{updated ->
             librarySnapshot=updated
-            val current=repository.named(phraseId)
+            val restored=phraseStore.selected()
+            val current=if(restored.legacyId!=null) restored else repository.named(phraseId)
             phraseId=current.id;loadPhrase(current)
         },{libraryOpen=false})
     }
