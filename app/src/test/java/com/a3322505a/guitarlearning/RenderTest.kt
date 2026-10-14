@@ -121,7 +121,8 @@ class RenderTest {
                 compose.onNode(hasText(phrase.title) and hasAnyAncestor(hasTestTag("practice-settings"))).performScrollTo().performClick()
                 compose.onNodeWithText("完成").performClick()
                 compose.onAllNodesWithText(phrase.title).assertCountEquals(1)
-                val tags=listOf("practice-card","diagram-viewport","playback-status","transport")
+                // The action group's width changes with its labels; the footer and content stay fixed.
+                val tags=listOf("practice-card","diagram-viewport","playback-status","transport-bar")
                 fun bounds()=tags.map { compose.onNodeWithTag(it).fetchSemanticsNode().boundsInRoot }
                 val expected=bounds()
                 capture("$id-idle-board","five-fixes")
@@ -218,10 +219,10 @@ class RenderTest {
     }
     @Test fun practiceAndTempoPanelsAreSeparateAndKeepSelections() {
         compose.onNodeWithTag("tempo-faster").performClick()
-        compose.onNodeWithText("65 BPM").assertIsDisplayed()
+        compose.onNodeWithTag("tempo-button").assertIsDisplayed().assertTextContains("65 BPM",substring=true)
         compose.onNodeWithTag("tempo-button").performClick()
         compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
-        compose.onNodeWithTag("tempo-button").performClick()
+        compose.onNodeWithText("收起").performClick()
         openContent()
         compose.onNodeWithText("跟练").performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
@@ -240,7 +241,7 @@ class RenderTest {
         listOf("两和弦转换","规则下拨","简单分解","第二个和弦","每个和弦的长度").forEach { compose.onNodeWithText(it).assertDoesNotExist() }
         compose.onNodeWithText("完成").performClick()
         compose.activityRule.scenario.recreate();compose.waitForIdle()
-        compose.onNodeWithText("65 BPM").assertIsDisplayed()
+        compose.onNodeWithTag("tempo-button").assertIsDisplayed().assertTextContains("65 BPM",substring=true)
         compose.onNodeWithText(Phrases.singleNote.title).assertIsDisplayed()
         category("和弦学习")
         compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
@@ -344,11 +345,13 @@ class RenderTest {
         }
         listOf("听示范","开始跟练").forEach { text ->
             val node=compose.onNodeWithText(text).assertIsDisplayed().fetchSemanticsNode()
-            assertEquals("$text retains the original 52dp height",52f,node.boundsInRoot.height,.5f)
+            assertTrue("$text keeps a usable touch target",node.boundsInRoot.height>=48f && node.boundsInRoot.width>=48f)
         }
         val transport=compose.onNodeWithTag("transport").fetchSemanticsNode().boundsInRoot
         val tempo=compose.onNodeWithTag("tempo-button").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
-        assertTrue("Speed stays above the transport on both views",tempo.bottom<=transport.top)
+        assertFalse("Speed and playback controls must not overlap",tempo.overlaps(transport))
+        val footer=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot
+        assertTrue("Compact footer leaves room for practice",footer.height<=compose.onRoot().fetchSemanticsNode().boundsInRoot.height/3)
         compose.onNodeWithText("结束").assertDoesNotExist()
         compose.onAllNodesWithTag("view-switch").assertCountEquals(1)
     }
@@ -390,9 +393,10 @@ class RenderTest {
         capture("tablet-portrait-practice-settings","v67")
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("tempo-button").performClick()
+        compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
+        compose.onNodeWithText("收起").performClick()
         compose.onNodeWithTag("tempo-faster").performClick()
-        compose.onNodeWithTag("tempo-button").performClick()
-        compose.onNodeWithText("65 BPM").assertIsDisplayed()
+        compose.onNodeWithTag("tempo-button").assertIsDisplayed().assertTextContains("65 BPM",substring=true)
         compose.onNodeWithText("六线谱").performClick()
         assertTabletControlsVisible(tab=true)
         capture("tablet-portrait-large-tab","v67")
@@ -477,7 +481,8 @@ class RenderTest {
         val row=compose.onAllNodesWithContentDescription("六线谱，第",substring=true).fetchSemanticsNodes().first().boundsInRoot
         assertTrue("All six strings and rhythm fit in the viewport",row.bottom<=tab.bottom+.5f)
         compose.onNodeWithContentDescription("第 1 至 3 小节",substring=true).assertIsDisplayed()
-        listOf("开始跟练","听示范","撤提示","60 BPM").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        listOf("开始跟练","听示范","撤提示").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
+        compose.onNodeWithTag("tempo-button").assertIsDisplayed().assertTextContains("60 BPM",substring=true)
         compose.onNodeWithTag("config-summary").assertIsDisplayed()
         capture("phone-landscape-tab")
         category("和弦学习")
@@ -582,7 +587,7 @@ class RenderTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         assertSame(original,ViewModelProvider(compose.activity)[PracticeModel::class.java].player)
-        compose.onNodeWithText("D · 逐弦检查").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertIsDisplayed().assertTextContains("D · 逐弦")
         compose.onNodeWithTag("tablature").assertIsDisplayed()
     }
     @Test fun oldSavedTabPreferenceDoesNotStartLandscape() {
@@ -710,7 +715,7 @@ class RenderTest {
             category("和弦学习")
             category("短句练习")
             openContent()
-            compose.onNode(hasText(Phrases.singleNote.title) and hasClickAction()).performScrollTo().performClick()
+            compose.onNode(hasText(Phrases.singleNote.title) and hasClickAction() and hasAnyAncestor(hasTestTag("practice-settings"))).performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("chord-diagram").assertDoesNotExist()
             compose.onNodeWithText("下一：Asus4(no5)").assertDoesNotExist()
