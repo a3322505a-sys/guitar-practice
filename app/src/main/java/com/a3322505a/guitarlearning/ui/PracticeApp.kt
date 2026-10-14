@@ -135,7 +135,7 @@ fun PracticeApp(player: Player) {
     val melody=page==1 && chordPhrases && (harmony.isEmpty() || shownChord==null)
     val renderHint=if(melody && hint==Hint.ROOTS) Hint.FULL else hint
     val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
-    fun changed() { player.invalidate(); note="设置已改变，下一次播放从头开始" }
+    fun changed() { player.invalidate(); note="" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
     fun firstChange(value: Chord) { if(firstName!=value.id) { changed();firstName=value.id } }
     fun loadPhrase(value: Phrase) {
@@ -183,7 +183,7 @@ fun PracticeApp(player: Player) {
         progress.phase==Phase.PREPARING -> "准备声音…"
         progress.phase==Phase.ENDED -> progress.message
         progress.phase==Phase.ERROR -> progress.message
-        else -> "准备好，就开始一轮"
+        else -> progress.message.takeIf { it.startsWith("设置已改变") } ?: "准备好，就开始一轮"
     }
     BackHandler(enabled=overlay==PracticeOverlay.NONE && (player.active || progress.phase==Phase.PAUSED)) { player.stop() }
     BackHandler(enabled=overlay==PracticeOverlay.PRACTICE) { overlay=PracticeOverlay.NONE }
@@ -231,7 +231,7 @@ fun PracticeApp(player: Player) {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=12.dp)) {
                 val compactHeader=windowHeight<520.dp
                 val views: @Composable ()->Unit = { ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it } }
-                PracticeNavigation(summary,{overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
+                PracticeNavigation(summary,{settingsTab=0;overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
                 if(!compactHeader) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { views() }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                     // Reserve a real diagram above the half-height sheet, not just a card title.
@@ -250,7 +250,7 @@ fun PracticeApp(player: Player) {
             PracticeSettings(PracticeSettingsState(page,chordPhrases,tabletControls,scale,first,phrase,
                 repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },chords.groupBy { it.group },
                 phrase.relatedId?.let { repository.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
-                moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,selectedTrackId,soloTrack,if(!libraryReady) "正在加载曲库…" else note),
+                moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,selectedTrackId,soloTrack,if(page==0) scaleResult.reason else if(!libraryReady) "正在加载曲库…" else note),
                 sidePanel,settingsTab,{settingsTab=it},{overlay=PracticeOverlay.NONE},::category,
                 {value -> if(value!=repeats) { changed();repeats=value }},
                 {guitar=it;player.guitar=it;preferences.edit().putBoolean("guitar",it).apply()},
