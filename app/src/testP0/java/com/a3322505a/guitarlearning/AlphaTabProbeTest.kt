@@ -117,7 +117,7 @@ class AlphaTabProbeTest {
                 assertEquals("Written guitar positions changed in $asset", ref.getString("writtenStringFretSha256"), hash)
             }
             val polyBars = track.staves.toList().flatMap { it.bars.toList() }.filter { bar -> bar.voices.count { voice -> voice.beats.any { it.notes.length > 0 } } > 1 }
-            if (asset == "complex.gp") assertTrue("Complex fixture must contain actual multi-voice guitar", polyBars.isNotEmpty())
+            if (asset == "complex.gp" || asset == "polyphonic.gp") assertTrue("Polyphonic fixture must contain actual multi-voice guitar", polyBars.isNotEmpty())
             val renderSettings = settings().apply {
                 core.engine = "svg"
                 core.enableLazyLoading = false

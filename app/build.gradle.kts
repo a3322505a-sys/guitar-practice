@@ -31,8 +31,8 @@ android {
 androidComponents {
     onVariants(selector().withBuildType("p0")) { variant ->
         variant.outputs.forEach {
-            it.versionCode.set(83)
-            it.versionName.set("4.0.0-local35-alphatab-p0")
+            it.versionCode.set(86)
+            it.versionName.set("4.0.0-local38-alphatab-p0")
         }
     }
 }

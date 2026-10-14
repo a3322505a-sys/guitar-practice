@@ -39,6 +39,7 @@ class AlphaTabProbeActivity : ComponentActivity() {
     private var positionCount = 0
     private var lastSecond = -1
     private var sourceName = ""
+    private var previewEnabled = false
 
     private val open = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) load("本地 GP") {
@@ -48,6 +49,7 @@ class AlphaTabProbeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        previewEnabled = intent.getBooleanExtra("p0Preview", false)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(0xfffaf6f0.toInt()) }
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
@@ -57,7 +59,8 @@ class AlphaTabProbeActivity : ComponentActivity() {
         setContentView(root)
         val files = row(root)
         button(files, "打开 GP") { open.launch(arrayOf("*/*")) }
-        listOf("简单 GP5" to "simple.gp5", "多声部 GP" to "complex.gp", "GPX" to "sample.gpx").forEach { (label, path) ->
+        val samples = listOf("简单 GP5" to "simple.gp5", "多声部 GP" to "complex.gp", "GPX" to "sample.gpx", "轻量多声部 GP" to "polyphonic.gp")
+        samples.forEach { (label, path) ->
             button(files, label) { fixture(label, path) }
         }
         status = TextView(this).apply { textSize = 14f; setPadding(dp(8), 0, dp(8), 0); text = "P0 · alphaTab 1.8.4 · 原曲库和教学入口保留" }
@@ -127,16 +130,35 @@ class AlphaTabProbeActivity : ComponentActivity() {
         }
         trackChoice.onItemSelectedListener = selected { index ->
             val chosen = tracks.getOrNull(index) ?: return@selected
+            // Spinner initialization posts a selection callback after load already rendered it.
+            if (notation.tracks?.firstOrNull() === chosen) return@selected
             notation.api.stop()
             notation.tracks = listOf(chosen)
             for (track in chosen.score.tracks) notation.api.changeTrackMute(alphaTab.collections.List(track), track !== chosen)
             record("track", "index=${chosen.index} name=${chosen.name}")
         }
         // Local fixtures are prepared explicitly by scripts/prepare-alphatab-p0.py.
-        if (assets.list("p0").orEmpty().contains("simple.gp5")) fixture("简单 GP5", "simple.gp5")
+        val requested = intent.getStringExtra("p0Fixture") ?: "simple.gp5"
+        val sample = samples.firstOrNull { it.second == requested }
+        if (sample != null && assets.list("p0").orEmpty().contains(requested)) fixture(sample.first, sample.second)
+        else {
+            status.text = "P0 样本不存在：$requested"
+            record("loadError", "Unknown P0 fixture")
+        }
     }
 
     private fun fixture(name: String, path: String) {
+        if (previewEnabled) {
+            // A display window only: the original source and alphaTab playback model remain intact.
+            notation.settings = probeSettings().apply {
+                // AlphaTabView recycles offscreen bitmaps and requests them again on scroll.
+                core.enableLazyLoading = true
+                display.startBar = when (path) { "complex.gp" -> 21.0; "polyphonic.gp" -> 52.0; else -> 1.0 }
+                display.barCount = 6.0
+                display.barCountPerPartial = 6.0
+            }
+            record("preview", "asset=$path startBar=${notation.settings.display.startBar} bars=6")
+        }
         val entries = runCatching { JSONObject(assets.open("p0/manifest.json").bufferedReader().use { it.readText() }).getJSONArray("fixtures") }.getOrNull()
         val track = entries?.let { array -> (0 until array.length()).map { array.getJSONObject(it) }.firstOrNull { it.getString("asset") == path }?.optInt("selectedTrack") }
         load(name, track) { assets.open("p0/$path") }

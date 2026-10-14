@@ -124,16 +124,20 @@ def main() -> None:
         x[1]["reference"]["tracks"][x[2]]["staves"][0]["tuningLowToHigh"] != [40, 45, 50, 55, 59, 64]))
     if poly_bars == 0:
         raise SystemExit("No independently confirmed polyphonic guitar fixture found")
+    # Keep an original, small polyphonic GP for slow software emulators as well.
+    _, light_item, light_track = min((c for c in candidates if c[0] > 0), key=lambda c: c[1]["bytes"])
     simple = args.scores / "海底谭/花水电车版主音吉他/ウミユリ海底譚 ver.2 guitar 2.gp5"
     if not simple.exists():
         simple = min((p for p in files if p.suffix.lower() == ".gp5"), key=lambda p: p.stat().st_size)
     gpx = simple.with_suffix(".gpx")
-    chosen = {"simple.gp5": simple, "complex.gp": Path(complex_item["path"]), "sample.gpx": gpx}
+    chosen = {"simple.gp5": simple, "complex.gp": Path(complex_item["path"]), "sample.gpx": gpx,
+              "polyphonic.gp": Path(light_item["path"])}
     fixtures = []
     for target, source in chosen.items():
         shutil.copyfile(source, assets / target)
         item = next(x for x in inventory if x["path"] == str(source))
-        fixtures.append({"asset": target, **item, "selectedTrack": complex_track if target == "complex.gp" else 0})
+        track_index = complex_track if target == "complex.gp" else light_track if target == "polyphonic.gp" else 0
+        fixtures.append({"asset": target, **item, "selectedTrack": track_index})
     output = {"sourceRoot": str(args.scores), "files": inventory, "fixtures": fixtures}
     (evidence / "desktop-gp-manifest.json").write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
     # Only fixture identities and reference facts need to be inside the private P0 APK.

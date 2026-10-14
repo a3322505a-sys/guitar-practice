@@ -14,7 +14,7 @@ v79 将音阶、内置练习和曲包统一到同一套六线谱布局与绘制�
 
 ## alphaTab P0 独立验证分支
 
-本分支另有 **v83 / 4.0.0-local35-alphatab-p0** 原生引擎测试入口，见 [保留 / 迁移清单](docs/alphaTab-P0-preservation.md) 与 [P0 证据和阻碍](docs/alphaTab-P0-results.md)。桌面 53 份 GP 系列文件主机试读、选定素材排谱 / 离线合成及 APK 构建通过；模拟器尚未成功启动，P0 运行验收未完成，未进入后续迁移。原应用入口和用户数据保留；alphaTab 依赖和入口仅进入 `p0` 构建。
+本分支另有 **v86 / 4.0.0-local38-alphatab-p0** 原生引擎测试入口，见 [保留 / 迁移清单](docs/alphaTab-P0-preservation.md)、[初次 P0 记录](docs/alphaTab-P0-results.md) 与 [2026-10-15 续作证据](docs/alphaTab-P0-continuation-2026-10-15.md)。无需安装宿主驱动的 Android 9 / x86 软件模拟器已完成安装、GP5 / GPX / 一份 GP 8.0.2 样本的原生排谱检查；修复了预览滚动后变空的问题。软件模拟存在严重音频欠载，音色、连续播放与严格同步尚未验收，未进入后续迁移。alphaTab 依赖和入口仅进入 `p0` 构建。
 
 ## 使用入口
 
