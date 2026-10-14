@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,8 @@ internal fun phraseCue(event: Event?, sequence: Sequence): String {
     }.joinToString(" · ").ifBlank { "按音位弹奏" }
 }
 
+private enum class PracticeOverlay { NONE, PRACTICE, MANAGEMENT }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PracticeApp(player: Player) {
@@ -63,7 +67,6 @@ fun PracticeApp(player: Player) {
     var librarySnapshot by remember { mutableStateOf(repository.snapshot) }
     var libraryReady by remember { mutableStateOf(false) }
     var preparedEpoch by remember { mutableIntStateOf(0) }
-    var libraryOpen by rememberSaveable { mutableStateOf(false) }
     val phraseStore=remember { PhraseSettingsStore(preferences,repository::named) }
     var page by rememberSaveable { mutableIntStateOf(0) }
     var scale by rememberSaveable(stateSaver=ScaleSaver) { mutableStateOf(ScaleOptions()) }
@@ -83,8 +86,8 @@ fun PracticeApp(player: Player) {
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click",true)) }
     var viewPreference by rememberSaveable { mutableIntStateOf(0) }
     val activity=checkNotNull(LocalActivity.current)
-    // 0: closed, 1: practice content, 2: tempo/playback, 3: diagram help.
-    var settingsPanel by rememberSaveable { mutableIntStateOf(0) }
+    var overlay by rememberSaveable { mutableStateOf(PracticeOverlay.NONE) }
+    var settingsTab by rememberSaveable { mutableIntStateOf(0) }
     var moreExercisesOpen by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
     val hint=Hint.entries[hintIndex]
@@ -132,7 +135,7 @@ fun PracticeApp(player: Player) {
     val melody=page==1 && chordPhrases && (harmony.isEmpty() || shownChord==null)
     val renderHint=if(melody && hint==Hint.ROOTS) Hint.FULL else hint
     val nextChord=if(page==1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0,section)+1)%harmony.size].chord else ""
-    fun changed() { player.invalidate(); note="" }
+    fun changed() { player.invalidate(); note="设置已改变，下一次播放从头开始" }
     fun scaleChange(value: ScaleOptions) { if(value!=scale) { changed(); scale=value } }
     fun firstChange(value: Chord) { if(firstName!=value.id) { changed();firstName=value.id } }
     fun loadPhrase(value: Phrase) {
@@ -163,7 +166,6 @@ fun PracticeApp(player: Player) {
         }
     }
     fun phraseChange(value: Phrase) { phraseStore.select(value);if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
-    fun chordMode(phrases: Boolean) { if(chordPhrases!=phrases) { changed();chordPhrases=phrases;if(phrases) loadPhrase(phrase) } }
     fun tap(p: Position) {
         val capo=if(page==1) displayedSequence?.capoFret ?: 0 else 0
         player.audition(listOf(p),capoFret=capo,openStringMidi=displayedSequence?.runtimePlan?.mainTrack?.openStringMidi ?: Music.openMidi.toList())
@@ -183,7 +185,8 @@ fun PracticeApp(player: Player) {
         progress.phase==Phase.ERROR -> progress.message
         else -> "准备好，就开始一轮"
     }
-    BackHandler(enabled=settingsPanel==0 && (player.active || progress.phase==Phase.PAUSED)) { player.stop() }
+    BackHandler(enabled=overlay==PracticeOverlay.NONE && (player.active || progress.phase==Phase.PAUSED)) { player.stop() }
+    BackHandler(enabled=overlay==PracticeOverlay.PRACTICE) { overlay=PracticeOverlay.NONE }
     val windowConfiguration=LocalConfiguration.current
     val tabletControls=minOf(windowConfiguration.screenWidthDp,windowConfiguration.screenHeightDp)>=600
     PracticeTheme(largeControls=tabletControls) {
@@ -196,54 +199,74 @@ fun PracticeApp(player: Player) {
             val orientation=practiceOrientation(activity,tab)
             if(activity.requestedOrientation!=orientation) activity.requestedOrientation=orientation
         }
-        Scaffold(containerColor=Color.Transparent,contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
-            PracticeTransport(tab,if(showingSession) practiceSession!!.bpm else bpm,beatsPerBar,hint,player.active,progress.phase,sequence!=null,
-                {settingsPanel=2},{setHint(if(hint==Hint.HIDDEN) 0 else 2)},
+        val windowHeight=maxHeight
+        val configuring=overlay==PracticeOverlay.PRACTICE
+        val sidePanel=maxWidth>=600.dp || maxWidth>maxHeight
+        val panelWidth=if(configuring && sidePanel) minOf(420.dp,maxWidth*.44f) else 0.dp
+        fun setBpm(value: Int) { if(value!=bpm) { changed();bpm=value } }
+        fun setMultiplier(value: Int) { if(value!=tempoMultiplier) { changed();tempoMultiplier=value;phraseStore.saveTempo(phrase,sourceTempo,value) } }
+        fun category(value: Int) {
+            val nextPage=if(value==0) 0 else 1
+            val nextPhrases=value==2
+            if(page!=nextPage || (nextPage==1 && chordPhrases!=nextPhrases)) {
+                changed();page=nextPage
+                if(nextPage==1) { chordPhrases=nextPhrases;if(nextPhrases) loadPhrase(phrase) }
+            }
+        }
+        val summary=if(page==0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege}型 · ${scale.exercise.title}"
+            else if(chordPhrases) phrase.title else "${first.name} · 逐弦"
+        Scaffold(modifier=Modifier.fillMaxSize().padding(end=panelWidth),containerColor=Color.Transparent,
+            contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
+            PracticeTransport(bpm,sequence?.runtimePlan!=null && sourceTempo,tempoMultiplier,
+                displayedSequence?.runtimePlan?.visits?.getOrNull(cursor?.bar ?: range.first)?.measure?.meter?.let { it.numerator.toString()+"/"+it.denominator } ?: "$beatsPerBar/4",
+                hint,transportMode(progress.phase,session!=null,session?.preview==true),sequence!=null,::setBpm,::setMultiplier,
+                {setHint(if(hint==Hint.HIDDEN) 0 else 2)},
                 {if(player.active) player.pause() else player.resume()},{player.restart()},
                 {sequence?.let { note="";player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.barCount-1),
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
                 {sequence?.let { note="";player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.barCount-1),
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
-                {player.stop();note=""},if(showingSession) {
-                    if(practiceSession!!.sourceTempo) "原谱 "+(practiceSession.tempoMultiplier*100).toInt()+"%" else null
-                } else if(sequence?.runtimePlan!=null && sourceTempo) "原谱 "+tempoMultiplier+"%" else null,
-                displayedSequence?.runtimePlan?.visits?.getOrNull(cursor?.bar ?: range.first)?.measure?.meter?.let { it.numerator.toString()+"/"+it.denominator })
+                {player.stop();note=""})
         }) { padding ->
-            BoxWithConstraints(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)) {
-              val navigationCompact=(tab || maxHeight<520.dp) && maxWidth>=600.dp*LocalDensity.current.fontScale
-              Column(Modifier.fillMaxSize()) {
-                PracticeNavigation(page,chordPhrases,navigationCompact,tabletControls,
-                    { index -> if(page!=index) { player.stop();page=index;note="" } },::chordMode,{settingsPanel=1},
-                    { if(!tab) ChordSteps(first,::firstChange,chords) },
-                    { if(tab || tabletControls) ViewSwitch(tab) { viewPreference=it } })
-              PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
-                  sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
-                  showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar,chords),
-                  Modifier.weight(1f),::firstChange,{viewPreference=it},::tap,
-                  { chord -> player.audition(chord.positions,capoFret=chord.capoFret,openStringMidi=chord.openStringMidi);note="${chord.name} · 整和弦试听" },{settingsPanel=3})
-              }
+            Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=12.dp)) {
+                val compactHeader=windowHeight<520.dp
+                val views: @Composable ()->Unit = { ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it } }
+                PracticeNavigation(summary,{overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
+                if(!compactHeader) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { views() }
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    // Reserve a real diagram above the half-height sheet, not just a card title.
+                    val contentHeight=if(configuring && !sidePanel) minOf(maxHeight,(windowHeight*.48f-112.dp).coerceAtLeast(120.dp)) else maxHeight
+                    PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
+                        sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
+                        showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar,chords,configuring),
+                        Modifier.fillMaxWidth().height(contentHeight),::firstChange,{viewPreference=it},::tap,
+                        { chord -> player.audition(chord.positions,capoFret=chord.capoFret,openStringMidi=chord.openStringMidi);note="${chord.name} · 整和弦试听" })
+                }
             }
         }
-      }
-        if(settingsPanel!=0) PracticeSettings(PracticeSettingsState(settingsPanel,page,chordPhrases,tabletControls,scale,first,phrase,
-            repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },chords.groupBy { it.group },
-            phrase.relatedId?.let { repository.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
-            moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,
-            selectedTrackId,soloTrack),
-            {settingsPanel=0},{value -> changed();bpm=value},{value -> changed();repeats=value},
-            {guitar=it;player.guitar=it;preferences.edit().putBoolean("guitar",it).apply()},
-            {click=it;player.click=it;preferences.edit().putBoolean("click",it).apply()},
-            {moreExercisesOpen=!moreExercisesOpen},::scaleChange,::phraseChange,::firstChange,
-            {value -> changed();firstBar=value.first;lastBar=value.last},{settingsPanel=0;libraryOpen=true},
-            {value -> changed();sourceTempo=value;phraseStore.saveTempo(phrase,value,tempoMultiplier)},
-            {value -> changed();tempoMultiplier=value;phraseStore.saveTempo(phrase,sourceTempo,value)},
-            {value -> changed();selectedTrackId=value;phrase.assetKey?.let { preferences.edit().putString("asset."+it.encoded+".mainTrack",value).apply() }},
-            {value -> changed();soloTrack=value;phrase.assetKey?.let { preferences.edit().putBoolean("asset."+it.encoded+".solo",value).apply() }})
-        if(libraryOpen) SongLibrary(repository,{updated ->
+        if(configuring && sidePanel) Box(Modifier.fillMaxSize().padding(end=panelWidth)
+            .clickable { overlay=PracticeOverlay.NONE })
+        if(configuring) Box(if(sidePanel) Modifier.align(Alignment.CenterEnd).width(panelWidth).fillMaxHeight() else Modifier) {
+            PracticeSettings(PracticeSettingsState(page,chordPhrases,tabletControls,scale,first,phrase,
+                repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },chords.groupBy { it.group },
+                phrase.relatedId?.let { repository.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
+                moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,selectedTrackId,soloTrack,if(!libraryReady) "正在加载曲库…" else note),
+                sidePanel,settingsTab,{settingsTab=it},{overlay=PracticeOverlay.NONE},::category,
+                {value -> if(value!=repeats) { changed();repeats=value }},
+                {guitar=it;player.guitar=it;preferences.edit().putBoolean("guitar",it).apply()},
+                {click=it;player.click=it;preferences.edit().putBoolean("click",it).apply()},
+                {moreExercisesOpen=!moreExercisesOpen},::scaleChange,::phraseChange,::firstChange,
+                {value -> if(value!=range) { changed();firstBar=value.first;lastBar=value.last }},
+                {value -> if(value!=sourceTempo) { changed();sourceTempo=value;phraseStore.saveTempo(phrase,value,tempoMultiplier) }},
+                {value -> if(value!=selectedTrackId) { changed();selectedTrackId=value;phrase.assetKey?.let { preferences.edit().putString("asset."+it.encoded+".mainTrack",value).apply() } }},
+                {value -> if(value!=soloTrack) { changed();soloTrack=value;phrase.assetKey?.let { preferences.edit().putBoolean("asset."+it.encoded+".solo",value).apply() } }})
+        }
+        if(overlay==PracticeOverlay.MANAGEMENT) SongLibrary(repository,{updated ->
             librarySnapshot=updated
             val restored=phraseStore.selected()
             val current=if(restored.legacyId!=null) restored else repository.named(phraseId)
             phraseId=current.id;loadPhrase(current)
-        },{libraryOpen=false})
+        },{overlay=PracticeOverlay.NONE},displayedSequence)
+      }
     }
 }

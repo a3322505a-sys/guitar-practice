@@ -36,12 +36,13 @@ internal data class PracticeContentState(
     val renderCursor: Cursor?,val cursor: Cursor?,val showingSession: Boolean,
     val event: Event?,val phraseNow: Event?,val nextEvent: Event?,val moving: MovingPosition?,
     val current: List<Position>,val shownChord: Chord?,val nextChord: String,
-    val status: String,val note: String,val beatsPerBar: Int,val chords: List<Chord> = Chords.all)
+    val status: String,val note: String,val beatsPerBar: Int,val chords: List<Chord> = Chords.all,
+    val configuring: Boolean = false)
 
 @Composable
 internal fun PracticeContent(state: PracticeContentState,modifier: Modifier,
     onChord: (Chord)->Unit,onView: (Int)->Unit,onTap: (Position)->Unit,
-    onAudition: (Chord)->Unit,onHelp: ()->Unit) = with(state) {
+    onAudition: (Chord)->Unit) = with(state) {
     if(displayedSequence==null) {
         Box(modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
             Text(if(note.isNotBlank()) note else scaleResult.reason.ifBlank { "正在准备曲目…" },color=Muted)
@@ -52,13 +53,13 @@ internal fun PracticeContent(state: PracticeContentState,modifier: Modifier,
 BoxWithConstraints(modifier.fillMaxWidth()) {
   val availableWidth=maxWidth
   val availableHeight=maxHeight
-  val wide=maxWidth>=700.dp
-  val compact=maxHeight<(if(tabletControls) 360.dp else 520.dp)
+  val wide=maxWidth>=1000.dp && !configuring
+  val compact=configuring || maxHeight<(if(tabletControls) 360.dp else 520.dp)
   val fontScale=LocalDensity.current.fontScale
   // Decide from the complete route, so rests/dead notes never resize the card.
   val openStringsOnly=melody && displayedSequence!!.route.isNotEmpty() && displayedSequence.route.all { it.fret==0 }
   // A short window scrolls the whole chord page, never the labels inside its diagram.
-  val chordPageScroll=page==1 && !wide && maxHeight<600.dp*fontScale
+  val chordPageScroll=page==1 && !configuring && !wide && maxHeight<600.dp*fontScale
   val chordScrollState=remember(page) { ScrollState(0) }
   if(tab) {
       Column(Modifier.fillMaxSize().padding(vertical=4.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
@@ -77,16 +78,6 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
   } else {
   val content: @Composable () -> Unit = {
       Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-          if(!tabletControls) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-              Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                  Box(Modifier.size(7.dp).background(PurpleInk,RoundedCornerShape(4.dp)))
-                  if(page==1 && !chordPhrases) {
-                      ChordSteps(first,onChord,chords)
-                  } else Text("练习视图",style=MaterialTheme.typography.labelLarge,color=PurpleInk)
-              }
-              Spacer(Modifier.weight(1f))
-              ViewSwitch(tab,onView)
-          }
           val cardContent: @Composable (Chord,Boolean)->Unit = { cardChord,selected ->
           val shownChord=cardChord
           val chordTones=cardChord.positions.distinctBy { cardChord.midi(it)%12 }.sortedBy { (cardChord.midi(it)-cardChord.root)%12 }
@@ -95,7 +86,7 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                   else if(hint==Hint.FULL && event!=null) { if(event.rest) "现在：留拍" else "现在：${eventLabel(event)}" }
                   else "${scale.key.title} · ${Patterns.all[scale.pattern].solfege} 指型"
               val phraseCard=page==1 && chordPhrases
-              Row(Modifier.fillMaxWidth().then(if(phraseCard) Modifier.height((if(openStringsOnly) 80.dp else if(compact) 96.dp else 120.dp)*fontScale) else Modifier)
+              Row(Modifier.fillMaxWidth().then(if(phraseCard && !configuring) Modifier.height((if(openStringsOnly) 80.dp else if(compact) 96.dp else 120.dp)*fontScale) else Modifier)
                   .background(candyBrush(if(page==1) Pink else Mint),RoundedCornerShape(20.dp)).padding(horizontal=12.dp,vertical=if(compact) 4.dp else 12.dp),verticalAlignment=Alignment.CenterVertically) {
                   Column(Modifier.weight(1f)) {
                       val headline=buildAnnotatedString {
@@ -115,48 +106,51 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                           if(!melody) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=1)
                       }
                       if(page==1 && !chordPhrases && shownChord.capoFret>0) Text(shownChord.conditions,style=MaterialTheme.typography.bodySmall,color=PurpleInk,modifier=Modifier.testTag("chord-conditions"))
-                      if(page==1 && !chordPhrases && hint!=Hint.HIDDEN) Text(
+                      if(page==1 && !chordPhrases && hint!=Hint.HIDDEN && !configuring) Text(
                           chordTones.filter { hint==Hint.FULL || shownChord.isRoot(it) }.joinToString(" · ") { "${shownChord.role(it)} ${shownChord.noteName(it)}" },
                           style=MaterialTheme.typography.bodySmall,color=BlueInk)
-                      if(page==0 && hint==Hint.FULL && nextEvent!=null) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
+                      if(page==0 && hint==Hint.FULL && nextEvent!=null && !configuring) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                   }
                   if(page==1 && !chordPhrases) PracticeTextButton(onClick={onAudition(shownChord)},enabled=selected && !active && phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
-                  else if(phraseCard) PracticeTextButton(onClick={onHelp()},modifier=Modifier.testTag("diagram-help"),contentPadding=PaddingValues(horizontal=4.dp)) { Text("帮助") }
                   else if(!compact && availableWidth>370.dp && !active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                   if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
               }
                   BoxWithConstraints((if(openStringsOnly) Modifier.height(128.dp*fontScale) else Modifier.weight(1f)).fillMaxWidth().testTag("diagram-viewport").background(Color.White.copy(alpha=.94f),RoundedCornerShape(20.dp)),contentAlignment=Alignment.Center) {
                       if(page==0) {
-                          val h=maxOf(176.dp*fontScale,maxHeight).coerceAtMost(300.dp*fontScale)
+                          val h=maxOf(if(configuring) 80.dp else 176.dp*fontScale,maxHeight).coerceAtMost(300.dp*fontScale)
                           Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.Center) {
                               val positions=if(scale.exercise==ScaleExercise.CONNECTION && scale.pattern<4) (Patterns.all[scale.pattern].positions+Patterns.all[scale.pattern+1].positions).distinct() else Patterns.all[scale.pattern].positions
-                              Fretboard(positions,scale.key,hint,false,current,!active,h,onTap)
+                              Fretboard(positions,scale.key,hint,false,current,!active && phase!=Phase.PAUSED,h,onTap,showLegend=!configuring)
                           }
                       } else if(melody && displayedSequence!!.route.isNotEmpty()) Fretboard(displayedSequence.route,null,renderHint,false,
                           if(showingSession) current else phraseNow?.positions ?: displayedSequence.runtimePlan?.notes?.take(1)?.map { it.position }.orEmpty(),
-                          !active,maxHeight.coerceAtMost(300.dp*fontScale),onTap,moving,
+                          !active && phase!=Phase.PAUSED,maxHeight.coerceAtMost(300.dp*fontScale),onTap,moving,
                           nextEvent?.positions.orEmpty(),showLegend=false,capoFret=displayedSequence.capoFret,
                           openStringMidi=displayedSequence.runtimePlan?.mainTrack?.openStringMidi ?: Music.openMidi.toList(),
                           movingPositions=cursor?.movingPositions ?: moving?.let { listOf(it) }.orEmpty())
                       else if(melody) Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "死音节奏",color=PurpleInk)
                       else ChordDiagram(shownChord,if(shownChord.root<0 && hint==Hint.ROOTS) Hint.FULL else hint,
-                          if(selected) current else emptyList(),selected && !active,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),onTap)
+                          if(selected) current else emptyList(),selected && !active && phase!=Phase.PAUSED,maxHeight.coerceAtMost(390.dp*fontScale).coerceAtMost(availableHeight),onTap)
                   }
                   if(!compact && !phraseCard) Text(if(hint==Hint.FULL) { if(page==0) "金色：主音 · 绿色：音阶音 · 粉色：当前音" else "左 6 弦 → 右 1 弦 · 金色根音 · O 空弦 · X 不弹" } else "保留拍点与控制，可随时恢复提示。",style=MaterialTheme.typography.labelSmall,color=Muted)
-              if(!compact || !wide || phraseCard) Row(Modifier.fillMaxWidth().height(56.dp*fontScale).testTag("playback-status")
+              if(!compact || !wide || phraseCard) Row(Modifier.fillMaxWidth().height((if(configuring) 32.dp else 56.dp)*fontScale).testTag("playback-status")
                   .background(Color.White.copy(alpha=.7f),RoundedCornerShape(14.dp)).padding(horizontal=10.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
                   Text(if(selected) status else "准备好，就开始一轮",style=MaterialTheme.typography.labelLarge,color=if(phase==Phase.ERROR) RoseInk else Green,modifier=Modifier.weight(1f),maxLines=2,overflow=TextOverflow.Ellipsis)
                   repeat(beatsPerBar) { i ->
                       Box(Modifier.padding(start=6.dp).size(11.dp).background(if(i==cursor?.beat && showingSession) Green else Lavender,RoundedCornerShape(8.dp)))
                   }
               }
-              if(phraseCard || !compact) Box(Modifier.fillMaxWidth().height(4.dp)) {
+              if(!configuring && (phraseCard || !compact)) Box(Modifier.fillMaxWidth().height(4.dp)) {
                   if(selected && showingSession && cursor?.pre==false) LinearProgressIndicator(progress={ (cursor.localTick / displayedSequence!!.length).toFloat() },modifier=Modifier.fillMaxWidth(),color=Green,trackColor=Mint)
               }
-              if(phraseCard) Box(Modifier.fillMaxWidth().height(20.dp*fontScale)) {
+              if(phraseCard && !configuring) Box(Modifier.fillMaxWidth().height(20.dp*fontScale)) {
                   if(selected && hint==Hint.FULL) Text(note,color=Green,style=MaterialTheme.typography.bodySmall,maxLines=1,overflow=TextOverflow.Ellipsis)
               } else if(selected && note.isNotEmpty() && hint==Hint.FULL && !compact) Text(note,color=Green,style=MaterialTheme.typography.bodySmall)
           }
+          }
+          if(page==1 && !chordPhrases) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+              ChordSteps(first,onChord,chords)
+              Text("左右滑动切换和弦",style=MaterialTheme.typography.labelSmall,color=Muted)
           }
           if(page==1 && !chordPhrases) ChordDeck(chords.indexOf(first),chords.size,{onChord(chords[it])},Modifier.weight(1f).fillMaxWidth()) { index,selected -> cardContent(chords[index],selected) }
           else Box(Modifier.weight(1f).fillMaxWidth()) { cardContent(shownChord ?: first,true) }

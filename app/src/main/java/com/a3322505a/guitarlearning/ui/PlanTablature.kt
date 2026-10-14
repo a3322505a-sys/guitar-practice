@@ -191,6 +191,10 @@ private fun tabDescription(plan: PerformancePlan,layout: TabSystemLayout,hint: H
     if(hint!=Hint.HIDDEN) layout.bars.forEach { b ->
         b.events.forEach { e ->
             if(e.notes.isEmpty()) append("休止；")
+            val articulations=e.notes.map { it.note.articulation.over(e.glyph.event.event.articulation).over(Articulation.DEFAULT) }
+            if(e.notes.size>1 && articulations.any { (it.strumDelayMs ?: 0.0)>0 }) {
+                append(if(articulations.first().pick=="up") "上拨，从有效高音弦到低音弦；" else "下拨，从有效低音弦到高音弦；")
+            }
             e.notes.filter { tabNoteVisible(plan,e.glyph.event,it.note,hint,key) }.forEach { n -> append("${n.note.string} 弦 ${n.label}${if(n.note.dead) " 死音" else " 品"}；") }
             e.glyph.event.event.written.tupletGroupIds.forEach { id ->
                 val t=plan.score.tuplets.first { it.id==id };append(if(t.actual==3 && t.normal==2) "三连音 3；" else "连音 ${t.actual}:${t.normal}；")

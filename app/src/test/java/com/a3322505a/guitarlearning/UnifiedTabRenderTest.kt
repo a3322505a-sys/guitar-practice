@@ -74,8 +74,9 @@ class UnifiedTabRenderTest {
                 runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
             }
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithText("和弦").performClick();compose.onNodeWithText("短句应用").performClick()
+            compose.onNodeWithTag("config-summary").performClick();compose.onNodeWithText("短句练习").performScrollTo().performClick();compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("config-summary").performClick()
+            compose.waitUntil(15000) { compose.onAllNodesWithText("嘘月 · 低音与高音分解").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("嘘月 · 低音与高音分解").performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick();compose.onNodeWithText("六线谱").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("let ring",substring=true).fetchSemanticsNodes().isNotEmpty() }
