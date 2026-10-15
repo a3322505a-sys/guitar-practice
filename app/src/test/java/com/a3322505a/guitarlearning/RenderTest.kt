@@ -39,7 +39,9 @@ class RenderTest {
         compose.waitForIdle()
     }
     private fun openContent() {
-        compose.onNodeWithTag("config-summary").performClick()
+        val summary=compose.onNodeWithTag("config-summary")
+        if(!summary.isDisplayed()) summary.performScrollTo()
+        summary.performClick()
         expandSettings()
         compose.onNodeWithText("内容").performClick()
     }
@@ -95,9 +97,9 @@ class RenderTest {
         compose.onNodeWithText("每拍3音").performScrollTo().performClick()
         capture("scale-triplet-settings","five-fixes")
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithText("音阶往返 · 每拍3音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("每拍3音",substring=true)
         compose.activityRule.scenario.recreate();compose.waitForIdle()
-        compose.onNodeWithText("音阶往返 · 每拍3音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("每拍3音",substring=true)
         compose.onNodeWithText("六线谱").performClick()
         compose.onAllNodesWithContentDescription("三连音 3",substring=true)[0].assertIsDisplayed()
         capture("scale-triplet-tab","five-fixes")
@@ -270,10 +272,10 @@ class RenderTest {
         compose.onNodeWithText("3").performScrollTo().performClick()
         capture("phone-more-scale-settings")
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithText("换起点 · 每拍2音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("换起点",substring=true).assertTextContains("每拍2音",substring=true)
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        compose.onNodeWithText("换起点 · 每拍2音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("换起点",substring=true).assertTextContains("每拍2音",substring=true)
         openContent()
         advanced()
         compose.onNodeWithText("起点级数").performScrollTo().assertIsDisplayed()
@@ -332,10 +334,10 @@ class RenderTest {
     private fun assertTabletControlsVisible(tab: Boolean = false) {
         val first=compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot
         val second=compose.onNodeWithTag("view-switch").fetchSemanticsNode().boundsInRoot
-        assertTrue("Summary and view controls have separate rows",second.top>=first.bottom)
+        assertTrue("View controls belong to the stage beside the control deck",second.left>=first.right)
         listOf("config-summary","management-button").forEach { tag ->
             val node=compose.onNodeWithTag(tag).assertIsDisplayed().fetchSemanticsNode()
-            assertEquals("$tag follows the shared 44dp toolbar",44f,node.boundsInRoot.height,.5f)
+            assertTrue("$tag keeps a usable toolbar height",node.boundsInRoot.height>=44f)
             assertEquals("$tag is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
         }
         listOf("指板","六线谱").forEach { text ->
@@ -478,13 +480,14 @@ class RenderTest {
         compose.waitForIdle()
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,compose.activity.requestedOrientation)
         val tab=compose.onNodeWithTag("tablature").fetchSemanticsNode().boundsInRoot
-        assertTrue("TAB should use most of the window width",tab.width>700f)
+        val navigation=compose.onNodeWithTag("practice-navigation").fetchSemanticsNode().boundsInRoot
+        assertTrue("TAB retains useful width beside the control deck",tab.width>450f && tab.left>=navigation.right)
         val row=compose.onAllNodesWithContentDescription("六线谱，第",substring=true).fetchSemanticsNodes().first().boundsInRoot
         assertTrue("All six strings and rhythm fit in the viewport",row.bottom<=tab.bottom+.5f)
-        compose.onNodeWithContentDescription("第 1 至 3 小节",substring=true).assertIsDisplayed()
+        compose.onNodeWithContentDescription("第 1 至",substring=true).assertIsDisplayed()
         listOf("开始跟练","听示范","撤提示").forEach { compose.onNodeWithText(it).assertIsDisplayed() }
         compose.onNodeWithTag("tempo-button").assertIsDisplayed().assertTextContains("60 BPM",substring=true)
-        compose.onNodeWithTag("config-summary").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").performScrollTo().assertIsDisplayed()
         capture("phone-landscape-tab")
         category("和弦学习")
         category("短句练习")
@@ -497,7 +500,7 @@ class RenderTest {
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,compose.activity.requestedOrientation)
-        compose.onNodeWithTag("config-summary").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("指板").performClick()
         compose.waitForIdle()
         assertEquals(original,compose.activity.requestedOrientation)
@@ -572,7 +575,10 @@ class RenderTest {
         assertWholeChordDiagram()
         compose.onNodeWithText("开始跟练").assertIsDisplayed()
         capture("small-large-text-chord-fit")
+        // HorizontalPager is the closest scroll ancestor; scroll the enclosing vertical page explicitly.
+        compose.onNodeWithTag("chord-page").performSemanticsAction(SemanticsActions.ScrollBy) { it(0f,-10000f) }
         compose.onNodeWithText("六线谱").performClick()
+        capture("small-large-text-tab-after-switch","v95")
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         compose.onNodeWithText("指板").performClick()
         scrollChordDiagramIntoView()

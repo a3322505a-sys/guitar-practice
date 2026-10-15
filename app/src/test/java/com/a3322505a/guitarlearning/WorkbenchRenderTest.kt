@@ -71,7 +71,7 @@ class WorkbenchRenderTest {
         compose.onNodeWithText("声音").performClick()
         compose.onNodeWithTag("guitar-switch").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithText("三度跳进 · 每拍1音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
         compose.onNodeWithTag("management-button").performClick()
         compose.onNodeWithText("选择曲包").assertIsDisplayed()
         capture("management-packages")
@@ -87,7 +87,7 @@ class WorkbenchRenderTest {
             dialog.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP,android.view.KeyEvent.KEYCODE_BACK))
         };compose.waitForIdle()
         compose.onNodeWithTag("management-sheet").assertDoesNotExist()
-        compose.onNodeWithText("三度跳进 · 每拍1音").assertIsDisplayed()
+        compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
     }
     private fun sidePanel() {
         compose.onNodeWithTag("config-summary").performClick()
@@ -110,7 +110,9 @@ class WorkbenchRenderTest {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val height=maxHeight
                 Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
-                    PracticeTransport(80,false,100,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},{},availableHeight=height)
+                    Box(Modifier.width(224.dp)) {
+                        PracticeTransport(80,false,100,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},{},availableHeight=height,verticalDeck=true)
+                    }
                 }
             }
         } }
@@ -120,7 +122,7 @@ class WorkbenchRenderTest {
             val bounds=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot
             val root=compose.onRoot().fetchSemanticsNode().boundsInRoot
             heights[value]=bounds.height
-            assertTrue("$value footer ${bounds.height}/${root.height}",bounds.height<=root.height/3)
+            assertTrue("$value control deck fits the window ${bounds.height}/${root.height}",bounds.height<=root.height)
             listOf("tempo-slower","tempo-button","tempo-faster").forEach { tag ->
                 val button=compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
                 assertTrue(button.height>=48 && button.width>=48)

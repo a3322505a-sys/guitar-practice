@@ -2,6 +2,7 @@ package com.a3322505a.guitarlearning
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Looper
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -13,6 +14,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
@@ -52,6 +54,9 @@ class SevenBlocksRenderTest {
     @Test fun sevenCompleteBlocksCanBeSelectedAndTheirExpandedRangeReachesThePlayer() {
         val player=Player(compose.activity)
         try {
+            // Finish the Activity's seed transaction before mounting another repository for the test player.
+            compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
+                runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false) }
             compose.activity.setContent { PracticeApp(player) }
             compose.onNodeWithTag("config-summary").performClick()
             compose.onNodeWithText("短句练习").performScrollTo().performClick()

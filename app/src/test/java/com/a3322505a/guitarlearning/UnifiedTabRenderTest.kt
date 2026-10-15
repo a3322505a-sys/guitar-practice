@@ -6,6 +6,7 @@ import android.os.Looper
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -55,9 +56,10 @@ class UnifiedTabRenderTest {
         return result!!
     }
     private fun assertPink(name: String,expected: Boolean) {
-        val bitmap=image(name);var pink=0
-        for(y in 0 until bitmap.height) for(x in 0 until bitmap.width) if(bitmap.getPixel(x,y)==0xFFFFB9D4.toInt()) pink++
-        assertEquals("pink pixels: $pink",expected,pink>100);bitmap.recycle()
+        val bitmap=image(name);var activePixels=0
+        val activeColor=ThemeRegistry.default.colors.notationActive.toArgb()
+        for(y in 0 until bitmap.height) for(x in 0 until bitmap.width) if(bitmap.getPixel(x,y)==activeColor) activePixels++
+        assertEquals("active theme highlight pixels: $activePixels",expected,activePixels>100);bitmap.recycle()
     }
     private fun render(seq: Sequence,tick: Double?,name: String,fontScale: Float=1f,following: Boolean=false) {
         val cursor=tick?.let { Session(seq,60,false,1).cursor(it) }
@@ -87,8 +89,9 @@ class UnifiedTabRenderTest {
                 runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
             }
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNodeWithTag("config-summary").performClick();compose.onNodeWithText("短句练习").performScrollTo().performClick();compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNode(hasText("短句") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
+            compose.onNodeWithTag("config-summary").performScrollTo().performClick()
+            compose.onNodeWithText("内容").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithText("嘘月 · 低音与高音分解").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("嘘月 · 低音与高音分解").performScrollTo().performClick()
             compose.onNodeWithText("完成").performClick();compose.onNodeWithText("六线谱").performClick()

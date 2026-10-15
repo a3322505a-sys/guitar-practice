@@ -44,7 +44,7 @@ class ThemeRenderTest {
                 val at=IntArray(2);it.getLocationOnScreen(at)
                 canvas.save();canvas.translate((at[0]-origin[0]).toFloat(),(at[1]-origin[1]).toFloat());it.draw(canvas);canvas.restore()
             }
-            File("../.local/ui-v93/$name.png").apply { parentFile!!.mkdirs();outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } }
+            File("../.local/ui-v95/$name.png").apply { parentFile!!.mkdirs();outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } }
             bitmap.recycle()
         }
     }
@@ -54,6 +54,12 @@ class ThemeRenderTest {
     }
     @Test fun appearanceCanSwitchEveryPresetAndRestoreAfterRecreation() {
         capture("forest-phone")
+        compose.onNode(hasText("和弦") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
+        compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
+        compose.onNode(hasText("短句") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
+        compose.onNodeWithTag("phrase-cue").assertIsDisplayed()
+        compose.onNode(hasText("音阶") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
+        compose.onNodeWithTag("fretboard").assertIsDisplayed()
         compose.onNodeWithTag("management-button").performClick()
         compose.onNodeWithText("主题 / 外观").performClick()
         ThemeRegistry.all.forEach { theme ->

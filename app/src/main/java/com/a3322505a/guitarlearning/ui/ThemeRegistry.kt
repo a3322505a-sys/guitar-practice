@@ -28,28 +28,32 @@ object ThemeRegistry {
         val main = Color(primary)
         val highlight = Color(accent)
         val surface = Color.White
-        val ink = Color(0xFF20292F)
-        val secondary = Color(0xFF57636D)
-        val tertiary = Color(0xFF65717A)
-        val mainWash = lerp(surface, main, .10f)
-        val accentWash = lerp(surface, highlight, .15f)
-        val border = lerp(page, ink, .15f)
+        val ink = Color(0xFF1E272D)
+        val secondary = Color(0xFF525E68)
+        val tertiary = Color(0xFF5B6771)
+        val mainWash = lerp(surface, main, .14f)
+        val normalNoteFill = lerp(surface, main, .20f)
+        val accentWash = lerp(surface, highlight, .16f)
+        val consoleBg = lerp(page, main, .06f)
+        val stageWell = lerp(surface, page, .58f)
+        val border = lerp(page, ink, .14f)
         val onMain = readableOn(main, ink)
         val onHighlight = readableOn(highlight, ink)
+        val onNormalNote = readableOn(normalNoteFill, ink)
         return AppThemeSpec(id, name, description, ThemeTokens(
-            background = page, surface = surface, surfaceSecondary = lerp(page, surface, .35f),
+            background = page, surface = surface, surfaceSecondary = consoleBg,
             primary = main, primaryContainer = mainWash, accent = highlight, accentContainer = accentWash,
             onPrimary = onMain, onAccent = onHighlight, onSurface = ink,
             textPrimary = ink, textSecondary = secondary, textTertiary = tertiary, border = border,
             success = Color(0xFF197449), warning = Color(0xFF855400), danger = Color(0xFFB23B42),
-            disabled = Color(0xFF9DA6AE), scrim = Color(0xFF152128).copy(alpha = .38f),
-            fretboardNoteNormal = main, fretboardNoteActive = highlight, fretboardRoot = mainWash,
-            onFretboardNoteNormal = onMain, onFretboardNoteActive = onHighlight, onFretboardRoot = ink,
+            disabled = Color(0xFF9DA6AE), scrim = Color(0xFF152128).copy(alpha = .42f),
+            fretboardNoteNormal = normalNoteFill, fretboardNoteActive = highlight, fretboardRoot = main,
+            onFretboardNoteNormal = onNormalNote, onFretboardNoteActive = onHighlight, onFretboardRoot = onMain,
             chordDot = main, onChordDot = onMain,
             progressComplete = main, progressPending = border,
-            notationInk = ink, notationStaff = lerp(surface, secondary, .65f),
+            notationInk = ink, notationStaff = lerp(stageWell, secondary, .62f),
             notationHighlight = mainWash, notationActive = accentWash, notationSecondary = secondary,
-            diagramSurface = surface, diagramGrid = lerp(surface, secondary, .45f),
+            diagramSurface = stageWell, diagramGrid = lerp(stageWell, secondary, .40f),
         ))
     }
 

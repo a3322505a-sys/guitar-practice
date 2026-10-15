@@ -69,11 +69,13 @@ fun PracticeTheme(
                 inversePrimary = c.primaryContainer,
             ),
             typography = Typography(
-                titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = (-.4).sp),
-                titleMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 17.sp, lineHeight = 24.sp),
-                labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 18.sp else 14.sp, lineHeight = if (largeControls) 26.sp else 20.sp),
-                bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 18.sp),
-                labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 16.sp),
+                titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 27.sp, letterSpacing = (-.3).sp, fontFeatureSettings = "tnum"),
+                titleMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 22.sp, fontFeatureSettings = "tnum"),
+                titleSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"),
+                labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 16.sp else 13.sp, lineHeight = if (largeControls) 22.sp else 18.sp, fontFeatureSettings = "tnum"),
+                labelMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = "tnum"),
+                bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum"),
+                labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 15.sp, fontFeatureSettings = "tnum"),
             ),
             shapes = Shapes(
                 extraSmall = RoundedCornerShape(m.cornerSmall),
@@ -87,7 +89,7 @@ fun PracticeTheme(
     }
 }
 
-/** Shared shell for fretboard, tablature, chord, rhythm and settings content. */
+/** Shared stage shell for fretboard, tablature, chord, rhythm and settings content. */
 @Composable
 fun PracticeContentCard(
     modifier: Modifier = Modifier,
@@ -107,30 +109,46 @@ fun PracticeContentCard(
         border = BorderStroke(m.borderWidth, c.border),
         shadowElevation = m.shadowLevel,
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (title != null || subtitle != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, color = c.textPrimary)
-                    if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (title != null || subtitle != null || actions != null) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (title != null || subtitle != null) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, color = c.textPrimary)
+                            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+                        }
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                    if (actions != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically, content = actions)
+                    }
                 }
             }
-            if (actions != null) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically, content = actions)
             content()
             if (footer != null) {
-                HorizontalDivider(color = c.border, thickness = m.borderWidth)
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp), content = footer)
+                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp), content = footer)
             }
         }
     }
 }
 
+/** Warm recessed instrument well without redundant double-white borders. */
 @Composable
 fun DiagramContainer(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     val c = PracticeSkin.colors
     val m = PracticeSkin.metrics
-    Surface(modifier = modifier, shape = RoundedCornerShape(m.cornerMedium), color = c.diagramSurface,
-        border = BorderStroke(m.borderWidth, c.border)) {
-        Box(Modifier.padding(6.dp), content = content)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(m.cornerMedium),
+        color = c.diagramSurface,
+        border = BorderStroke(m.borderWidth, c.border.copy(alpha = 0.55f)),
+    ) {
+        Box(Modifier.padding(4.dp), content = content)
     }
 }
 
@@ -139,13 +157,20 @@ fun PracticeAction(title: String, modifier: Modifier = Modifier, enabled: Boolea
     val c = PracticeSkin.colors
     val m = PracticeSkin.metrics
     val large = LocalLargePracticeControls.current
-    Button(onClick = onClick, enabled = enabled,
+    Button(
+        onClick = onClick,
+        enabled = enabled,
         modifier = modifier.heightIn(min = if (large) m.buttonStyle.minHeightLarge else m.buttonStyle.minHeight),
         shape = RoundedCornerShape(m.cornerSmall),
         contentPadding = PaddingValues(horizontal = m.buttonStyle.horizontalPadding, vertical = 10.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = c.primary, contentColor = c.onPrimary,
-            disabledContainerColor = c.surfaceSecondary, disabledContentColor = c.textTertiary)) {
-        TransportMotif(if (title == "暂停") "pause" else "play", Modifier.size(if (large) 22.dp else 17.dp), if (enabled) c.onPrimary else c.textTertiary)
+        colors = ButtonDefaults.buttonColors(
+            containerColor = c.primary,
+            contentColor = c.onPrimary,
+            disabledContainerColor = c.surfaceSecondary,
+            disabledContentColor = c.textTertiary,
+        ),
+    ) {
+        TransportMotif(if (title == "暂停") "pause" else "play", Modifier.size(if (large) 20.dp else 16.dp), if (enabled) c.onPrimary else c.textTertiary)
         Spacer(Modifier.width(8.dp))
         Text(title, fontWeight = FontWeight.Bold)
     }

@@ -53,9 +53,7 @@ class ChordSourceRenderTest {
         val player=RecordingChordPlayback()
         compose.activity.setContent { PracticeApp(player) }
         compose.waitUntil(12000) {
-            File(compose.activity.filesDir,"songs/active-index.json").let {
-                it.exists() && it.readText().contains("local.yourtrip")
-            }
+            runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
         }
         compose.onNodeWithTag("config-summary").performClick()
         val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)

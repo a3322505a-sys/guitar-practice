@@ -18,8 +18,9 @@ private fun Color.scoreColor() = alphaTab.model.Color(
 
 /** Visual resources only: keep the score, MIDI, player and cursor handler intact. */
 internal fun applyScoreSkin(view: AlphaTabView, colors: ThemeTokens) {
-    view.setBackgroundColor(colors.surface.toArgb())
-    view.barCursorFillColor = colors.notationHighlight.toArgb()
+    view.setBackgroundColor(colors.diagramSurface.toArgb())
+    // The Android cursor is painted over the score; an opaque wash hides the notes in the active bar.
+    view.barCursorFillColor = colors.notationHighlight.copy(alpha = .18f).toArgb()
     view.beatCursorFillColor = colors.accent.copy(alpha = .35f).toArgb()
     view.selectionFillColor = colors.primaryContainer.copy(alpha = .6f).toArgb()
     applyScoreResources(view.settings.display.resources, colors)
@@ -47,7 +48,7 @@ fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean) {
     val colors = PracticeSkin.colors
     val applied = remember(player) { arrayOfNulls<ThemeTokens>(1) }
     AndroidView(factory = { context -> AlphaTabView(context, null).also {
-        it.barCursorFillColor = colors.notationHighlight.toArgb()
+        it.barCursorFillColor = colors.notationHighlight.copy(alpha = .18f).toArgb()
         it.beatCursorFillColor = colors.accent.copy(alpha = .35f).toArgb()
         it.selectionFillColor = colors.primaryContainer.copy(alpha = .6f).toArgb()
         player.attach(it)
