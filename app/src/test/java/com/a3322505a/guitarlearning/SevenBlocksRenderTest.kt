@@ -21,7 +21,7 @@ import java.io.File
 @Config(sdk=[28],qualifiers="w1280dp-h800dp-land-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class SevenBlocksRenderTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     private fun capture(name: String) {
         compose.runOnIdle {
             val view=compose.activity.window.decorView

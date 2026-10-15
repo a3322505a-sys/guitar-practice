@@ -28,7 +28,7 @@ import java.io.File
 @Config(sdk=[28],qualifiers="w411dp-h891dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WorkbenchRenderTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     private fun expand() {
         val matcher=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) compose.onNode(matcher).performSemanticsAction(SemanticsActions.Expand) { it() }

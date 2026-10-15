@@ -25,7 +25,7 @@ import kotlin.math.ceil
 @Config(sdk=[28],qualifiers="w1000dp-h640dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class SongRenderTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     @Test fun complexImportedPlansActuallyDrawVoicesTupletsAndChangingMeters() {
         val contract=File("../contracts/song-package/v1")
         val reader=SongReader(SongSchema { File(contract,it).readBytes() })

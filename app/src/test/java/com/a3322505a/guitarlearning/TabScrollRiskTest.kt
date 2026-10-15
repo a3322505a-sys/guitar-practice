@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28],qualifiers="w411dp-h891dp-mdpi")
 class TabScrollRiskTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     private fun sequence(fret: Int)=Sequence((0 until 192).map { Event(it*3,3,listOf(Position(1,fret))) },576,"")
     private fun description(start: Int)="六线谱，第 $start 至 $start 小节。"
     @Test fun switchingStoppedContentResetsBothAxesButRecompositionDoesNot() {

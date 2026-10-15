@@ -29,7 +29,7 @@ import java.io.File
 @Config(sdk=[28],qualifiers="w794dp-h361dp-land-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class UnifiedTabRenderTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     private fun usotsuki()=SongTestLibrary.repository.resolve("S01").sequence
     @Test fun suppressedTieShowsBoundaryExplanationWithoutGhostFretOrFalseRest() {
         val contract=File("../contracts/song-package/v1")
@@ -81,7 +81,7 @@ class UnifiedTabRenderTest {
     @Test fun phonePracticePageShowsUsotsukiWithItsTransportAndAllSixStrings() {
         val player=Player(compose.activity)
         try {
-            // MainActivity already starts the real App. Finish its initial import before
+            // LegacyWorkbenchTestActivity already starts the real App. Finish its initial import before
             // replacing content, so two test-created repositories never publish concurrently.
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
                 runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)

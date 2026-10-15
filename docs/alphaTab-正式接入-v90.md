@@ -45,3 +45,7 @@ P5 的旧绘制/音频源码和旧采样清理、曲包生产/修订管理精简
 ## QQ 交付记录
 
 2026-10-15 已将 `guitar-practice-4.1.0-local42-alphatab-v90.apk` 发送到实时核实的既有 QQ 私聊，消息 ID `1817616896`。源文件与下载回读均为 43,057,228 字节，SHA-256 均为 `6f79244779aa36871016682986c12d6a8701576a5d149223f595069dfa515920`；源码提交为 `28294553669e0570762993c04c1c4665dcf9ccbe`。文件传输核验不代表手机安装、听感或实际练习验收。
+
+## GitHub JVM 回归边界
+
+旧六线谱和播放器 UI 回归显式使用仅 debug 构建包含的 `LegacyWorkbenchTestActivity`，继续检查保留的工作台/旧播放器行为。Robolectric 无法加载 Android alphaSkia JNI，且旧自绘谱面语义不是新原生谱面的验收依据；这些测试不表示正式 alphaTab 入口已通过 Android 运行验收。原生迁移事实由 `AlphaMigrationTest` 检查，显示、声音与启动仍需设备验证。release 源码和已发送 APK 不变。
