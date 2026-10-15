@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.contracts.ExperimentalContracts::class, ExperimentalUnsignedTypes::class)
+
 package com.a3322505a.guitarlearning.ui
 
 import androidx.activity.compose.BackHandler
@@ -22,6 +24,8 @@ import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 import com.a3322505a.guitarlearning.assets.song.*
+import com.a3322505a.guitarlearning.alphatab.*
+import android.content.Intent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
@@ -57,7 +61,7 @@ private enum class PracticeOverlay { NONE, PRACTICE, MANAGEMENT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PracticeApp(player: Player) {
+fun PracticeApp(player: PracticePlayback) {
     val context=LocalContext.current
     val preferences=remember { context.getSharedPreferences("practice-settings",0) }
     val repository=remember { SongRepository(File(context.filesDir,"songs"),
@@ -115,9 +119,11 @@ fun PracticeApp(player: Player) {
     val sequence=if(page==0) scaleResult.sequence else if(chordPhrases) {
         if(phrase.unprepared) player.session?.sequence else phraseSequence
     } else checkSequence
+    val nativePlayer=player as? AlphaPlayback
+    LaunchedEffect(sequence) { nativePlayer?.prepareSequence(sequence) }
     val progress=player.progress
     val session=player.session
-    val cursor=session?.cursor(progress.tick)
+    val cursor=player.cursor
     val practiceSession=session?.takeUnless { it.preview }
     val showingSession=practiceSession!=null && progress.phase!=Phase.IDLE
     val displayedSequence=if(showingSession) practiceSession!!.sequence else sequence
@@ -176,7 +182,7 @@ fun PracticeApp(player: Player) {
     val status=when {
         session?.preview==true && player.active -> if(session.sequence.events.single().positions.size>1) "整和弦试听" else "点音试听"
         player.active && cursor?.leadIn==true -> "拍位对齐 · 随后进入谱面"
-        player.active && cursor?.pre==true -> "预备拍 ${cursor.beat+1} / ${session!!.preBeats}"
+        player.active && cursor?.pre==true -> if(nativePlayer!=null) "预备拍…" else "预备拍 ${cursor.beat+1} / ${session!!.preBeats}"
         progress.phase==Phase.PLAYING -> "第 ${cursor!!.loop+1}${if(session!!.repeats>0) "/${session.repeats}" else ""} 轮 · 第 ${session!!.sequence.barLabel(cursor.bar)} 小节"+
             (session.plan.revisionPin?.split('/')?.getOrNull(1)?.let { " · 修订"+it } ?: "")
         progress.phase==Phase.PAUSED -> "已暂停 · 从${if(cursor?.pre==true) "预备" else "第 ${session?.sequence?.barLabel(cursor?.bar ?: 0) ?: "1"}"}小节继续"
@@ -219,24 +225,37 @@ fun PracticeApp(player: Player) {
             contentWindowInsets=WindowInsets(0,0,0,0),bottomBar={
             PracticeTransport(bpm,sequence?.runtimePlan!=null && sourceTempo,tempoMultiplier,
                 displayedSequence?.runtimePlan?.visits?.getOrNull(cursor?.bar ?: range.first)?.measure?.meter?.let { it.numerator.toString()+"/"+it.denominator } ?: "$beatsPerBar/4",
-                hint,transportMode(progress.phase,session!=null,session?.preview==true),sequence!=null,::setBpm,::setMultiplier,
+                hint,transportMode(progress.phase,session!=null,session?.preview==true),sequence!=null && (nativePlayer==null || nativePlayer.ready),::setBpm,::setMultiplier,
                 {setHint(if(hint==Hint.HIDDEN) 0 else 2)},
                 {if(player.active) player.pause() else player.resume()},{player.restart()},
                 {sequence?.let { note="";player.start(it,bpm,false,1,if(page==1 && chordPhrases) range else BarRange(0,it.barCount-1),
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
                 {sequence?.let { note="";player.start(it,bpm,true,repeats,if(page==1 && chordPhrases) range else BarRange(0,it.barCount-1),
                     it.runtimePlan!=null && sourceTempo,if(it.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0) }},
-                {player.stop();note=""},availableHeight=windowHeight)
+                {player.stop();note=""},availableHeight=windowHeight,showHintAction=nativePlayer==null || !tab)
         }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=12.dp)) {
                 val compactHeader=windowHeight<520.dp*LocalDensity.current.fontScale.coerceAtLeast(1f)
-                val views: @Composable ()->Unit = { ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it } }
+                val views: @Composable ()->Unit = {
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it }
+                        if(nativePlayer!=null) PracticeTextButton(onClick={player.pause();context.startActivity(Intent(context,GpPracticeActivity::class.java))}) { Text("GP 曲库") }
+                    }
+                }
                 PracticeNavigation(summary,{settingsTab=0;overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
                 if(!compactHeader) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { views() }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                     // Reserve a real diagram above the half-height sheet, not just a card title.
                     val contentHeight=if(configuring && !sidePanel) minOf(maxHeight,(windowHeight*.48f-112.dp).coerceAtLeast(120.dp)) else maxHeight
-                    PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
+                    val nativeContentModifier=Modifier.fillMaxWidth().height(contentHeight)
+                    if(nativePlayer!=null) NativeScore(nativePlayer,nativeContentModifier.then(if(tab) Modifier.padding(top=24.dp) else Modifier),tab && displayedSequence!=null)
+                    if(nativePlayer!=null && tab) {
+                        Text(status,style=MaterialTheme.typography.labelSmall,color=if(progress.phase==Phase.ERROR) RoseInk else Green,
+                            maxLines=1,modifier=Modifier.align(Alignment.TopStart))
+                        if(nativePlayer.loading || nativePlayer.error.isNotBlank()) Box(nativeContentModifier.background(Paper),contentAlignment=Alignment.Center) {
+                            Text(nativePlayer.error.ifBlank { "正在准备谱面…" },color=RoseInk)
+                        }
+                    } else PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
                         sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
                         showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar,chords,configuring),
                         Modifier.fillMaxWidth().height(contentHeight),::firstChange,{viewPreference=it},::tap,

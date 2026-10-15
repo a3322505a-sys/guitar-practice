@@ -46,7 +46,7 @@ internal fun transportMode(phase: Phase,hasSession: Boolean,preview: Boolean): T
 internal fun PracticeTransport(bpm: Int,sourceTempo: Boolean,multiplier: Int,meter: String,hint: Hint,
     mode: TransportMode,hasSequence: Boolean,onBpm: (Int)->Unit,onMultiplier: (Int)->Unit,onHint: ()->Unit,
     onPauseResume: ()->Unit,onRestart: ()->Unit,onDemo: ()->Unit,onFollow: ()->Unit,onStop: ()->Unit,
-    availableHeight: Dp = Dp.Infinity) {
+    availableHeight: Dp = Dp.Infinity,showHintAction: Boolean = true) {
     PracticeTheme {
         var expanded by rememberSaveable { mutableStateOf(false) }
         var draft by remember(bpm) { mutableFloatStateOf(bpm.toFloat()) }
@@ -103,7 +103,7 @@ internal fun PracticeTransport(bpm: Int,sourceTempo: Boolean,multiplier: Int,met
                         TransportMode.ERROR -> TransportAction("播放失败",enabled=false,onClick={})
                     }
                     if(mode!=TransportMode.IDLE) TransportAction("结束",onClick=onStop)
-                    TransportAction(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示",onClick=onHint)
+                    if(showHintAction) TransportAction(if(hint==Hint.HIDDEN) "恢复提示" else "撤提示",onClick=onHint)
                 }
             }
             Surface(color=Color.Transparent,shadowElevation=6.dp,shape=RoundedCornerShape(topStart=20.dp,topEnd=20.dp),border=BorderStroke(1.dp,Color.White)) {

@@ -1,6 +1,10 @@
 # 吉他练习
 
-离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v81 / 4.0.0-local33**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。最新交付包：[v81 APK](output/guitar-practice-4.0.0-local33-v81.apk)；[布局整改与风险复核](docs/布局整改与谱面风险-v81.md)；[预装曲包](app/src/main/assets/song-packages/)；[工作台改造记录](docs/常驻练习工作台-v80.md)；[六线谱修复记录](docs/六线谱统一与高亮-v79.md)。
+离线 Android 吉他练习 App，单 `:app` 模块。alphaTab 重构分支当前为 **v89 / 4.1.0-local41-alphatab**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。[本轮施工与验收边界](docs/alphaTab-正式接入-v89.md)；[v89 本地交付](../../output/alphaTab-v89/README.md)。远端 main 仍为 v81；主工作目录未提交的 v82 排版工作独立保留，本分支未覆盖它。
+
+v89 在原工作台中正式接入 alphaTab：六线谱、声音、变速、选段循环和播放进度使用同一原生引擎；原指板、和弦知识和教学卡片保留。新增 **GP 曲库**：GP5 / GPX / GP 导入一次后保存副本，以后断网重开；搜索、删除确认、最近练习以及每曲选轨、选段、速度、次数、显示和声音偏好分别保存。格式承诺限于已试读的具体样本，不承诺所有 GP8 变体。
+
+现有音阶、和弦、内置短句及四个预装 `.gpractice` 曲包经来源适配进入 alphaTab 模型，原曲库目录和设置键继续使用。正式启动入口不创建旧音频输出或自研 TAB。旧实现和采样素材留作历史比较，待用户实机验收后再清理；自动核对不能替代连续发声、音色、同步、横屏和平板操作验收。
 
 v81 收紧播放栏：窗口宽度和有效高度允许时速度与操作合为一行，窄窗口分两行；速度浮层默认收起，拖动松手才应用。顶部圆角入口只显示一份曲目摘要，TAB 下方只保留播放状态；管理与帮助复用同一配色和卡片。已复现并修复截音后的幽灵音符及新谱继承旧滚动位置，保留同一练习的播放跟随。真机安装、操作及实际试听尚未验证。
 
@@ -21,6 +25,7 @@ v79 将音阶、内置练习和曲包统一到同一套六线谱布局与绘制�
 - **顶部摘要 → 内容 → 音阶练习**：C大调 / A自然小调五型，往返、三度、相邻指型A→B→A，以及更多练法；一八度/整型音域、每拍1/2/3音。
 - **顶部摘要 → 内容 → 和弦学习**：基础12和弦、曲包提供的《嘘月》4张及《斜阳》16张指法，以及外部曲包指法；点音、整和弦、逐弦示范和跟练，候选分析与省略音标记保留。
 - **顶部摘要 → 内容 → 短句练习**：选择曲目/完整乐句；版本、选段、轨道按需展开。
+- **GP 曲库**：导入 GP5 / GPX / GP，选择六弦吉他轨。配置中的选段按引擎实际演奏顺序列出每次小节经过；跨入延音/连奏的起点需要前移，选段结束截断剩余延音。返回教学后原教学选择保留。
 - **底部速度**：数值与圆角加减按钮常驻；点带箭头的数值打开滑块或原谱倍率浮层，点收起、空白处或返回关闭。**摘要 → 跟练/声音** 调整次数、速度模式与即时声音开关。**右上齿轮** 管理曲包和查看帮助。
 - 指板/六线谱共享同一音乐事件与播放会话；无和弦分段的多音伴奏仍显示音位指板。速度、次数和小节范围按短句ID保存。声音开关立即生效；换实际内容/速度/选区结束旧播放，切视图保留播放位置。
 - 手机手动TAB横屏/指板竖屏；平板按实际窗口与系统方向适配。顶部的大控件与底部原尺寸分开。没有成绩、课程门槛、账号或在线曲库。
@@ -31,16 +36,20 @@ Kotlin目录：`app/src/main/java/com/a3322505a/guitarlearning/`。
 
 | 入口 | 职责 |
 | --- | --- |
-| `MainActivity.kt` → `ui/PracticeApp.kt` | 状态、设置读写、导航与播放器操作的唯一页面协调入口 |
+| `MainActivity.kt` → `ui/PracticeApp.kt` | 原教学工作台与设置连接；`PracticeModel` 只创建 `AlphaPlayback` |
+| `alphatab/GpLibrary.kt`、`GpPracticeActivity.kt` | 原谱副本、SHA-256 身份、逐曲原子记录、导入与跟练；不写入旧曲库目录 |
+| `alphatab/AlphaPlayback.kt`、`NativeScore.kt`、`EngineProjection.kt` | 原生六线谱与单一合成器会话；引擎 MIDI 音符起止/听到的 tick 投影为持续复音指板；切视图保留原生控件 |
+| `alphatab/AlphaScoreAdapter.kt` | 现有来源/教学计划到 alphaTab 的有限适配，保留精确时值、弦品、调弦、capo、声部、休止和连线；不支持的转换报错 |
 | `ui/PracticeControls.kt`、`PracticeContent.kt`、`PracticeTransport.kt`、`PracticeSettings.kt` | 摘要/练习区域/固定播放栏/自适应配置层展示，只接派生状态与回调 |
 | `music/Music.kt` | 调弦、音高、基础音阶/指型和基础和弦；曲包指法由Repository提供 |
 | `practice/Phrases.kt`、`PhraseSettings.kt` | 内置通用/七个Block练习；每ID速度/次数/选区恢复，曲包旧ID来自包内教学元数据 |
 | `app/src/main/assets/song-packages/` | 四个审核曲包；作为唯一歌曲事件、教学与指法数据源，由现有Repository预装/读取 |
-| `music/score/`、`practice/compile/`、`practice/Session.kt` | Q精确乐谱、结构校验、Form/Practice编译与唯一TempoMap；旧12/24 tick由可信适配器转入 |
+| `music/score/`、`practice/compile/`、`practice/Session.kt` | 旧素材的精确来源与认可路线适配、旧设置/界面元数据；正式播放由 alphaTab 时间线推进 |
 | `assets/song/`、`contracts/song-package/v1/`、`ui/SongLibrary.kt` | 五文件共同协议、来源审核、动态目录、不可变修订/原子索引及导入管理 |
-| `practice/Sequence.kt`、`Expression.kt`、`TabNotation.kt` | 保留内置素材与原谱面投影的兼容；运行时统一消费PerformancePlan与Session |
-| `audio/Player.kt`、`PlaybackSink.kt`、`Pcm.kt`、`PlanPcm.kt`、`SoundBank.kt` | 唯一会话、采样器和流式输出；单调Long设备帧推进Cursor，音色保留采样近似 |
-| `ui/Diagrams.kt`、`Tablature.kt`、`PlanTablature.kt`、`TabLayout.kt`、`TabHighlight.kt`、`TabSymbols.kt`、`ChordDeck.kt`、`Style.kt` | 同一弦品/实音的图示、唯一TAB布局/高亮、点击、谱行跟随、整卡横滑与样式 |
+| `practice/Sequence.kt`、`Expression.kt`、`TabNotation.kt` | 内置教学规则、来源兼容和界面元数据；不再驱动正式音频或 TAB 时钟 |
+| `audio/PracticePlayback.kt` | 工作台状态/操作契约；旧 `Player`、PCM 与设备帧时钟用于迁移前测试，正式启动入口不调用 |
+| `ui/TabLayout.kt`、`TabHighlight.kt`、`Tablature.kt`、`PlanTablature.kt`、`TabSymbols.kt` | 迁移前实现，仅用于旧测试/历史对照；正式谱面由 alphaTab 绘制 |
+| `ui/Diagrams.kt`、`ChordDeck.kt`、`Style.kt` | 现有音位指板、和弦教学卡片与整卡切换保留 |
 
 来源事实 → 教学选材/变体 → 可见目录 → 用户选择恢复保持独立。通用/七个Block内置素材经可信legacy provider接入；迁移歌曲和新增歌曲使用审核曲包。莫扎特历史6个ID及其他迁移ID保留，旧设置按来源锚点迁移；原键不删除。历史v72契约见 [兼容表](docs/v72兼容与施工记录.md)，当前协议见 [曲包v1](contracts/song-package/v1/README.md)。
 

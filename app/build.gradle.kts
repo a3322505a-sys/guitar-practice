@@ -10,8 +10,8 @@ android {
         applicationId = "com.a3322505a.guitarlearning"
         minSdk = 26
         targetSdk = 35
-        versionCode = 81
-        versionName = "4.0.0-local33"
+        versionCode = 89
+        versionName = "4.1.0-local41-alphatab"
     }
     buildTypes {
         release { isMinifyEnabled = false }
@@ -37,7 +37,7 @@ androidComponents {
     }
 }
 dependencies {
-    add("p0Implementation", "net.alphatab:alphaTab:1.8.4")
+    implementation("net.alphatab:alphaTab:1.8.4")
     constraints {
         implementation("androidx.annotation:annotation:1.9.1")
         listOf("lifecycle-common", "lifecycle-common-java8", "lifecycle-runtime", "lifecycle-runtime-ktx", "lifecycle-runtime-compose", "lifecycle-viewmodel", "lifecycle-viewmodel-ktx", "lifecycle-viewmodel-savedstate", "lifecycle-process").forEach {
