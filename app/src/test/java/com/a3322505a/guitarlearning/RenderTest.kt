@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Config(sdk=[28],qualifiers="w411dp-h891dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RenderTest {
-    @get:Rule val compose=createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
     private fun expandSettings() {
         val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty()) compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
@@ -102,7 +102,7 @@ class RenderTest {
         compose.onAllNodesWithContentDescription("三连音 3",substring=true)[0].assertIsDisplayed()
         capture("scale-triplet-tab","five-fixes")
         compose.onNodeWithText("听示范").performClick()
-        val player=ViewModelProvider(compose.activity)[PracticeModel::class.java].player
+        val player=ViewModelProvider(compose.activity)[LegacyWorkbenchTestModel::class.java].player
         assertEquals(4,player.session!!.sequence.events.first().duration)
         assertTrue(player.session!!.sequence.tuplets.isNotEmpty())
         compose.onNodeWithText("结束").performClick()
@@ -578,7 +578,7 @@ class RenderTest {
         assertWholeChordDiagram()
     }
     @Test fun activityRecreationKeepsPlayerAndSelectedPractice() {
-        val original=ViewModelProvider(compose.activity)[PracticeModel::class.java].player
+        val original=ViewModelProvider(compose.activity)[LegacyWorkbenchTestModel::class.java].player
         category("和弦学习")
         openContent()
         compose.onAllNodesWithText("D")[0].performScrollTo().performClick()
@@ -586,7 +586,7 @@ class RenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        assertSame(original,ViewModelProvider(compose.activity)[PracticeModel::class.java].player)
+        assertSame(original,ViewModelProvider(compose.activity)[LegacyWorkbenchTestModel::class.java].player)
         compose.onNodeWithTag("config-summary").assertIsDisplayed().assertTextContains("D · 逐弦")
         compose.onNodeWithTag("tablature").assertIsDisplayed()
     }
@@ -594,7 +594,7 @@ class RenderTest {
         compose.activity.getSharedPreferences("practice-settings",0).edit().putInt("view",1).apply()
         compose.activity.setContent {}
         compose.waitForIdle()
-        val player=ViewModelProvider(compose.activity)[PracticeModel::class.java].player
+        val player=ViewModelProvider(compose.activity)[LegacyWorkbenchTestModel::class.java].player
         compose.activity.setContent { PracticeApp(player) }
         compose.waitForIdle()
         compose.onNodeWithTag("tablature").assertDoesNotExist()
@@ -704,7 +704,7 @@ class RenderTest {
         } finally { player.release() }
     }
     @Test fun selectedWholeCardSurvivesRealActivityRecreation() {
-        // Use MainActivity's real saved-state tree, rather than replacing it with an injected player.
+        // Use LegacyWorkbenchTestActivity's real saved-state tree, rather than replacing it with an injected player.
         category("和弦学习")
         repeat(3) { compose.onNodeWithTag("next-chord").performClick() }
         compose.onNodeWithText("Em · 逐弦检查").assertIsDisplayed()

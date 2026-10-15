@@ -13,11 +13,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
-import com.a3322505a.guitarlearning.audio.Player
+import com.a3322505a.guitarlearning.audio.PracticePlayback
+import com.a3322505a.guitarlearning.alphatab.AlphaPlayback
 import com.a3322505a.guitarlearning.ui.PracticeApp
 
 class MainActivity : ComponentActivity() {
-    private lateinit var player: Player
+    private lateinit var player: PracticePlayback
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         immersiveStatusBar(window)
@@ -42,7 +43,7 @@ internal fun immersiveStatusBar(window: Window) {
 }
 
 class PracticeModel(application: Application) : AndroidViewModel(application) {
-    val player = Player(application)
+    val player = AlphaPlayback(application)
     override fun onCleared() { player.release() }
 }
 

@@ -174,9 +174,9 @@ private fun DiagramHelp(displayedSequence: Sequence?) {
     }
     CandyCard(Modifier.fillMaxWidth(),Mint.copy(alpha=.7f)) {
         Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=Green)
-            Text("x 为死音；P.M. 为手掌制音；↑/↓ 为拨弦方向；滑音、击弦、勾弦只拨来源音一次。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
-            if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：谱面保留原时值，按长短2:1演奏。b2.0 表示推高2半音；小数字／是拍上的32分装饰滑音。滑入与滑出不指定终点，声音为采样近似。",style=MaterialTheme.typography.bodySmall)
-            Text("撤提示会隐藏当前与下一音位及演奏提示，保留拍点与播放控制。",style=MaterialTheme.typography.bodySmall)
+            Text("x 为死音，P.M. 为手掌制音；拨弦、滑音、击弦、勾弦和延音按原谱标记演奏。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
+            if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：保留书面时值，按长短2:1演奏；装饰音与推弦使用标准谱面标记。",style=MaterialTheme.typography.bodySmall)
+            Text("撤提示用于指板的音位与演奏提示；六线谱始终保留乐谱音符。",style=MaterialTheme.typography.bodySmall)
     }
     CandyCard(Modifier.fillMaxWidth(),Warm.copy(alpha=.7f)) {
         Text("跟练与指法",style=MaterialTheme.typography.titleMedium,color=candyInk(Warm))

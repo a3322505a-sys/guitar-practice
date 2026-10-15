@@ -1,6 +1,7 @@
 param(
     [string]$Keystore = 'D:\软件\001-release.p12',
-    [string]$PasswordFile = 'D:\软件\001-release.password'
+    [string]$PasswordFile = 'D:\软件\001-release.password',
+    [ValidateSet('release','p0')][string]$BuildType = 'release'
 )
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
@@ -15,10 +16,11 @@ $cert = Join-Path $output 'release-cert.der'
 if($LASTEXITCODE -ne 0) { throw 'Cannot export existing certificate' }
 if((Get-FileHash -LiteralPath $cert -Algorithm SHA256).Hash -ne '43b7af607adb264fb2faa79437d91dbc7e1bea7d7ce92804965fe0f1c8daf320') { throw 'Existing release identity does not match 001' }
 $aligned = Join-Path $output 'aligned-unsigned.apk'
-& (Join-Path $sdkTools 'zipalign.exe') -f -p 4 (Join-Path $project 'app\build\outputs\apk\release\app-release-unsigned.apk') $aligned
-if($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }
-$metadata = Get-Content -LiteralPath (Join-Path $project 'app\build\outputs\apk\release\output-metadata.json') -Raw | ConvertFrom-Json
+$apkDirectory = Join-Path $project "app\build\outputs\apk\$BuildType"
+$metadata = Get-Content -LiteralPath (Join-Path $apkDirectory 'output-metadata.json') -Raw | ConvertFrom-Json
 $version = $metadata.elements[0]
+& (Join-Path $sdkTools 'zipalign.exe') -f -p 4 (Join-Path $apkDirectory $version.outputFile) $aligned
+if($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }
 $signed = Join-Path $output ("guitar-practice-{0}-v{1}.apk" -f $version.versionName, $version.versionCode)
 if(Test-Path -LiteralPath $signed) { throw "Signed output already exists: $signed" }
 & $java -jar (Join-Path $sdkTools 'lib\apksigner.jar') sign --ks $Keystore --ks-key-alias guitar-release --ks-pass "file:$PasswordFile" --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out $signed $aligned
