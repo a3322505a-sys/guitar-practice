@@ -335,13 +335,14 @@ class RenderTest {
         assertTrue("Summary and view controls have separate rows",second.top>=first.bottom)
         listOf("config-summary","management-button").forEach { tag ->
             val node=compose.onNodeWithTag(tag).assertIsDisplayed().fetchSemanticsNode()
-            assertTrue("$tag has a visible 64dp target",node.boundsInRoot.height>=63.5f)
+            assertEquals("$tag follows the shared 44dp toolbar",44f,node.boundsInRoot.height,.5f)
             assertEquals("$tag is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
         }
         listOf("指板","六线谱").forEach { text ->
             val node=compose.onNodeWithText(text).assertIsDisplayed().fetchSemanticsNode()
-            assertTrue("$text has a visible 64dp target",node.boundsInRoot.height>=63.5f)
-            assertEquals("$text is fully visible",node.layoutInfo.coordinates.size.width.toFloat(),node.boundsInRoot.width,.5f)
+            assertEquals("$text follows the shared 44dp toolbar",44f,node.boundsInRoot.height,.5f)
+            // A selectable segment includes its inset in merged semantics bounds.
+            assertTrue("$text is fully visible",node.boundsInRoot.width>=node.layoutInfo.coordinates.size.width-.5f)
         }
         listOf("听示范","开始跟练").forEach { text ->
             val node=compose.onNodeWithText(text).assertIsDisplayed().fetchSemanticsNode()

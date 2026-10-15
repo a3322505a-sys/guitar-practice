@@ -30,6 +30,7 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
     val bars=remember(plan) { plan.tabProjection() }
     val list=rememberLazyListState()
     val measurer=rememberTextMeasurer()
+    val colors=PracticeSkin.colors
     val density=LocalDensity.current
     val scale=density.fontScale.coerceAtLeast(1f)
     val u=density.density*scale
@@ -65,43 +66,43 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                         contentDescription=description
                         stateDescription=playback.barIndex?.let { "当前小节 ${it+1}" } ?: "未播放"
                     }) {
-                        tabHighlight(layout,playback,hint,u)
-                        fun text(value: String,x: Float,y: Float,color: Color=Ink,size: Int=11,center: Boolean=false) {
+                        tabHighlight(layout,playback,hint,u,colors)
+                        fun text(value: String,x: Float,y: Float,color: Color=colors.notationInk,size: Int=11,center: Boolean=false) {
                             val m=measure(value,size)
                             drawText(m,color,Offset(x*u-if(center) m.size.width/2f else 0f,y*u-m.size.height/2f))
                         }
                         layout.bars.forEach { b ->
                             val v=b.bar.visit;val meter=v.measure.meter
-                            text(v.measure.label+if(v.occurrence>1) " · 经过${v.occurrence}" else "",b.left-28,11f,if(playback.barIndex==b.bar.index) Green else Muted)
+                            text(v.measure.label+if(v.occurrence>1) " · 经过${v.occurrence}" else "",b.left-28,11f,if(playback.barIndex==b.bar.index) colors.primary else colors.textSecondary)
                             val meterText="${meter.numerator}/${meter.denominator}"+if(meter.beatGroups.any { it!=1 }) " [${meter.beatGroups.joinToString("+")}]" else ""
-                            text(meterText,b.right+8-measure(meterText,11).size.width/u,11f,Muted)
-                            if(b.bar.index==0 && plan.mainTrack.capo>0) text("夹${plan.mainTrack.capo}品",b.left+40,11f,Muted)
+                            text(meterText,b.right+8-measure(meterText,11).size.width/u,11f,colors.textSecondary)
+                            if(b.bar.index==0 && plan.mainTrack.capo>0) text("夹${plan.mainTrack.capo}品",b.left+40,11f,colors.textSecondary)
                             for(string in 1..6) {
                                 val y=b.staffTop+(string-1)*18
-                                drawLine(Color(0xFFA0B4A9),Offset((b.left-10)*u,y*u),Offset((b.right+10)*u,y*u),.7f*u)
-                                if(b==layout.bars.first()) text("$string",b.left-22,y,Muted,10)
+                                drawLine(colors.notationStaff,Offset((b.left-10)*u,y*u),Offset((b.right+10)*u,y*u),.7f*u)
+                                if(b==layout.bars.first()) text("$string",b.left-22,y,colors.textSecondary,10)
                             }
-                            drawLine(Ink,Offset((b.left-10)*u,b.staffTop*u),Offset((b.left-10)*u,b.staffBottom*u),u)
-                            drawLine(Ink,Offset((b.right+10)*u,b.staffTop*u),Offset((b.right+10)*u,b.staffBottom*u),u)
+                            drawLine(colors.notationInk,Offset((b.left-10)*u,b.staffTop*u),Offset((b.left-10)*u,b.staffBottom*u),u)
+                            drawLine(colors.notationInk,Offset((b.right+10)*u,b.staffTop*u),Offset((b.right+10)*u,b.staffBottom*u),u)
                             if(hint!=Hint.HIDDEN) b.marks.forEach { mark ->
                                 val y=26f+mark.lane*18
-                                text(mark.label,mark.x,y,if(mark.voice=="harmony") PurpleInk else Muted)
+                                text(mark.label,mark.x,y,if(mark.voice=="harmony") colors.notationSecondary else colors.textSecondary)
                                 if(mark.ranged) {
                                     val start=mark.x+measure(mark.label,11).size.width/u+4
-                                    if(mark.endX>start) drawLine(Muted,Offset(start*u,y*u),Offset(mark.endX*u,y*u),u,pathEffect=PathEffect.dashPathEffect(floatArrayOf(3*u,3*u)))
-                                    drawLine(Muted,Offset(mark.endX*u,y*u),Offset(mark.endX*u,(y+4)*u),u)
+                                    if(mark.endX>start) drawLine(colors.textSecondary,Offset(start*u,y*u),Offset(mark.endX*u,y*u),u,pathEffect=PathEffect.dashPathEffect(floatArrayOf(3*u,3*u)))
+                                    drawLine(colors.textSecondary,Offset(mark.endX*u,y*u),Offset(mark.endX*u,(y+4)*u),u)
                                 }
                             }
                             val voiceEvents=b.events.groupBy { it.glyph.event.voiceId }
                             voiceEvents.forEach { (voice,events) ->
-                                if(voices.size>1) text("V${voices.indexOf(voice)+1}",b.left-22,events.first().beamY,Muted,9)
+                                if(voices.size>1) text("V${voices.indexOf(voice)+1}",b.left-22,events.first().beamY,colors.textSecondary,9)
                                 events.forEachIndexed { i,e ->
                                     val written=e.glyph.written
                                     val active=e.glyph.event.id in playback.eventIds
-                                    val ink=if(active) RoseInk else Ink
+                                    val ink=if(active) colors.primary else colors.notationInk
                                     if(hint!=Hint.HIDDEN) {
                                         if(e.glyph.event.event.notes.isEmpty()) {
-                                            rest(rhythmValue(written),e.x*u,(e.beamY-9)*u,u)
+                                            rest(rhythmValue(written),e.x*u,(e.beamY-9)*u,u,ink)
                                             repeat(written.dots) { dot -> drawCircle(ink,1.5f*u,Offset((e.x+13+dot*5)*u,(e.beamY-9)*u)) }
                                         } else if(e.notes.isNotEmpty()) {
                                             // Digits are the noteheads; no duplicate blue notehead row.
@@ -112,9 +113,9 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                                                 val a=if(down) lowest+4 else e.notes.minOf { it.y }-4
                                                 val end=if(down) e.notes.minOf { it.y }-4 else lowest+4
                                                 val ax=e.x-17;val d=if(down) 1 else -1
-                                                drawLine(PurpleInk,Offset(ax*u,a*u),Offset(ax*u,end*u),1.3f*u)
-                                                drawLine(PurpleInk,Offset(ax*u,end*u),Offset((ax-3)*u,(end+d*5)*u),1.3f*u)
-                                                drawLine(PurpleInk,Offset(ax*u,end*u),Offset((ax+3)*u,(end+d*5)*u),1.3f*u)
+                                                drawLine(colors.notationSecondary,Offset(ax*u,a*u),Offset(ax*u,end*u),1.3f*u)
+                                                drawLine(colors.notationSecondary,Offset(ax*u,end*u),Offset((ax-3)*u,(end+d*5)*u),1.3f*u)
+                                                drawLine(colors.notationSecondary,Offset(ax*u,end*u),Offset((ax+3)*u,(end+d*5)*u),1.3f*u)
                                             }
                                             if(written.baseDenominator!=1) {
                                                 drawLine(ink,Offset(e.x*u,(lowest+8)*u),Offset(e.x*u,e.beamY*u),u)
@@ -137,10 +138,10 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                                             val t=plan.score.tuplets.first { it.id==id };val members=events.filter { it.glyph.event.event.id in t.eventIds }
                                             if(members.firstOrNull()==e) {
                                                 val a=members.first().x;val end=members.last().endX;val y=e.beamY+14+level*16
-                                                drawLine(PurpleInk,Offset(a*u,y*u),Offset(end*u,y*u),u)
-                                                drawLine(PurpleInk,Offset(a*u,y*u),Offset(a*u,(y-4)*u),u)
-                                                drawLine(PurpleInk,Offset(end*u,y*u),Offset(end*u,(y-4)*u),u)
-                                                text(if(t.actual==3 && t.normal==2) "3" else "${t.actual}:${t.normal}",(a+end)/2,y+7,PurpleInk,10,true)
+                                                drawLine(colors.notationSecondary,Offset(a*u,y*u),Offset(end*u,y*u),u)
+                                                drawLine(colors.notationSecondary,Offset(a*u,y*u),Offset(a*u,(y-4)*u),u)
+                                                drawLine(colors.notationSecondary,Offset(end*u,y*u),Offset(end*u,(y-4)*u),u)
+                                                text(if(t.actual==3 && t.normal==2) "3" else "${t.actual}:${t.normal}",(a+end)/2,y+7,colors.notationSecondary,10,true)
                                             }
                                         }
                                     }
@@ -152,7 +153,7 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                                     if(end<=a) return
                                     val y=n.y+8
                                     val path=Path().apply { moveTo(a*u,y*u);quadraticTo((a+end)/2*u,(y+8)*u,end*u,y*u) }
-                                    drawPath(path,Ink,style=Stroke(u));if(mark.isNotEmpty()) text(mark,(a+end)/2,y+7,PurpleInk,9,true)
+                                    drawPath(path,colors.notationInk,style=Stroke(u));if(mark.isNotEmpty()) text(mark,(a+end)/2,y+7,colors.notationSecondary,9,true)
                                 }
                                 plan.outgoingRelations[n.id].orEmpty().forEach { r ->
                                     val target=layout.notes[r.to]
@@ -167,10 +168,10 @@ internal fun PlanTablature(plan: PerformancePlan,hint: Hint,cursor: Cursor?,foll
                                 val active=e.glyph.event.id in playback.eventIds
                                 val sounding=n.id in playback.soundingNoteIds
                                 val m=measure(n.label,16);val w=m.size.width+10*u;val h=m.size.height+2*u
-                                val background=if(active) Pink else if(playback.barIndex==b.bar.index) Mint else Color.White
+                                val background=if(active) colors.notationActive else if(playback.barIndex==b.bar.index) colors.notationHighlight else colors.surface
                                 drawRoundRect(background,Offset(n.x*u-w/2,n.y*u-h/2),Size(w,h),CornerRadius(3*u))
-                                drawText(m,if(active || sounding) RoseInk else Ink,Offset(n.x*u-m.size.width/2,n.y*u-m.size.height/2))
-                                repeat(e.glyph.written.dots) { dot -> drawCircle(Ink,1.5f*u,Offset(n.x*u+w/2+(3+dot*4)*u,n.y*u)) }
+                                drawText(m,if(active || sounding) colors.notationActive else colors.notationInk,Offset(n.x*u-m.size.width/2,n.y*u-m.size.height/2))
+                                repeat(e.glyph.written.dots) { dot -> drawCircle(colors.notationInk,1.5f*u,Offset(n.x*u+w/2+(3+dot*4)*u,n.y*u)) }
                             } }
                         }
                     }

@@ -10,12 +10,12 @@ internal fun notationCursor(cursor: Cursor?, phase: Phase) = cursor?.takeIf {
 }
 
 /** Mature colours/shapes, fed exclusively by the new layout's anchors. */
-internal fun DrawScope.tabHighlight(layout: TabSystemLayout, playback: TabPlayback, hint: Hint, u: Float) {
+internal fun DrawScope.tabHighlight(layout: TabSystemLayout, playback: TabPlayback, hint: Hint, u: Float, colors: ThemeTokens) {
     val bar=layout.bars.firstOrNull { it.bar.index==playback.barIndex } ?: return
-    drawRoundRect(Mint,Offset((bar.left-30)*u,2*u),
+    drawRoundRect(colors.notationHighlight,Offset((bar.left-30)*u,2*u),
         Size((bar.right-bar.left+46)*u,(layout.height-4)*u),CornerRadius(10*u))
     bar.events.filter { it.glyph.event.id in playback.eventIds }.map { it.x }.distinct().forEach { x ->
-        drawRoundRect(if(hint==Hint.HIDDEN) Mint else Pink,Offset((x-12)*u,(bar.staffTop-11)*u),
+        drawRoundRect(if(hint==Hint.HIDDEN) colors.notationHighlight else colors.notationActive,Offset((x-12)*u,(bar.staffTop-11)*u),
             Size(24*u,112*u),CornerRadius(9*u))
     }
 }

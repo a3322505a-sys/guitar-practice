@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.a3322505a.guitarlearning.immersiveStatusBar
@@ -49,6 +50,9 @@ class GpPracticeActivity : ComponentActivity() {
 @Composable
 private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
     val context = LocalContext.current
+    val themeManager = remember { ThemeManager(context) }
+    DisposableEffect(themeManager) { onDispose { themeManager.close() } }
+    var showAppearance by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val library = remember { GpLibrary(File(context.filesDir, "gp-library")) }
     val selection = remember { context.getSharedPreferences("gp-library-ui", 0) }
@@ -75,22 +79,22 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
         if (stop) player.invalidate()
         save(current.copy(preferences = p))
     }
-    fun accept(result: Pair<GpSong, Score>) {
+    fun accept(result: Pair<GpSong, Score>, keepLibrary: Boolean = false) {
         val (loaded, score) = result
         val tracks = GpLibrary.guitarTracks(score)
         val track = tracks.firstOrNull { it.index.toInt() == loaded.preferences.track } ?: tracks.first()
         val current = loaded.copy(opened = System.currentTimeMillis(), preferences = loaded.preferences.copy(track = track.index.toInt()))
         player.loadScore(score, track.index.toInt()); player.solo = current.preferences.solo; player.click = current.preferences.metronome
-        song = current; showLibrary = false; showSettings = false; message = ""
+        song = current; showLibrary = keepLibrary; showSettings = false; message = ""
         selection.edit().putString("selected", current.id).apply()
         writer.execute { library.save(current) }
         songs = (library.list().filter { it.id != current.id } + current).sortedByDescending { maxOf(it.opened, it.imported) }
     }
-    fun open(value: GpSong) {
+    fun open(value: GpSong, keepLibrary: Boolean = false) {
         if (busy) return
         busy = true; player.stop(); message = "正在读取 ${value.title}…"
         scope.launch {
-            try { accept(withContext(Dispatchers.IO) { writer.submit {}.get(); library.open(value.id) }) }
+            try { accept(withContext(Dispatchers.IO) { writer.submit {}.get(); library.open(value.id) }, keepLibrary) }
             catch (failure: Exception) { message = "打开失败：${failure.message}"; showLibrary = true }
             finally { busy = false }
         }
@@ -116,7 +120,9 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
     LaunchedEffect(library) {
         songs = withContext(Dispatchers.IO) { library.list() }
         val restored = selection.getString("selected", null)
-        songs.firstOrNull { it.id == restored }?.let(::open)
+        val keepLibrary = activity.intent.getBooleanExtra("open-library", false)
+        activity.intent.removeExtra("open-library")
+        songs.firstOrNull { it.id == restored }?.let { value -> open(value, keepLibrary) }
     }
     val preferences = song?.preferences ?: GpPreferences()
     val configuration = LocalConfiguration.current
@@ -164,7 +170,7 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
     }
     BackHandler(showLibrary) { if (song != null) showLibrary = false else activity.finish() }
     BackHandler(showSettings) { showSettings = false }
-    PracticeTheme(largeControls = minOf(configuration.screenWidthDp, configuration.screenHeightDp) >= 600) {
+    PracticeTheme(largeControls = minOf(configuration.screenWidthDp, configuration.screenHeightDp) >= 600, theme = themeManager.current) {
         Scaffold(modifier = Modifier.fillMaxSize().practiceBackground().displayCutoutPadding().navigationBarsPadding(),
             containerColor = androidx.compose.ui.graphics.Color.Transparent, contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
@@ -176,23 +182,21 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
                     { start(false) }, { start(true) }, { player.stop() }, showHintAction = false)
             }) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    PracticeTextButton({ activity.finish() }) { Text("‹ 教学") }
-                    Text(song?.title ?: "本地 GP 曲库", modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
-                    PracticeTextButton({ player.pause(); showLibrary = true }) { Text("曲库") }
-                    PracticeTextButton({ showSettings = true }, enabled = song != null && !busy) { Text("配置") }
+                PracticeNavigation(song?.title ?: "本地 GP 曲库",
+                    { if(song!=null && !busy) showSettings=true else showLibrary=true },{showAppearance=true},compact=true)
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    PracticeTextButton({activity.finish()},modifier=Modifier.height(PracticeSkin.metrics.segmentStyle.height)) { Text("‹ 教学") }
+                    PracticeSegments(listOf("指板","六线谱","曲库"),if(showLibrary) 2 else if(preferences.tab) 1 else 0,
+                        { index -> if(index==2) { player.pause();showLibrary=true } else change(preferences.copy(tab=index==1),false) },Modifier.weight(1f))
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    ViewSwitch(preferences.tab) { change(preferences.copy(tab = it == 1), false) }
-                    Text(track?.name.orEmpty(), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = Muted)
-                }
-                Text(status, maxLines = 2, style = MaterialTheme.typography.labelSmall, color = if (player.error.isNotBlank()) RoseInk else Green)
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().background(Paper)) {
+                PracticeContentCard(title=track?.name?.ifBlank { "GP 练习" } ?: "GP 练习",subtitle=status,
+                    modifier=Modifier.weight(1f).fillMaxWidth()) {
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().background(PracticeSkin.colors.surface)) {
                     val boardHeight = maxHeight.coerceAtMost(300.dp)
                     NativeScore(player, Modifier.fillMaxSize(), preferences.tab && song != null)
-                    if (!preferences.tab && song != null) Box(Modifier.fillMaxSize().background(Paper).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
+                    if (!preferences.tab && song != null) Box(Modifier.fillMaxSize().background(PracticeSkin.colors.surface).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
                         val positions = (boardPositions + player.positions).distinct()
-                        if (positions.isEmpty()) Text("当前小节休止", color = Muted)
+                        if (positions.isEmpty()) Text("当前小节休止", color = PracticeSkin.colors.textSecondary)
                         else Fretboard(positions, null, Hint.FULL, false, player.positions, !player.active,
                             height = boardHeight, onTap = {
                                 player.audition(listOf(it), capoFret = staff?.capo?.toInt() ?: 0,
@@ -200,34 +204,38 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
                             }, showLegend = false, capoFret = staff?.capo?.toInt() ?: 0,
                             openStringMidi = staff?.tuning?.toList()?.map(Double::toInt) ?: listOf(64, 59, 55, 50, 45, 40))
                     }
-                    if (busy) Box(Modifier.fillMaxSize().background(Paper), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Green) }
+                    if (busy) Box(Modifier.fillMaxSize().background(PracticeSkin.colors.background), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = PracticeSkin.colors.primary) }
+                }
                 }
             }
         }
+        if(showAppearance) AlertDialog(onDismissRequest={showAppearance=false},title={Text("主题 / 外观")},
+            text={Column(Modifier.heightIn(max=480.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) { ThemePicker(themeManager) }},
+            confirmButton={TextButton({showAppearance=false}, shape=MaterialTheme.shapes.small) {Text("完成")} })
         if (showLibrary) AlertDialog(onDismissRequest = { if (song != null) showLibrary = false },
             title = { Text("本地 GP 曲库") },
             text = {
                 Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("GP5 / GPX / GP 已通过具体文件试读；不同导出版本仍可能有差异。", style = MaterialTheme.typography.bodySmall, color = Muted)
-                    OutlinedTextField(search, { search = it }, label = { Text("搜索曲目") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    if (message.isNotBlank()) Text(message, color = RoseInk, style = MaterialTheme.typography.bodySmall)
+                    Text("GP5 / GPX / GP 已通过具体文件试读；不同导出版本仍可能有差异。", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
+                    OutlinedTextField(search, { search = it }, label = { Text("搜索曲目") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape=MaterialTheme.shapes.medium)
+                    if (message.isNotBlank()) Text(message, color = PracticeSkin.colors.danger, style = MaterialTheme.typography.bodySmall)
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp)) {
                         items(songs.filter { it.title.contains(search, true) || it.fileName.contains(search, true) }, key = { it.id }) { item ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton({ open(item) }, enabled = !busy, modifier = Modifier.weight(1f)) {
+                                TextButton({ open(item) }, enabled = !busy, modifier = Modifier.weight(1f), shape=MaterialTheme.shapes.small) {
                                     Column(Modifier.fillMaxWidth()) {
                                         Text(item.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                        Text(item.fileName + if (item.opened > 0) " · 最近练习" else "", style = MaterialTheme.typography.labelSmall, color = Muted)
+                                        Text(item.fileName + if (item.opened > 0) " · 最近练习" else "", style = MaterialTheme.typography.labelSmall, color = PracticeSkin.colors.textSecondary)
                                     }
                                 }
-                                TextButton({ deleting = item }, enabled = !busy) { Text("删除") }
+                                TextButton({ deleting = item }, enabled = !busy, shape=MaterialTheme.shapes.small) { Text("删除") }
                             }
                         }
                     }
                     if (songs.isEmpty()) Text("还没有导入的 GP。原有短句与曲包仍在教学入口中。", style = MaterialTheme.typography.bodySmall)
                 }
-            }, confirmButton = { TextButton({ import.launch(arrayOf("*/*")) }, enabled = !busy) { Text(if (busy) "读取中…" else "导入 GP") } },
-            dismissButton = { TextButton({ if (song != null) showLibrary = false else activity.finish() }) { Text(if (song != null) "继续练习" else "返回教学") } })
+            }, confirmButton = { TextButton({ import.launch(arrayOf("*/*")) }, enabled = !busy, shape=MaterialTheme.shapes.small) { Text(if (busy) "读取中…" else "导入 GP") } },
+            dismissButton = { TextButton({ if (song != null) showLibrary = false else activity.finish() }, shape=MaterialTheme.shapes.small) { Text(if (song != null) "继续练习" else "返回教学") } })
         deleting?.let { target -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text("删除 ${target.title}？") },
             text = { Text("只删除 App 保存的本地副本和这首曲子的练习偏好，原 GP 文件保留。") },
             confirmButton = { TextButton({
@@ -240,7 +248,7 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
                     } catch (failure: Exception) { message = "删除失败：${failure.message}" }
                     finally { busy = false }
                 }
-            }) { Text("删除副本") } }, dismissButton = { TextButton({ deleting = null }) { Text("取消") } }) }
+            }, shape=MaterialTheme.shapes.small) { Text("删除副本") } }, dismissButton = { TextButton({ deleting = null }, shape=MaterialTheme.shapes.small) { Text("取消") } }) }
         if (showSettings && song != null) AlertDialog(onDismissRequest = { showSettings = false }, title = { Text("跟练配置") },
             text = { Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val tracks = player.score?.let(GpLibrary::guitarTracks).orEmpty()
@@ -250,7 +258,7 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
                 val labels = visits.indices.map { "${it + 1} · ${projection?.label(it)}" }
                 GpChoice("起点", labels, first) { change(preferences.copy(first = it, last = maxOf(it, last))) }
                 GpChoice("终点", labels, last) { change(preferences.copy(last = maxOf(first, it))) }
-                TextButton({ change(preferences.copy(first = 0, last = -1)) }) { Text("恢复整曲") }
+                TextButton({ change(preferences.copy(first = 0, last = -1)) }, shape=MaterialTheme.shapes.small) { Text("恢复整曲") }
                 Text("原速 ${preferences.speed}%")
                 var speedDraft by remember(preferences.speed) { mutableFloatStateOf(preferences.speed.toFloat()) }
                 Slider(speedDraft,{speedDraft=it},onValueChangeFinished={
@@ -260,8 +268,8 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
                 GpToggle("只听所选吉他轨", preferences.solo) { change(preferences.copy(solo = it), false); player.solo = it }
                 GpToggle("开始前预备拍", preferences.countIn) { change(preferences.copy(countIn = it)) }
                 GpToggle("节拍器", preferences.metronome) { change(preferences.copy(metronome = it), false); player.click = it }
-                Text("起止点按引擎实际演奏顺序选择；遇到反复时，每次经过分别列出。", style = MaterialTheme.typography.bodySmall, color = Muted)
-            } }, confirmButton = { TextButton({ showSettings = false }) { Text("完成") } })
+                Text("起止点按引擎实际演奏顺序选择；遇到反复时，每次经过分别列出。", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
+            } }, confirmButton = { TextButton({ showSettings = false }, shape=MaterialTheme.shapes.small) { Text("完成") } })
     }
 }
 
@@ -269,7 +277,7 @@ private fun GpPracticeApp(player: AlphaPlayback, activity: GpPracticeActivity) {
 private fun GpChoice(label: String, choices: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        OutlinedButton({ expanded = true }, enabled = choices.isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton({ expanded = true }, enabled = choices.isNotEmpty(), modifier = Modifier.fillMaxWidth(), shape=MaterialTheme.shapes.small) {
             Text("$label：${choices.getOrNull(selected).orEmpty()}", maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = 280.dp)) {

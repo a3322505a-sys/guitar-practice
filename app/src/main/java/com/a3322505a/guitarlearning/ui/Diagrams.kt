@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -34,7 +33,7 @@ import kotlin.math.hypot
 
 enum class Hint(val title: String) { FULL("完整提示"), ROOTS("仅主音／根音"), HIDDEN("隐藏音位／指法") }
 
-private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: Float, color: Color = Ink, size: Int = 13) {
+private fun DrawScope.label(measurer: TextMeasurer, value: String, x: Float, y: Float, color: Color, size: Int = 13) {
     val layout = measurer.measure(value, TextStyle(color=color, fontSize=size.sp))
     drawText(layout, topLeft=Offset(x-layout.size.width/2f, y-layout.size.height/2f))
 }
@@ -54,6 +53,8 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
     val columns = high-low+1
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
+    val colors=PracticeSkin.colors
+    val metrics=PracticeSkin.metrics
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width=maxOf(maxWidth, (columns*36+56+if(hasOpen) 36 else 0).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
@@ -82,37 +83,38 @@ fun Fretboard(positions: List<Position>, key: Tonality?, hint: Hint, degrees: Bo
                 fun x(fret: Float)=if(fret==0f) left+18.dp.toPx() else gridLeft+(fret-low+.5f)*cell
                 val vertical=size.height/238.dp.toPx()
                 val top=40.dp.toPx()*vertical; val row=32.dp.toPx()*vertical
-                drawRoundRect(Color(0xFFEDF7F0), Offset(left,top-12.dp.toPx()*vertical), androidx.compose.ui.geometry.Size(size.width-left,5*row+24.dp.toPx()*vertical), androidx.compose.ui.geometry.CornerRadius(8.dp.toPx()))
-                for(i in 0..columns) drawLine(Color(0xFFB9AA94),Offset(gridLeft+i*cell,top-12.dp.toPx()*vertical),Offset(gridLeft+i*cell,top+5*row+12.dp.toPx()*vertical),1.2.dp.toPx())
-                for(i in 0 until columns) label(measurer,"${low+i}",gridLeft+(i+0.5f)*cell,16.dp.toPx()*vertical)
+                drawRoundRect(colors.diagramSurface, Offset(left,top-12.dp.toPx()*vertical), androidx.compose.ui.geometry.Size(size.width-left,5*row+24.dp.toPx()*vertical), androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()))
+                for(i in 0..columns) drawLine(colors.diagramGrid,Offset(gridLeft+i*cell,top-12.dp.toPx()*vertical),Offset(gridLeft+i*cell,top+5*row+12.dp.toPx()*vertical),metrics.borderWidth.toPx())
+                for(i in 0 until columns) label(measurer,"${low+i}",gridLeft+(i+0.5f)*cell,16.dp.toPx()*vertical,colors.textSecondary)
                 if(hasOpen) {
-                    label(measurer,"O",x(0f),16.dp.toPx()*vertical)
-                    drawLine(Ink,Offset(gridLeft,top-12.dp.toPx()*vertical),Offset(gridLeft,top+5*row+12.dp.toPx()*vertical),3.dp.toPx())
+                    label(measurer,"O",x(0f),16.dp.toPx()*vertical,colors.textPrimary)
+                    drawLine(colors.textPrimary,Offset(gridLeft,top-12.dp.toPx()*vertical),Offset(gridLeft,top+5*row+12.dp.toPx()*vertical),(metrics.borderWidth*3).toPx())
                 }
                 for(s in 1..6) {
                     val y=top+(s-1)*row
-                    drawLine(Color(0xFF9E9688),Offset(left,y),Offset(size.width-10.dp.toPx(),y),(0.45+s*0.12).dp.toPx())
-                    label(measurer,"$s ${Music.name(openStringMidi[s-1]+capoFret)}",21.dp.toPx(),y,size=12)
+                    drawLine(colors.diagramGrid,Offset(left,y),Offset(size.width-10.dp.toPx(),y),(0.45+s*0.12).dp.toPx())
+                    label(measurer,"$s ${Music.name(openStringMidi[s-1]+capoFret)}",21.dp.toPx(),y,colors.textSecondary,size=12)
                 }
                 for(p in visible) {
                     val center=Offset(x(p.fret.toFloat()),top+(p.string-1)*row)
                     val root=key?.isRoot(p)==true
                     val active=p in current
-                    drawCircle(if(active) Pink else if(root) Gold else Green,13.dp.toPx()*vertical,center)
-                    if(active) drawCircle(Ink,16.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
-                    if(p in upcoming) drawCircle(BlueInk,19.dp.toPx()*vertical,center,style=Stroke(2.dp.toPx()))
-                    label(measurer,if(degrees && key!=null) key.degree(openStringMidi[p.string-1]+p.fret+capoFret).toString() else Music.name(openStringMidi[p.string-1]+p.fret+capoFret),center.x,center.y,if(root||active) Ink else Color.White)
+                    drawCircle(if(active) colors.fretboardNoteActive else if(root) colors.fretboardRoot else colors.fretboardNoteNormal,13.dp.toPx()*vertical,center)
+                    if(active) drawCircle(colors.textPrimary,16.dp.toPx()*vertical,center,style=Stroke((metrics.borderWidth*2).toPx()))
+                    if(p in upcoming) drawCircle(colors.primary,19.dp.toPx()*vertical,center,style=Stroke((metrics.borderWidth*2).toPx()))
+                    label(measurer,if(degrees && key!=null) key.degree(openStringMidi[p.string-1]+p.fret+capoFret).toString() else Music.name(openStringMidi[p.string-1]+p.fret+capoFret),center.x,center.y,
+                        if(active) colors.onFretboardNoteActive else if(root) colors.onFretboardRoot else colors.onFretboardNoteNormal)
                 }
                 movingPositions.forEachIndexed { moveIndex,moving -> if(hint!=Hint.HIDDEN) {
                     val y=top+(moving.source.string-1)*row
                     val a=x(moving.source.fret.toFloat());val b=x(moving.target.fret.toFloat())
-                    drawLine(PurpleInk,Offset(a,y),Offset(b,y),3.dp.toPx())
+                    drawLine(colors.primary,Offset(a,y),Offset(b,y),(metrics.borderWidth*3).toPx())
                     val movingX=if(hasOpen && moving.fret<1) x(0f)+(x(1f)-x(0f))*moving.fret else x(moving.fret.toFloat())
-                    drawCircle(Pink,9.dp.toPx(),Offset(movingX,y))
+                    drawCircle(colors.fretboardNoteActive,9.dp.toPx(),Offset(movingX,y))
                     label(measurer,"${moving.source.fret}${moving.mark}${moving.target.fret}",(moveIndex+1)*size.width/(movingPositions.size+1),
-                        205.dp.toPx()*vertical,color=PurpleInk)
+                        205.dp.toPx()*vertical,color=colors.primary)
                 } }
-                if(showLegend) label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,size=12)
+                if(showLegend) label(measurer,"上为 1 弦，下为 6 弦 · 数字为品位",size.width/2,225.dp.toPx()*vertical,colors.textSecondary,size=12)
             }
         }
     }
@@ -124,6 +126,8 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
     openStringMidi: List<Int> = Music.openMidi.toList()) {
     val visible=when(hint) { Hint.FULL -> positions; Hint.ROOTS -> if(key==null) positions else positions.filter(key::isRoot); Hint.HIDDEN -> emptyList() }
     val fontScale=androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val colors=PracticeSkin.colors
+    val metrics=PracticeSkin.metrics
     Column(Modifier.fillMaxWidth().testTag("fretboard").semantics {
         contentDescription=if(hint==Hint.HIDDEN) "指板，提示已隐藏" else buildString {
             append("空弦指板，0 品，无需按品。左为 6 弦，右为 1 弦。")
@@ -131,20 +135,21 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
             upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 0 品；") }
         }
     }.padding(8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "空弦 · 无需按品",style=MaterialTheme.typography.labelLarge,color=Muted)
+        Text(if(hint==Hint.HIDDEN) "按节拍演奏" else "空弦 · 无需按品",style=MaterialTheme.typography.labelLarge,color=colors.textSecondary)
         Row(Modifier.widthIn(max=600.dp).fillMaxWidth().testTag("open-string-board"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             for(string in 6 downTo 1) {
                 val position=Position(string,0)
                 val shown=position in visible
                 val active=shown && position in current
                 val next=shown && position in upcoming
-                Surface(onClick={onTap(position)},enabled=enabled && shown,modifier=Modifier.weight(1f).height(76.dp*fontScale).testTag("open-string-$string"),shape=RoundedCornerShape(12.dp),
-                    color=if(active) Pink else if(shown) Mint else Color(0xFFF1F4F5),
-                    border=BorderStroke(if(active || next) 2.dp else 1.dp,if(active) RoseInk else if(next) BlueInk else Outline)) {
+                Surface(onClick={onTap(position)},enabled=enabled && shown,modifier=Modifier.weight(1f).height(76.dp*fontScale).testTag("open-string-$string"),shape=RoundedCornerShape(metrics.cornerSmall),
+                    color=if(active) colors.fretboardNoteActive else if(shown) colors.primaryContainer else colors.surfaceSecondary,
+                    border=BorderStroke(metrics.borderWidth,if(active || next) colors.primary else colors.border)) {
                     Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
-                        Text("$string 弦",style=MaterialTheme.typography.labelSmall,color=Muted)
-                        Text(if(shown) Music.name(openStringMidi[position.string-1]+position.fret+capoFret,true) else "—",style=MaterialTheme.typography.labelLarge,color=if(shown) Ink else Muted)
-                        Text(if(shown) "0" else "",style=MaterialTheme.typography.labelSmall,color=Green)
+                        val ink=if(active) colors.onFretboardNoteActive else colors.textPrimary
+                        Text("$string 弦",style=MaterialTheme.typography.labelSmall,color=if(active) ink else colors.textSecondary)
+                        Text(if(shown) Music.name(openStringMidi[position.string-1]+position.fret+capoFret,true) else "—",style=MaterialTheme.typography.labelLarge,color=if(shown) ink else colors.textSecondary)
+                        Text(if(shown) "0" else "",style=MaterialTheme.typography.labelSmall,color=if(active) ink else colors.primary)
                     }
                 }
             }
@@ -154,9 +159,11 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
 
 @Composable
 fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 300.dp, onTap: (Position)->Unit) {
-    chord.unavailableReason?.let { Text(it,color=RoseInk);return }
+    chord.unavailableReason?.let { Text(it,color=PracticeSkin.colors.danger);return }
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
+    val colors=PracticeSkin.colors
+    val metrics=PracticeSkin.metrics
     val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter(chord::isRoot); Hint.HIDDEN -> emptyList() }
     Canvas(Modifier.fillMaxWidth().height(diagramHeight).testTag("chord-diagram").semantics {
         contentDescription=if(hint==Hint.HIDDEN) "和弦图，提示已隐藏" else buildString {
@@ -177,26 +184,27 @@ fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boo
         val top=geometry.top; val fretStep=geometry.fretStep
         val right=left+5*step
         // One scale for both axes: the grid stays square, even inside a wide card.
-        drawRoundRect(Color(0xFFF4F8F3),Offset(left,top),androidx.compose.ui.geometry.Size(5*step,4*fretStep),androidx.compose.ui.geometry.CornerRadius(5*geometry.unit))
-        for(i in 0..4) drawLine(if(i==0 && chord.baseFret==1) Ink else Color(0xFFB7B9AF),Offset(left,top+i*fretStep),Offset(right,top+i*fretStep),if(i==0 && chord.baseFret==1) 4.dp.toPx() else 1.dp.toPx())
+        drawRoundRect(colors.diagramSurface,Offset(left,top),androidx.compose.ui.geometry.Size(5*step,4*fretStep),androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx().coerceAtMost(5*geometry.unit)))
+        for(i in 0..4) drawLine(if(i==0 && chord.baseFret==1) colors.textPrimary else colors.diagramGrid,Offset(left,top+i*fretStep),Offset(right,top+i*fretStep),if(i==0 && chord.baseFret==1) (metrics.borderWidth*4).toPx() else metrics.borderWidth.toPx())
         for(i in 0..5) {
             val x=left+i*step
-            drawLine(Color(0xFF8B998E),Offset(x,top),Offset(x,top+4*fretStep),(1.1-i*0.11).dp.toPx())
-            label(measurer,"${6-i}",x,geometry.stringY,size=12)
+            drawLine(colors.diagramGrid,Offset(x,top),Offset(x,top+4*fretStep),(1.1-i*0.11).dp.toPx())
+            label(measurer,"${6-i}",x,geometry.stringY,colors.textSecondary,size=12)
             if(hint==Hint.FULL) {
-                label(measurer,chord.label(i),x,geometry.noteY,size=13)
-                if(chord.frets[i]==null) label(measurer,"X",x,geometry.openY,color=Muted)
+                label(measurer,chord.label(i),x,geometry.noteY,colors.textPrimary,size=13)
+                if(chord.frets[i]==null) label(measurer,"X",x,geometry.openY,color=colors.textSecondary)
             }
         }
         for(p in visible) {
             val center=geometry.position(p)
             val root=chord.isRoot(p)
             val active=p in current
-            drawCircle(if(active) Pink else if(root) Gold else Green,13*geometry.unit,center)
-            label(measurer,if(hint==Hint.ROOTS) "根" else if(p.fret==0) "O" else chord.fingers[6-p.string].toString(),center.x,center.y,if(root||active) Ink else Color.White)
-            if(active) drawCircle(Ink,17*geometry.unit,center,style=Stroke(2.dp.toPx()))
+            drawCircle(if(active) colors.fretboardNoteActive else if(root) colors.fretboardRoot else colors.chordDot,13*geometry.unit,center)
+            label(measurer,if(hint==Hint.ROOTS) "根" else if(p.fret==0) "O" else chord.fingers[6-p.string].toString(),center.x,center.y,
+                if(active) colors.onFretboardNoteActive else if(root) colors.onFretboardRoot else colors.onChordDot)
+            if(active) drawCircle(colors.textPrimary,17*geometry.unit,center,style=Stroke((metrics.borderWidth*2).toPx()))
         }
-        for(i in 1..4) label(measurer,"${chord.baseFret+i-1}",left-23*geometry.unit,top+(i-0.5f)*fretStep,size=12)
+        for(i in 1..4) label(measurer,"${chord.baseFret+i-1}",left-23*geometry.unit,top+(i-0.5f)*fretStep,colors.textSecondary,size=12)
     }
 }
 

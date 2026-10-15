@@ -74,8 +74,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         check(view == null || view === nativeView)
         if (view === nativeView) return
         view = nativeView
-        nativeView.barCursorFillColor = 0x18e890ac
-        nativeView.beatCursorFillColor = 0x60e66c9b
         nativeView.settings = AlphaScoreAdapter.settings()
         val api = nativeView.api
         api.customCursorHandler = scoreCursor

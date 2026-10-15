@@ -12,6 +12,13 @@ import androidx.compose.runtime.saveable.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -63,6 +70,8 @@ private enum class PracticeOverlay { NONE, PRACTICE, MANAGEMENT }
 @Composable
 fun PracticeApp(player: PracticePlayback) {
     val context=LocalContext.current
+    val themeManager=remember { ThemeManager(context) }
+    DisposableEffect(themeManager) { onDispose { themeManager.close() } }
     val preferences=remember { context.getSharedPreferences("practice-settings",0) }
     val repository=remember { SongRepository(File(context.filesDir,"songs"),
         SongReader(SongSchema { name -> context.assets.open("song-contract/"+name).use { it.readBytes() } }),
@@ -200,7 +209,7 @@ fun PracticeApp(player: PracticePlayback) {
     BackHandler(enabled=overlay==PracticeOverlay.PRACTICE) { overlay=PracticeOverlay.NONE }
     val windowConfiguration=LocalConfiguration.current
     val tabletControls=minOf(windowConfiguration.screenWidthDp,windowConfiguration.screenHeightDp)>=600
-    PracticeTheme(largeControls=tabletControls) {
+    PracticeTheme(largeControls=tabletControls,theme=themeManager.current) {
       // Paint the entire window before insets keep controls clear of cutouts and system UI.
       BoxWithConstraints(Modifier.fillMaxSize().practiceBackground().displayCutoutPadding().windowInsetsPadding(WindowInsets.captionBar)
           .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal))) {
@@ -242,10 +251,14 @@ fun PracticeApp(player: PracticePlayback) {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=12.dp)) {
                 val compactHeader=windowHeight<520.dp*LocalDensity.current.fontScale.coerceAtLeast(1f)
                 val views: @Composable ()->Unit = {
-                    Row(verticalAlignment=Alignment.CenterVertically) {
-                        ViewSwitch(tab) { overlay=PracticeOverlay.NONE;viewPreference=it }
-                        if(nativePlayer!=null) PracticeTextButton(onClick={player.pause();context.startActivity(Intent(context,GpPracticeActivity::class.java))}) { Text("GP 曲库") }
-                    }
+                    PracticeSegments(if(nativePlayer!=null) listOf("指板","六线谱","GP","曲库") else listOf("指板","六线谱"),
+                        viewPreference, { selected ->
+                            when(selected) {
+                                0,1 -> { overlay=PracticeOverlay.NONE;viewPreference=selected }
+                                2 -> { player.pause();context.startActivity(Intent(context,GpPracticeActivity::class.java).putExtra("open-library",false)) }
+                                3 -> { player.pause();context.startActivity(Intent(context,GpPracticeActivity::class.java).putExtra("open-library",true)) }
+                            }
+                        },Modifier.width(if(nativePlayer!=null) 296.dp else 174.dp).testTag("view-switch"))
                 }
                 PracticeNavigation(summary,{settingsTab=0;overlay=PracticeOverlay.PRACTICE},{overlay=PracticeOverlay.MANAGEMENT},compactHeader,views)
                 if(!compactHeader) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) { views() }
@@ -253,14 +266,30 @@ fun PracticeApp(player: PracticePlayback) {
                     // Reserve a real diagram above the half-height sheet, not just a card title.
                     val contentHeight=if(configuring && !sidePanel) minOf(maxHeight,(windowHeight*.48f-112.dp).coerceAtLeast(120.dp)) else maxHeight
                     val nativeContentModifier=Modifier.fillMaxWidth().height(contentHeight)
-                    if(nativePlayer!=null) NativeScore(nativePlayer,nativeContentModifier.then(if(tab) Modifier.padding(top=24.dp) else Modifier),tab && displayedSequence!=null)
+                    var scoreBounds by remember { mutableStateOf<Rect?>(null) }
+                    var hostOrigin by remember { mutableStateOf(Offset.Zero) }
+                    val density=LocalDensity.current
+                    Box(nativeContentModifier.onGloballyPositioned {hostOrigin=it.positionInRoot()}) {
                     if(nativePlayer!=null && tab) {
-                        Text(status,style=MaterialTheme.typography.labelSmall,color=if(progress.phase==Phase.ERROR) RoseInk else Green,
-                            maxLines=1,modifier=Modifier.align(Alignment.TopStart))
-                        if(nativePlayer.loading || nativePlayer.error.isNotBlank()) Box(nativeContentModifier.background(Paper),contentAlignment=Alignment.Center) {
-                            Text(nativePlayer.error.ifBlank { "正在准备谱面…" },color=RoseInk)
+                        PracticeContentCard(title="练习谱面",subtitle=status,modifier=Modifier.fillMaxSize(),
+                            footer=if(note.isBlank()) null else ({ Text(note,style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary) })) {
+                            Box(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned {scoreBounds=it.boundsInRoot()})
                         }
-                    } else PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
+                    }
+                    // A fixed parent and callsite are essential: alphaTab destroys its API on detach.
+                    val bounds=scoreBounds
+                    val hasFrame=bounds!=null && bounds.width>0 && bounds.height>0
+                    val frame=if(tab && hasFrame) Modifier.offset {
+                        IntOffset((bounds!!.left-hostOrigin.x).roundToInt(),(bounds.top-hostOrigin.y).roundToInt())
+                    }.size(with(density){bounds!!.width.toDp()},with(density){bounds!!.height.toDp()}) else Modifier.fillMaxSize()
+                    if(nativePlayer!=null) NativeScore(nativePlayer,frame,tab && displayedSequence!=null && hasFrame)
+                    if(nativePlayer!=null && tab && (nativePlayer.loading || nativePlayer.error.isNotBlank())) {
+                        Box(frame.background(PracticeSkin.colors.surface),contentAlignment=Alignment.Center) {
+                            Text(nativePlayer.error.ifBlank { "正在准备谱面…" },color=PracticeSkin.colors.danger)
+                        }
+                    }
+                    if(nativePlayer==null || !tab) {
+                    PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
                         sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
                         showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,
                         if(page==1 && !chordPhrases) chordUnavailable ?: note else note,beatsPerBar,chords,configuring),
@@ -272,6 +301,8 @@ fun PracticeApp(player: PracticePlayback) {
                                 note="${chord.name} · 整和弦试听"
                             }
                         })
+                    }
+                    }
                 }
             }
         }
@@ -290,14 +321,14 @@ fun PracticeApp(player: PracticePlayback) {
                 {value -> if(value!=range) { changed();firstBar=value.first;lastBar=value.last }},
                 {value -> if(value!=sourceTempo) { changed();sourceTempo=value;phraseStore.saveTempo(phrase,value,tempoMultiplier) }},
                 {value -> if(value!=selectedTrackId) { changed();selectedTrackId=value;phrase.assetKey?.let { preferences.edit().putString("asset."+it.encoded+".mainTrack",value).apply() } }},
-                {value -> if(value!=soloTrack) { changed();soloTrack=value;phrase.assetKey?.let { preferences.edit().putBoolean("asset."+it.encoded+".solo",value).apply() } }})
+                {value -> if(value!=soloTrack) { changed();soloTrack=value;phrase.assetKey?.let { preferences.edit().putBoolean("asset."+it.encoded+".solo",value).apply() } }},themeManager=themeManager)
         }
         if(overlay==PracticeOverlay.MANAGEMENT) SongLibrary(repository,{updated ->
             librarySnapshot=updated
             val restored=phraseStore.selected()
             val current=if(restored.legacyId!=null) restored else repository.named(phraseId)
             phraseId=current.id;loadPhrase(current)
-        },{overlay=PracticeOverlay.NONE},displayedSequence)
+        },{overlay=PracticeOverlay.NONE},displayedSequence,themeManager)
       }
     }
 }
