@@ -1,6 +1,8 @@
 # 吉他练习
 
-离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v90 / 4.1.0-local42-alphatab**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。[本轮施工与验收边界](docs/alphaTab-正式接入-v90.md)；安装包已通过 QQ 交付并回读校验；本地主工作目录未提交的 v82 排版工作独立保留。
+离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v91 / 4.1.0-local43-alphatab**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。[本轮修复与验证](docs/v91-实装修复.md)；[alphaTab 正式接入记录](docs/alphaTab-正式接入-v90.md)；本地主工作目录未提交的 v82 排版工作独立保留。
+
+v91 修复曲包和弦选择与逐弦练习中的基础名称反查，卡片、指板、试听与练习共用所选来源身份、指法、调弦及 Capo。工作台和 GP 曲库统一仅显示带节奏的 TAB；初始速度和真实变速保留，同值标记去重。预备拍定位所选段落起始拍，恢复半透明粉色光条，继续由 alphaTab 推进播放与跨行循环。
 
 v90 在原工作台中正式接入 alphaTab：六线谱、声音、变速、选段循环和播放进度使用同一原生引擎；原指板、和弦知识和教学卡片保留。新增 **GP 曲库**：GP5 / GPX / GP 导入一次后保存副本，以后断网重开；搜索、删除确认、最近练习以及每曲选轨、选段、速度、次数、显示和声音偏好分别保存。格式承诺限于已试读的具体样本，不承诺所有 GP8 变体。
 
@@ -40,6 +42,7 @@ Kotlin目录：`app/src/main/java/com/a3322505a/guitarlearning/`。
 | `alphatab/GpLibrary.kt`、`GpPracticeActivity.kt` | 原谱副本、SHA-256 身份、逐曲原子记录、导入与跟练；不写入旧曲库目录 |
 | `alphatab/AlphaPlayback.kt`、`NativeScore.kt`、`EngineProjection.kt` | 原生六线谱与单一合成器会话；引擎 MIDI 音符起止/听到的 tick 投影为持续复音指板；切视图保留原生控件 |
 | `alphatab/AlphaScoreAdapter.kt` | 现有来源/教学计划到 alphaTab 的有限适配，保留精确时值、弦品、调弦、capo、声部、休止和连线；不支持的转换报错 |
+| `alphatab/AlphaNotation.kt`、`PracticeCursorHandler.kt` | 工作台/GP 共用 TAB 与速度标记整理；SDK 光标的粉色呈现和预备拍起点冻结 |
 | `ui/PracticeControls.kt`、`PracticeContent.kt`、`PracticeTransport.kt`、`PracticeSettings.kt` | 摘要/练习区域/固定播放栏/自适应配置层展示，只接派生状态与回调 |
 | `music/Music.kt` | 调弦、音高、基础音阶/指型和基础和弦；曲包指法由Repository提供 |
 | `practice/Phrases.kt`、`PhraseSettings.kt` | 内置通用/七个Block练习；每ID速度/次数/选区恢复，曲包旧ID来自包内教学元数据 |

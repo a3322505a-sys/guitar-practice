@@ -42,6 +42,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private var countIn = false
     private var beginning = false
     private var auditioning = false
+    private var pausedTick: Double? = null
     var score: Score? by mutableStateOf(null); private set
     var selectedTrack: Track? by mutableStateOf(null); private set
     var projection: EngineProjection? by mutableStateOf(null); private set
@@ -95,13 +96,20 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         api.playerStateChanged.on { event -> ui {
             if (!auditioning && progress.phase !in listOf(Phase.IDLE, Phase.ENDED, Phase.ERROR)) {
                 progress = progress.copy(phase = if (event.state == PlayerState.Playing) Phase.PLAYING else Phase.PAUSED)
+                // 1.8.4 snaps a paused beat to its first written occurrence. Keep the
+                // heard tick instead, especially on a later repeat visit in a GP file.
+                if (event.state == PlayerState.Paused && !event.stopped) pausedTick?.let { api.tickPosition = it }
             }
             Log.i("AlphaPractice","state=${event.state} audition=$auditioning")
             if (auditioning && event.state == PlayerState.Paused) { auditioning = false; audio.abandonAudioFocusRequest(focus) }
         } }
         api.playerPositionChanged.on { event -> ui {
             if (auditioning || beginning || progress.phase !in listOf(Phase.PLAYING, Phase.PAUSED)) return@ui
+            if (event.isSeek && progress.phase == Phase.PAUSED && pausedTick?.let {
+                kotlin.math.abs(event.currentTick - it) > 1e-6
+            } == true) return@ui
             if (event.isSeek && progress.phase == Phase.PLAYING) return@ui
+            if (!event.isSeek && progress.phase == Phase.PLAYING) pausedTick = null
             countIn = false
             scoreCursor.follow()
             currentTick = event.currentTick; effectiveBpm = event.modifiedTempo
@@ -214,7 +222,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             return
         }
         require(repeats >= 0 && speed in 0.25..2.0)
-        api.stop(); auditioning=false; round = 0; rounds = repeats; fromVisit = first; toVisit = last
+        api.stop(); auditioning=false; pausedTick=null; round = 0; rounds = repeats; fromVisit = first; toVisit = last
         countIn = pre; beginning = true; positions = emptyList()
         progress = Progress(Phase.PREPARING, message = "准备声音…")
         pendingStart = {
@@ -264,6 +272,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         if (!active) return
         if(progress.phase==Phase.PREPARING) { stop();return }
         pendingStart = null; beginning = false
+        pausedTick = view?.api?.tickPosition ?: currentTick
         view?.api?.pause(); progress = progress.copy(phase = Phase.PAUSED)
         audio.abandonAudioFocusRequest(focus)
     }
@@ -274,6 +283,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             // Continue at its paused position without replaying the preparation bar.
             view?.api?.countInVolume = 0.0
             countIn = false; scoreCursor.follow()
+            pausedTick?.let { view?.api?.tickPosition = it }
             progress = progress.copy(phase = Phase.PLAYING)
             if(view?.api?.play()!=true) fail(IllegalStateException("引擎尚未能继续播放"))
         }
@@ -286,7 +296,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     override fun invalidate() { stop(); progress = Progress(message = "设置已改变，下一次播放从头开始") }
     override fun stop() {
         pendingStart = null; beginning = false; auditioning = false
-        countIn = false; scoreCursor.stop()
+        countIn = false; pausedTick = null; scoreCursor.stop()
         view?.api?.stop(); positions = emptyList(); cursor = null; session = null
         progress = Progress(); audio.abandonAudioFocusRequest(focus)
     }
@@ -302,7 +312,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     fun setSpeed(multiplier: Double) { view?.api?.playbackSpeed = multiplier.coerceIn(0.25, 2.0) }
     private fun fail(failure: Throwable) {
         pendingStart = null; beginning = false; ready = false; loading = false
-        countIn = false; scoreCursor.stop()
+        countIn = false; pausedTick = null; scoreCursor.stop()
         error = failure.message ?: "引擎加载失败"
         Log.e("AlphaPractice",error,failure)
         progress = Progress(Phase.ERROR, message = error); positions = emptyList(); cursor = null
