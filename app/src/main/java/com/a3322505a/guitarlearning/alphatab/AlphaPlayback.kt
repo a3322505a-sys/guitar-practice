@@ -283,8 +283,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         if (active || !ready || positions.isEmpty()) return
         val preview = Sequence(listOf(Event(0, 12, positions, strum = strum)), 12, "试听",
             capoFret = capoFret, openStringMidi = openStringMidi)
-        val model = AlphaScoreAdapter.fromSequence(preview)
-        val beat = model.tracks.first().staves.first().bars.first().voices.first().beats.first()
+        val beat = AlphaScoreAdapter.audition(preview,selectedTrack)
         if(audio.requestAudioFocus(focus)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return
         auditioning = true
         view?.api?.playBeat(beat)

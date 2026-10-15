@@ -96,6 +96,24 @@ class AlphaMigrationTest {
         assertEquals(listOf(Position(6,2)),projection.active(2400.0,0))
         assertTrue(projection.active(3000.0,0).isEmpty())
     }
+    @Test fun auditionUsesTheSelectedTracksLoadedPresetAndUnmutedChannels() {
+        val selected=polyphonic().tracks.first()
+        selected.playbackInfo.program=27.0
+        selected.playbackInfo.primaryChannel=6.0
+        selected.playbackInfo.secondaryChannel=7.0
+        val preview=Sequence(listOf(Event(0,12,listOf(Position(6,0)))),12,"点音",capoFret=2)
+        val beat=AlphaScoreAdapter.audition(preview,selected)
+        val midi=alphaTab.midi.MidiFile()
+        alphaTab.midi.MidiFileGenerator(beat.voice.bar.staff.track.score,AlphaScoreAdapter.settings(),
+            alphaTab.midi.AlphaSynthMidiFileHandler(midi)).generateSingleBeat(beat)
+        val attacks=midi.events.filterIsInstance<NoteOnEvent>()
+        assertTrue(attacks.isNotEmpty())
+        assertTrue(attacks.all { it.channel==6.0 || it.channel==7.0 })
+        assertTrue(attacks.all { it.noteKey==42.0 })
+        val programs=midi.events.filterIsInstance<alphaTab.midi.ProgramChangeEvent>().filter { it.channel==6.0 || it.channel==7.0 }
+        assertTrue(programs.isNotEmpty())
+        assertTrue(programs.all { it.program==27.0 })
+    }
     @Test fun gpCopiesReopenAfterRestartDuplicatesKeepPreferencesAndFailuresKeepExistingSongs() {
         val root = Files.createTempDirectory("gp-library-test").toFile()
         val bytes = Gp7Exporter().export(polyphonic()).buffer.toByteArray()

@@ -43,6 +43,24 @@ object AlphaScoreAdapter {
 
     fun fromSequence(sequence: Sequence): Score = fromPlan(sequence.performance)
 
+    /** One-time playback must use a loaded, unmuted channel/preset from the selected track. */
+    fun audition(sequence: Sequence, selected: Track?): Beat {
+        val model=fromSequence(sequence)
+        val target=model.tracks.first()
+        selected?.playbackInfo?.let { source ->
+            target.playbackInfo.program=source.program
+            target.playbackInfo.primaryChannel=source.primaryChannel
+            target.playbackInfo.secondaryChannel=source.secondaryChannel
+            target.playbackInfo.bank=source.bank
+            target.playbackInfo.volume=source.volume
+            target.playbackInfo.balance=source.balance
+        }
+        val beat=target.staves.first().bars.first().voices.first().beats.first()
+        // finish() stamps the initial instrument on the first beat as well.
+        beat.getAutomation(AutomationType.Instrument)?.value=target.playbackInfo.program
+        return beat
+    }
+
     fun fromPlan(plan: PerformancePlan): Score {
         val settings = settings()
         val score = Score().apply { title = plan.practice.title }
@@ -80,6 +98,8 @@ object AlphaScoreAdapter {
             score.addTrack(track)
             val staff = Staff().apply {
                 capo = sourceTrack.capo.toDouble()
+                // The guitar staff is written one octave above its sounding pitch.
+                displayTranspositionPitch = -12.0
                 stringTuning = Tuning("", DoubleList(*sourceTrack.openStringMidi.map { it.toDouble() }.toDoubleArray()))
             }
             track.addStaff(staff)
