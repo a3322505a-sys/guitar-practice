@@ -154,6 +154,7 @@ private fun OpenStringBoard(positions: List<Position>, key: Tonality?, hint: Hin
 
 @Composable
 fun ChordDiagram(chord: Chord, hint: Hint, current: List<Position>, enabled: Boolean, height: androidx.compose.ui.unit.Dp = 300.dp, onTap: (Position)->Unit) {
+    chord.unavailableReason?.let { Text(it,color=RoseInk);return }
     val measurer=rememberTextMeasurer()
     val diagramHeight=height
     val visible=when(hint) { Hint.FULL -> chord.positions; Hint.ROOTS -> chord.positions.filter(chord::isRoot); Hint.HIDDEN -> emptyList() }

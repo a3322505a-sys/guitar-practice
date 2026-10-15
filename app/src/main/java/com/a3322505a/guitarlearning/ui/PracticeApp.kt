@@ -105,7 +105,8 @@ fun PracticeApp(player: PracticePlayback) {
     }
     player.guitar=guitar; player.click=click
     val scaleResult=remember(scale) { Routes.scale(scale) }
-    val checkSequence=remember(first) { chordSequence(first,first,ChordExercise.CHECK,4) }
+    val chordUnavailable=first.unavailableReason
+    val checkSequence=remember(first) { if(chordUnavailable==null) chordSequence(first,first,ChordExercise.CHECK,4) else null }
     val phraseSequence=remember(phrase.sequence,selectedTrackId,soloTrack) {
         val original=phrase.sequence
         val plan=original.runtimePlan
@@ -173,8 +174,12 @@ fun PracticeApp(player: PracticePlayback) {
     }
     fun phraseChange(value: Phrase) { phraseStore.select(value);if(phraseId!=value.id) { changed();phraseId=value.id;loadPhrase(value) } }
     fun tap(p: Position) {
-        val capo=if(page==1) displayedSequence?.capoFret ?: 0 else 0
-        player.audition(listOf(p),capoFret=capo,openStringMidi=displayedSequence?.runtimePlan?.mainTrack?.openStringMidi ?: Music.openMidi.toList())
+        val card=first.takeIf { page==1 && !chordPhrases }
+        if(card?.unavailableReason!=null) { note=card.unavailableReason!!;return }
+        val capo=card?.capoFret ?: if(page==1) displayedSequence?.capoFret ?: 0 else 0
+        val tuning=card?.openStringMidi ?: displayedSequence?.runtimePlan?.mainTrack?.openStringMidi
+            ?: displayedSequence?.openStringMidi ?: Music.openMidi
+        player.audition(listOf(p),capoFret=capo,openStringMidi=tuning)
         val name=if(page==1 && !chordPhrases) first.noteName(p,true) else Music.name(displayedSequence?.midi(p) ?: (p.midi+capo),true)
         note="${p.string} 弦 ${p.fret} 品 · $name" + if(page==0) " · ${scale.key.degree(p.midi)} 级" else if(!chordPhrases || harmony.isNotEmpty()) shownChord?.let { " · ${it.role(p)}" }.orEmpty() else ""
     }
@@ -257,9 +262,16 @@ fun PracticeApp(player: PracticePlayback) {
                         }
                     } else PracticeContent(PracticeContentState(page,chordPhrases,tab,tabletControls,scale,first,phrase,melody,
                         sequence,displayedSequence,scaleResult,hint,renderHint,player.active,progress.phase,renderCursor,cursor,
-                        showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,note,beatsPerBar,chords,configuring),
+                        showingSession,event,phraseNow,nextEvent,moving,current,shownChord,nextChord,status,
+                        if(page==1 && !chordPhrases) chordUnavailable ?: note else note,beatsPerBar,chords,configuring),
                         Modifier.fillMaxWidth().height(contentHeight),::firstChange,{viewPreference=it},::tap,
-                        { chord -> player.audition(chord.positions,capoFret=chord.capoFret,openStringMidi=chord.openStringMidi);note="${chord.name} · 整和弦试听" })
+                        { chord ->
+                            val unavailable=chord.unavailableReason
+                            if(unavailable!=null) note=unavailable else {
+                                player.audition(chord.positions,capoFret=chord.capoFret,openStringMidi=chord.openStringMidi)
+                                note="${chord.name} · 整和弦试听"
+                            }
+                        })
                 }
             }
         }
@@ -269,7 +281,7 @@ fun PracticeApp(player: PracticePlayback) {
             PracticeSettings(PracticeSettingsState(page,chordPhrases,tabletControls,scale,first,phrase,
                 repository.family(phrase),repository.versions(phrase),librarySnapshot.catalogue.groupBy { it.use },chords.groupBy { it.group },
                 phrase.relatedId?.let { repository.named(it).title },bpm,repeats,firstBar,lastBar,range,wholeRange,guitar,click,
-                moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,selectedTrackId,soloTrack,if(page==0) scaleResult.reason else if(!libraryReady) "正在加载曲库…" else note),
+                moreExercisesOpen,beatsPerBar,sequence,displayedSequence,scaleResult,sourceTempo,tempoMultiplier,selectedTrackId,soloTrack,if(page==0) scaleResult.reason else if(!libraryReady) "正在加载曲库…" else if(!chordPhrases) chordUnavailable ?: note else note),
                 sidePanel,settingsTab,{settingsTab=it},{overlay=PracticeOverlay.NONE},::category,
                 {value -> if(value!=repeats) { changed();repeats=value }},
                 {guitar=it;player.guitar=it;preferences.edit().putBoolean("guitar",it).apply()},

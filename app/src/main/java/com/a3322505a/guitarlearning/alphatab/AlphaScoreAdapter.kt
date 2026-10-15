@@ -35,6 +35,8 @@ object AlphaScoreAdapter {
         // Ranges are selected against engine visits, never an ambiguous repeated written bar.
         player.enableUserInteraction = false
         display.barCountPerPartial = 4.0
+        // TAB keeps the written rests, stems, beams and tuplets when the score staff is hidden.
+        notation.rhythmMode = alphaTab.TabRhythmMode.ShowWithBars
         listOf(alphaTab.NotationElement.ScoreTitle,alphaTab.NotationElement.ScoreSubTitle,
             alphaTab.NotationElement.ScoreArtist,alphaTab.NotationElement.ScoreAlbum,
             alphaTab.NotationElement.ScoreWords,alphaTab.NotationElement.ScoreMusic,
@@ -67,16 +69,25 @@ object AlphaScoreAdapter {
         require(plan.tempos.none { it.rampEnd != null }) { "渐变速度暂未迁移，请使用原资料核对" }
         require(plan.dynamics.none { it.rampEnd != null }) { "渐变力度暂未迁移，请使用原资料核对" }
         val heads = mutableMapOf<String, MutableList<Note>>()
+        var previousTempo: Double? = null
         plan.visits.forEach { visit ->
             score.addMasterBar(MasterBar().apply {
                 timeSignatureNumerator = visit.measure.meter.numerator.toDouble()
                 timeSignatureDenominator = visit.measure.meter.denominator.toDouble()
                 isAnacrusis = visit.duration != visit.measure.meter.duration
                 val tempo = plan.tempos.last { it.at <= visit.start }
-                tempoAutomations.push(Automation.buildTempoAutomation(false, 0.0, tempo.bpm * tempo.beatUnit.value(), 2.0))
+                val initialTempo = tempo.bpm * tempo.beatUnit.value()
+                if (initialTempo != previousTempo) {
+                    tempoAutomations.push(Automation.buildTempoAutomation(false, 0.0, initialTempo, 2.0))
+                    previousTempo = initialTempo
+                }
                 plan.tempos.filter { it.at > visit.start && it.at < visit.start + visit.duration }.forEach {
-                    tempoAutomations.push(Automation.buildTempoAutomation(false,
-                        ((it.at - visit.start) / visit.duration).value(), it.bpm * it.beatUnit.value(), 2.0))
+                    val bpm = it.bpm * it.beatUnit.value()
+                    if (bpm != previousTempo) {
+                        tempoAutomations.push(Automation.buildTempoAutomation(false,
+                            ((it.at - visit.start) / visit.duration).value(), bpm, 2.0))
+                        previousTempo = bpm
+                    }
                 }
                 val swing = plan.swing.firstOrNull { it.start <= visit.start && it.end > visit.start }
                 if (swing != null) {
@@ -186,6 +197,7 @@ object AlphaScoreAdapter {
                 else -> error("未支持的连线：${relation.kind}")
             }
         }
+        AlphaNotation.prepare(score)
         score.finish(settings)
         // Engraved time must match the accepted source route, including partial bars and tuplets.
         score.masterBars.forEachIndexed { index, master ->
