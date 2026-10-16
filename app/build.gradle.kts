@@ -10,11 +10,11 @@ android {
         applicationId = "com.a3322505a.guitarlearning"
         minSdk = 26
         targetSdk = 35
-        versionCode = 92
-        versionName = "4.1.0-local44-alphatab"
+        versionCode = 96
+        versionName = "4.2.0-local48-isolated"
     }
     buildTypes {
-        release { isMinifyEnabled = false }
+        release { isMinifyEnabled = false; isShrinkResources = false }
         create("p0") {
             initWith(getByName("release"))
             isDebuggable = true
@@ -24,6 +24,7 @@ android {
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+    sourceSets.getByName("debug").assets.srcDir(rootProject.file("assets/soundfont-source"))
     sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
     testOptions { unitTests.isIncludeAndroidResources = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }

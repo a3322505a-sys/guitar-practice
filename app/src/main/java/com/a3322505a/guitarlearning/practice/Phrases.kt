@@ -77,6 +77,6 @@ fun validatePhrases(phrases: List<Phrase>) {
             valid(if(section==null) event.chord==null else event.chord==section.chord,"event[$index] harmony does not match its section")
             if(section!=null) valid(event.positions.all { it in Chords.named(section.chord).positions },"event[$index] note outside displayed chord")
         }
-        valid(runCatching { seq.tabBars() }.isSuccess,"unsupported TAB rhythm")
+        valid(runCatching { seq.validateTabRhythm() }.isSuccess,"unsupported TAB rhythm")
     }
 }

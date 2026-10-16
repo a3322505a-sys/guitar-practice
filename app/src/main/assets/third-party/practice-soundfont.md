@@ -10,7 +10,7 @@ same name. Its existing native loader, synthesizer and timeline are unchanged.
 - Bank 0, zero-based program 24 (GM #25): 22 existing `guitar-nylon/*.pcm`
   samples. FreePats Spanish classical guitar, Roberto, 2019-06-18, source commit
   `6f4eb1b092acc88f5448cea1a0001bd07b971af8`, CC0-1.0. Full license, source and
-  sample hashes: `../guitar-nylon/LICENSE.txt`, `README.md`, `manifest.json`.
+  sample hashes: `nylon/LICENSE.txt`, `nylon/README.md`, `nylon/manifest.json`.
   <https://freepats.zenvoid.org/Guitar/acoustic-guitar.html>
   Same 360 ms RMS/peak calibration, nearest-root mapping and 1.5 ms attack /
   90 ms release as the legacy bank; no loops or added effects. All MIDI keys
@@ -28,5 +28,6 @@ python scripts/build-practice-soundfont.py path/to/alphaTab-1.8.4.aar
 python scripts/build-practice-soundfont.py path/to/alphaTab-1.8.4.aar --check
 ```
 
-The PCM assets are inputs to this offline conversion only; the application does
+The original PCM inputs are preserved in `assets/soundfont-source/guitar-nylon/`;
+only debug also packages them for comparison. For release, the application does
 not create the legacy PCM player. The final sound on a phone requires listening.
