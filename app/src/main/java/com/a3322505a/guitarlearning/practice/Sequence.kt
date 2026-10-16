@@ -17,7 +17,9 @@ data class Event(val tick: Int, val duration: Int, val positions: List<Position>
     // An onset is unique within a finite sequence. All its chord tones share this identity.
     val id get() = tick
 }
-data class Section(val tick: Int, val chord: String,val voicingId: String? = null)
+data class Section(val tick: Int, val chord: String,val voicingId: String? = null,
+    /** The selected loaded card owns its identity, grip, tuning, capo and teaching facts. */
+    val sourceChord: Chord? = null)
 data class Sequence(val events: List<Event>, val length: Int, val explanation: String, val sections: List<Section> = emptyList(), val beatsPerBar: Int = 4,
     val tuplets: List<Tuplet> = emptyList(), val links: List<Legato> = emptyList(), val originalBar: Int = 0, val capoFret: Int = 0,
     val barMeters: List<Int> = emptyList(), val swing: Swing = Swing.NONE,
@@ -67,7 +69,8 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
     fun sectionAt(tick: Double) = runtimePlan?.harmonies?.indexOfLast { it.start.value()*QUARTER<=tick } ?: sections.indexOfLast { it.tick <= tick }
     fun chordAt(section: Section): Chord? {
-        if(runtimePlan==null) return Chords.named(section.chord)
+        section.sourceChord?.let { return it.takeIf { chord -> chord.unavailableReason==null } }
+        if(runtimePlan==null) return Chords.all.firstOrNull { it.name==section.chord }
         val v=runtimePlan.score.voicings.firstOrNull { it.id==section.voicingId && it.trackId==runtimePlan.practice.mainTrackId } ?: return null
         val track=runtimePlan.mainTrack
         return v.chord(track).copy(name=section.chord)
@@ -211,12 +214,14 @@ enum class ChordExercise(val title: String, val instruction: String) {
 
 fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int): Sequence {
     val chords = if(kind == ChordExercise.CHECK) listOf(first) else listOf(first, second)
+    chords.forEach { require(it.unavailableReason==null) { it.unavailableReason!! } }
     require(chords.map { it.capoFret }.distinct().size==1) { "chords must share the same capo" }
+    require(chords.map { it.openStringMidi }.distinct().size==1) { "chords must share the same tuning" }
     val events = mutableListOf<Event>()
     val sections = mutableListOf<Section>()
     var tick = 0
     for(chord in chords) {
-        sections += Section(tick, chord.name)
+        sections += Section(tick, chord.name,chord.id,chord)
         when(kind) {
             ChordExercise.CHECK -> chord.positions.forEach { p -> events += Event(tick, QUARTER, listOf(p), chord.name); tick += QUARTER }
             ChordExercise.CHANGE -> { events += Event(tick, beats * QUARTER, chord.positions, chord.name); tick += beats * QUARTER }
@@ -227,5 +232,5 @@ fun chordSequence(first: Chord, second: Chord, kind: ChordExercise, beats: Int):
     val length = ((tick+BAR-1)/BAR)*BAR
     if(length > tick) events += Event(tick, length-tick, emptyList(), chords.last().name)
     val extra = if(length>tick) " 尾部留 ${(length-tick)/12.0} 拍。" else ""
-    return Sequence(events, length, kind.instruction + extra, sections,capoFret=first.capoFret)
+    return Sequence(events, length, kind.instruction + extra, sections,capoFret=first.capoFret,openStringMidi=first.openStringMidi)
 }

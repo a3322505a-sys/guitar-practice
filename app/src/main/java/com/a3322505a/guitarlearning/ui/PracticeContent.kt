@@ -43,7 +43,7 @@ internal data class PracticeContentState(
 internal fun PracticeContent(state: PracticeContentState,modifier: Modifier,
     onChord: (Chord)->Unit,onView: (Int)->Unit,onTap: (Position)->Unit,
     onAudition: (Chord)->Unit) = with(state) {
-    if(displayedSequence==null) {
+    if(displayedSequence==null && (page!=1 || chordPhrases)) {
         Box(modifier.fillMaxSize(),contentAlignment=Alignment.Center) {
             Text(if(note.isNotBlank()) note else scaleResult.reason.ifBlank { "正在准备曲目…" },color=Muted)
         }
@@ -75,7 +75,15 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
   } else {
   val content: @Composable () -> Unit = {
       Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-          val cardContent: @Composable (Chord,Boolean)->Unit = { cardChord,selected ->
+          val cardContent: @Composable (Chord,Boolean)->Unit = card@{ cardChord,selected ->
+          val unavailable=cardChord.unavailableReason
+          if(unavailable!=null) {
+              CandyCard(Modifier.fillMaxSize().then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),Pink) {
+                  Text(cardChord.name,style=MaterialTheme.typography.titleLarge,color=Ink)
+                  Text(unavailable,color=RoseInk)
+              }
+              return@card
+          }
           val shownChord=cardChord
           val chordTones=cardChord.positions.distinctBy { cardChord.midi(it)%12 }.sortedBy { (cardChord.midi(it)-cardChord.root)%12 }
           CandyCard((if(openStringsOnly) Modifier.fillMaxWidth() else Modifier.fillMaxSize()).then(if(selected) Modifier.testTag("practice-card") else Modifier.clearAndSetSemantics {}),if(page==1) lerp(Pink,Color.White,.45f) else lerp(Sky,Color.White,.45f)) {
@@ -102,13 +110,13 @@ BoxWithConstraints(modifier.fillMaxWidth()) {
                           Text(cue,modifier=Modifier.testTag("phrase-cue"),style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=2,overflow=TextOverflow.Ellipsis)
                           if(!melody) Text("下一：$nextChord",style=MaterialTheme.typography.labelLarge,color=BlueInk,maxLines=1)
                       }
-                      if(page==1 && !chordPhrases && shownChord.capoFret>0) Text(shownChord.conditions,style=MaterialTheme.typography.bodySmall,color=PurpleInk,modifier=Modifier.testTag("chord-conditions"))
+                      if(page==1 && !chordPhrases && (shownChord.capoFret>0 || shownChord.openStringMidi!=Music.openMidi)) Text(shownChord.conditions,style=MaterialTheme.typography.bodySmall,color=PurpleInk,modifier=Modifier.testTag("chord-conditions"))
                       if(page==1 && !chordPhrases && hint!=Hint.HIDDEN && !configuring) Text(
                           chordTones.filter { hint==Hint.FULL || shownChord.isRoot(it) }.joinToString(" · ") { "${shownChord.role(it)} ${shownChord.noteName(it)}" },
                           style=MaterialTheme.typography.bodySmall,color=BlueInk)
                       if(page==0 && hint==Hint.FULL && nextEvent!=null && !configuring) Text("下一："+if(nextEvent.positions.isEmpty()) "留拍" else nextEvent.positions.joinToString { Music.name(it.midi,true) },style=MaterialTheme.typography.labelMedium,color=BlueInk)
                   }
-                  if(page==1 && !chordPhrases) PracticeTextButton(onClick={onAudition(shownChord)},enabled=selected && !active && phase!=Phase.PAUSED,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
+                  if(page==1 && !chordPhrases) PracticeTextButton(onClick={onAudition(shownChord)},enabled=selected && !active && phase!=Phase.PAUSED && shownChord.unavailableReason==null,contentPadding=PaddingValues(horizontal=6.dp)) { Text("听和弦",style=MaterialTheme.typography.labelLarge) }
                   else if(!compact && availableWidth>370.dp && !active) MusicMotif(Modifier.size(30.dp),"notes",if(page==1) RoseInk else Green)
                   if(hint==Hint.HIDDEN && !phraseCard) Text("已撤提示",color=Muted,style=MaterialTheme.typography.labelSmall)
               }

@@ -1,7 +1,6 @@
 package com.a3322505a.guitarlearning.practice.compile
 
 import com.a3322505a.guitarlearning.music.score.*
-import com.a3322505a.guitarlearning.music.Chords
 import com.a3322505a.guitarlearning.practice.*
 
 /** Trusted legacy mapping only. Imported data never passes through the single-stream Event model. */
@@ -51,13 +50,16 @@ object LegacySequenceAdapter {
             "n-"+l.sourceTick+"-"+l.string,"n-"+l.targetTick+"-"+l.string) }
         val swing=if(sequence.swing==Swing.NONE) emptyList() else listOf(SwingSpec(Q.ZERO,q(sequence.length),
             Q(sequence.swing.unit.toLong(),12),listOf(2,1)))
-        val grips=sequence.sections.map { it.chord }.distinct().mapIndexed { i,name ->
-            val chord=Chords.named(name)
-            GuitarVoicing("legacy-grip-"+i,name,track.id,chord.frets.reversed().map { it ?: -1 },chord.fingers.reversed())
+        val sectionChords=sequence.sections.map { section ->
+            requireNotNull(sequence.chordAt(section)) { "和弦数据不可用：缺少 ${section.chord} 的来源指法。" }
+        }
+        val grips=sectionChords.distinctBy { it.id }.map { chord ->
+            GuitarVoicing(chord.id,chord.name,track.id,chord.frets.reversed().map { it ?: -1 },chord.fingers.reversed(),
+                VoicingTeaching(chord.root,chord.third,chord.soundingName,chord.group,chord.source,chord.intervalRoles,chord.toneNames))
         }
         val harmonies=sequence.sections.mapIndexed { i,s ->
             val bar=sequence.barAt(s.tick.toDouble())
-            HarmonySymbol("legacy-harmony-"+i,"m-"+bar,q(s.tick-sequence.barStart(bar)),s.chord,grips.first { it.name==s.chord }.id)
+            HarmonySymbol("legacy-harmony-"+i,"m-"+bar,q(s.tick-sequence.barStart(bar)),s.chord,sectionChords[i].id)
         }
         val score=ScoreDocument("legacy",measures,listOf(track),listOf(Voice("voice","guitar",writtenEvents)),
             tuplets,relations,listOf(Tempo(Q.ZERO,Q.ONE,60.0)),emptyList(),swing,Form(),grips,harmonies)

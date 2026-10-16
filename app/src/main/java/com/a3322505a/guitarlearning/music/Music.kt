@@ -40,12 +40,27 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
     val openStringMidi: List<Int> = Music.openMidi,val conditionsLabel: String? = null,val id: String = name) {
     // Stored in 6 → 1 order. null = X; 0 = O.
     val positions = frets.mapIndexedNotNull { index, fret -> fret?.let { Position(6 - index, it) } }
-    val baseFret get() = if(positions.maxOf { it.fret }<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
-    val conditions get() = conditionsLabel ?: if(capoFret==0) "标准调弦 · 无变调夹" else "变调夹${capoFret}品 · 实音 $soundingName"
+    val unavailableReason: String? get() = when {
+        frets.size!=6 || fingers.size!=6 -> "和弦数据不可用：缺少完整的六弦指法。"
+        openStringMidi.size!=6 || openStringMidi.any { it !in 0..127 } || capoFret !in 0..12 -> "和弦数据不可用：调弦或变调夹数据不完整。"
+        frets.any { it!=null && it !in 0..36 } || fingers.any { it !in 0..4 } -> "和弦数据不可用：弦品或手指数据无效。"
+        positions.isEmpty() -> "和弦数据不可用：没有可弹奏的弦。"
+        positions.any { midi(it) !in 0..127 } -> "和弦数据不可用：发声音高超出支持范围。"
+        else -> null
+    }
+    val baseFret get() = if((positions.maxOfOrNull { it.fret } ?: 0)<=4) 1 else positions.filter { it.fret>0 }.minOf { it.fret }
+    val conditions get() = conditionsLabel ?: buildList {
+        if(openStringMidi==Music.openMidi) {
+            if(capoFret==0) add("标准调弦")
+        } else add(if(openStringMidi.size==6 && openStringMidi.all { it in 0..127 })
+            "调弦（6→1）"+openStringMidi.reversed().joinToString(" / ") { Music.name(it,true) } else "调弦数据不完整")
+        add(if(capoFret==0) "无变调夹" else "变调夹${capoFret}品")
+        if(capoFret>0) add("实音 $soundingName")
+    }.joinToString(" · ")
     fun midi(p: Position) = openStringMidi[p.string-1]+p.fret+capoFret
     fun isRoot(p: Position) = midi(p)%12==root
     fun noteName(p: Position, octave: Boolean = false) = (toneNames[midi(p)%12] ?: Music.name(midi(p))) + if(octave) (midi(p)/12-1) else ""
-    val arpeggio get() = listOf(positions.first()) + positions.filter { it.string <= 3 }
+    val arpeggio get() = positions.take(1) + positions.filter { it.string <= 3 }
     fun role(p: Position) = if(root<0) "按法音" else when (midi(p) % 12) {
         root -> "根音"
         third -> "三音"
@@ -71,8 +86,12 @@ fun com.a3322505a.guitarlearning.music.score.GuitarVoicing.chord(
     return (taught ?: known ?: Chord(name,-1,null,frets,fingers.reversed())).copy(
         frets=frets,fingers=fingers.reversed(),capoFret=track.capo,openStringMidi=track.openStringMidi,
         group=teaching?.group ?: ("本地曲库 · "+group),source=teaching?.source ?: source,id=id,
-        conditionsLabel=if(teaching!=null && track.openStringMidi==Music.openMidi) null else
-            if(track.openStringMidi==Music.openMidi && track.capo==0) "标准调弦 · 无变调夹" else track.name+" · 夹"+track.capo+"品")
+        conditionsLabel=if(track.openStringMidi==Music.openMidi && (teaching!=null || track.capo==0)) null else buildList {
+            add(track.name)
+            if(track.openStringMidi!=Music.openMidi) add("调弦（6→1）"+track.openStringMidi.reversed().joinToString(" / ") { Music.name(it,true) })
+            add(if(track.capo==0) "无变调夹" else "变调夹${track.capo}品")
+            teaching?.let { add("实音 "+it.soundingName) }
+        }.joinToString(" · "))
 }
 
 object Chords {
