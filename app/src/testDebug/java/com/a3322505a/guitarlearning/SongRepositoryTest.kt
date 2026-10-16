@@ -172,7 +172,7 @@ class SongRepositoryTest {
             assertEquals(known.frets,c.frets);assertEquals(known.fingers,c.fingers)
             assertEquals(known.root,c.root);assertEquals(known.third,c.third)
         }
-        val sampler=Sampler(SoundBank.NYLON) { File("src/main/assets/guitar-nylon/$it.pcm").readBytes() }
+        val sampler=Sampler(SoundBank.NYLON) { File("../assets/soundfont-source/guitar-nylon/$it.pcm").readBytes() }
         val a=Session(old.sequence,80,false,1);val b=Session(phrase.sequence,80,false,1)
         val frames=a.frame(96.0).toInt();assertEquals(frames,b.frame(96.0).toInt())
         assertArrayEquals(Pcm(a,sampler).block(0,frames,true,false),Pcm(b,sampler).block(0,frames,true,false))

@@ -15,6 +15,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "app/src/main/assets"
+PCM_ASSETS = ROOT / "assets/soundfont-source"
 BASE_SHA256 = "4978cf37e7164206f2d22dc4fdf4020ffe040787210bf781e31bdc79961f59ef"
 
 
@@ -70,12 +71,12 @@ def build(base):
         return index
 
     # Same head-RMS/peak calibration and nearest-root tie policy as the old bank.
-    manifest = json.loads((ASSETS / "guitar-nylon/manifest.json").read_text())
+    manifest = json.loads((PCM_ASSETS / "guitar-nylon/manifest.json").read_text())
     roots = [s["midi"] for s in manifest["samples"]]
     zones = []
     for i, source in enumerate(manifest["samples"]):
         root = source["midi"]
-        raw = (ASSETS / f"guitar-nylon/{root}.pcm").read_bytes()
+        raw = (PCM_ASSETS / f"guitar-nylon/{root}.pcm").read_bytes()
         assert hashlib.sha256(raw).hexdigest() == source["pcm_sha256"]
         wave = [v[0] / 32768 for v in struct.iter_unpack("<h", raw)]
         head = wave[:22050 * 360 // 1000]
@@ -146,4 +147,14 @@ if __name__ == "__main__":
         assert result == target.read_bytes(), "SoundFont is not reproducible"
     else:
         target.write_bytes(result)
+    # Preserve the same license/source evidence after moving raw inputs out of
+    # release assets. Generation and --check cover the complete production output.
+    notice = ASSETS / "third-party/nylon"
+    for name in ("LICENSE.txt", "README.md", "manifest.json"):
+        original = (PCM_ASSETS / "guitar-nylon" / name).read_bytes()
+        if args.check:
+            assert original == (notice / name).read_bytes(), f"Stale nylon notice: {name}"
+        else:
+            notice.mkdir(parents=True, exist_ok=True)
+            (notice / name).write_bytes(original)
     print(f"{len(result)} bytes; SHA-256 {hashlib.sha256(result).hexdigest()}")

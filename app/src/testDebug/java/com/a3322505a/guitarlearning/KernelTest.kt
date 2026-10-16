@@ -11,7 +11,7 @@ import java.nio.ByteOrder
 import kotlin.math.*
 
 class KernelTest {
-    private fun sampler()=Sampler(SoundBank.NYLON) { File("src/main/assets/guitar-nylon/$it.pcm").readBytes() }
+    private fun sampler()=Sampler(SoundBank.NYLON) { File("../assets/soundfont-source/guitar-nylon/$it.pcm").readBytes() }
     private fun energy(data: ShortArray)=data.sumOf { it.toDouble()*it }
     private fun rejects(seq: Sequence)=assertTrue(runCatching { seq.tabBars() }.isFailure)
     private fun pcm(e: Event)=Pcm(Session(Sequence(listOf(e.copy(tick=0,duration=48)),48,"test"),60,false,1),sampler())

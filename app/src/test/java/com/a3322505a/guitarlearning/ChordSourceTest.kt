@@ -1,7 +1,11 @@
+@file:OptIn(kotlin.contracts.ExperimentalContracts::class, ExperimentalUnsignedTypes::class)
+
 package com.a3322505a.guitarlearning
 
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
+import com.a3322505a.guitarlearning.alphatab.AlphaScoreAdapter
+import com.a3322505a.guitarlearning.alphatab.EngineProjection
 import com.a3322505a.guitarlearning.music.score.GuitarVoicing
 import com.a3322505a.guitarlearning.music.score.Track
 import org.junit.Assert.*
@@ -55,7 +59,8 @@ class ChordSourceTest {
                 assertTrue(plan.harmonies.all { it.voicing?.id==chord.id })
                 assertTrue(plan.notes.all { n -> n.position in chord.positions && n.note.midi==chord.midi(n.position) })
                 if(exercise==ChordExercise.CHECK) assertEquals(chord.positions,plan.notes.map { it.position })
-                assertTrue(Session(sequence,80,true,2).totalFrames!!>0)
+                val (_,projection)=EngineProjection.generate(AlphaScoreAdapter.fromSequence(sequence))
+                assertEquals(plan.length.value()*960,projection.visits.last().end,1e-6)
             }
         }
     }

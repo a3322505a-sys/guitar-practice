@@ -7,7 +7,6 @@ import com.a3322505a.guitarlearning.practice.compile.LegacySequenceAdapter
 
 const val QUARTER = 12
 const val BAR = 48
-const val SAMPLE_RATE = 44100
 
 data class Event(val tick: Int, val duration: Int, val positions: List<Position>, val chord: String? = null, val strum: Boolean = false, val ring: Boolean = false,
     val velocity: Float = 1f, val accent: Boolean = false, val palmMute: Boolean = false,
@@ -51,19 +50,6 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     fun barStart(bar: Int) = barStarts[bar]
     fun barEnd(bar: Int) = minOf(length,barStarts.getOrElse(bar+1) { length })
     fun barAt(tick: Double) = barStarts.indexOfLast { it<=tick }.coerceIn(0,barCount-1)
-    /** Written straight pairs retain their notation; source triplet-feel warps audio and cursor together. */
-    fun performedTick(tick: Double): Double {
-        if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
-        val unit=swing.unit*ticksPerQuarter/QUARTER
-        val pair=unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
-        return base+if(local<=unit) local*4/3 else pair*2/3+(local-unit)*2/3
-    }
-    fun writtenTick(tick: Double): Double {
-        if(swing==Swing.NONE || tuplets.any { tick>=it.tick && tick<it.end }) return tick
-        val unit=swing.unit*ticksPerQuarter/QUARTER
-        val pair=unit*2.0;val base=kotlin.math.floor(tick/pair)*pair;val local=tick-base
-        return base+if(local<=pair*2/3) local*3/4 else unit+(local-pair*2/3)*3/2
-    }
     val route get() = runtimePlan?.mainPositions ?: events.flatMap { it.positions }.distinct()
     fun midi(position: Position) = runtimePlan?.mainTrack?.midi(position.string,position.fret) ?: (openStringMidi[position.string-1]+position.fret+capoFret)
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }

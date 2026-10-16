@@ -60,6 +60,7 @@ internal fun PracticeContent(
     onView: (Int) -> Unit,
     onTap: (Position) -> Unit,
     onAudition: (Chord) -> Unit,
+    legacyTab: (@Composable (PracticeContentState, Modifier, (Int) -> Unit) -> Unit)? = null,
 ) = with(state) {
     val colors = PracticeSkin.colors
     val metrics = PracticeSkin.metrics
@@ -73,6 +74,10 @@ internal fun PracticeContent(
                 Text(if (note.isNotBlank()) note else scaleResult.reason.ifBlank { "正在准备曲目…" }, color = colors.textSecondary)
             }
         }
+        return@with
+    }
+    if (tab) {
+        checkNotNull(legacyTab)(state, modifier, onView)
         return@with
     }
     fun eventLabel(value: Event?) = if (value == null || value.rest) "留拍" else listOf(
@@ -89,33 +94,6 @@ internal fun PracticeContent(
         // A short window scrolls the whole chord page, never labels inside its diagram.
         val chordPageScroll = page == 1 && !configuring && maxHeight < 560.dp * fontScale
         val chordScrollState = remember(page) { ScrollState(0) }
-
-        if (tab) {
-            PracticeContentCard(
-                title = "练习谱面",
-                actions = { ViewSwitch(true, onView) },
-                modifier = Modifier.fillMaxSize(),
-                footer = {
-                    PracticeStatus(status, phase, beatsPerBar, cursor, showingSession, compact = true, note = note)
-                },
-            ) {
-                if (displayedSequence != null) {
-                    DiagramContainer(Modifier.weight(1f).fillMaxWidth()) {
-                        Tablature(
-                            displayedSequence,
-                            renderHint,
-                            if (page == 0) scale.key else null,
-                            renderCursor,
-                            active || phase == Phase.PAUSED,
-                            Modifier.fillMaxSize(),
-                        )
-                    }
-                } else {
-                    Text(scaleResult.reason, color = colors.danger)
-                }
-            }
-            return@BoxWithConstraints
-        }
 
         val cardContent: @Composable (Chord, Boolean) -> Unit = card@{ cardChord, selected ->
             val cardModifier = (if (openStringsOnly) Modifier.fillMaxWidth() else Modifier.fillMaxSize())

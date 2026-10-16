@@ -56,7 +56,7 @@ class ExtensionTest {
         assertEquals(4,phrase.sequence.tabBars().single().segments.size)
     }
     @Test fun singleNotesProduceSoundAndTerminateWithoutHarmony() {
-        val sampler=Sampler(SoundBank.NYLON) { root -> File("src/main/assets/guitar-nylon/$root.pcm").readBytes() }
+        val sampler=Sampler(SoundBank.NYLON) { root -> File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
         val sequence=Phrases.singleNote.sequence
         val session=Session(sequence,60,false,1)
         val pcm=Pcm(session,sampler)

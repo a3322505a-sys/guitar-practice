@@ -14,7 +14,7 @@ class SongKernelTest {
     private val contract=File("../contracts/song-package/v1")
     private fun reader()=SongReader(SongSchema { File(contract,it).readBytes() })
     private fun fixture(name: String)=reader().read(File(contract,"fixtures/"+name+".gpractice").readBytes())
-    private fun sampler()=Sampler(SoundBank.NYLON) { File("src/main/assets/guitar-nylon/"+it+".pcm").readBytes() }
+    private fun sampler()=Sampler(SoundBank.NYLON) { File("../assets/soundfont-source/guitar-nylon/"+it+".pcm").readBytes() }
     @Test fun originalSharedFixturesRetainPolyphonyTupletsAndTechniques() {
         listOf("simple","complex","nested","techniques").forEach { name ->
             val song=fixture(name)

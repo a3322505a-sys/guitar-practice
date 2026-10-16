@@ -9,9 +9,6 @@ import com.a3322505a.guitarlearning.music.Position
 import com.a3322505a.guitarlearning.practice.*
 import java.util.concurrent.Executors
 
-enum class Phase { IDLE, PREPARING, PLAYING, PAUSED, ENDED, ERROR }
-data class Progress(val phase: Phase = Phase.IDLE, val tick: Double = 0.0, val message: String = "选择内容，点音探索，或开始练习")
-
 /** Retained for pre-migration tests; the application entry uses AlphaPlayback. */
 class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = null) : PracticePlayback {
     private val app = context.applicationContext
@@ -30,6 +27,7 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
         private set
     override var session: Session? by mutableStateOf(null)
         private set
+    override val cursor: Cursor? get() = session?.cursor(progress.tick)
     private var resumeAt = 0.0
     override val active get() = progress.phase == Phase.PLAYING || progress.phase == Phase.PREPARING
 
@@ -75,12 +73,13 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
         worker.execute {
             var output: PlaybackSink? = null
             try {
+                val timing = LegacySessionClock(current)
                 val pcm = Pcm(current, sampler)
                 if(id != generation) return@execute
                 val chunkSize = 512
                 output = sinkFactory?.invoke() ?: AndroidSink(attributes)
-                val origin = current.frame(fromTick)
-                val end = current.totalFrames
+                val origin = timing.frame(fromTick)
+                val end = timing.totalFrames
                 var written = origin
                 output.play()
                 while(id == generation && (end == null || written < end)) {
@@ -94,12 +93,12 @@ class Player(context: Context, private val sinkFactory: (() -> PlaybackSink)? = 
                     }
                     written+=offset
                     val heard=origin+output.heardFrames
-                    publish(id, Progress(Phase.PLAYING,current.tick(heard),""))
+                    publish(id, Progress(Phase.PLAYING,timing.tick(heard),""))
                 }
                 while(id==generation && end!=null) {
                     val heard=origin+output.heardFrames
                     if(heard>=end) break
-                    publish(id, Progress(Phase.PLAYING,current.tick(heard),""))
+                    publish(id, Progress(Phase.PLAYING,timing.tick(heard),""))
                     Thread.sleep(12)
                 }
                 if(id==generation) publish(id,Progress(Phase.ENDED,current.totalExactTicks!!,if(current.preview) "试听结束" else "本次练习结束"))

@@ -58,7 +58,7 @@ class SevenBlocksTest {
     }
 
     @Test fun thirtySecondsAndMixedMetersKeepAudioCursorAndCountInInQuarterNoteTime() {
-        val sampler=Sampler(SoundBank.NYLON) { root -> java.io.File("src/main/assets/guitar-nylon/$root.pcm").readBytes() }
+        val sampler=Sampler(SoundBank.NYLON) { root -> java.io.File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
         val seq=SevenBlocks.phrases[3].sequence
         val notation=seq.tabBars().flatMap { it.segments }
         assertTrue(notation.any { it.value==RhythmValue.THIRTY_SECOND && it.duration==3 && it.value.flags==3 })

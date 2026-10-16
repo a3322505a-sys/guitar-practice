@@ -15,6 +15,7 @@ internal data class Tone(val id: String,val parts: List<TonePart>,val start: Dou
 /** Streaming sampler with at most 256 active phase states and no whole-song/loop wave cache. */
 class Pcm(val session: Session, private val sampler: Sampler) {
     private val plan=session.plan
+    private val timing=LegacySessionClock(session)
     private val historyClocks=mutableMapOf<Int,TempoMap>()
     private fun seconds(q: Q,e: PlanEvent): Double {
         if((e.activation>e.start || e.sourceOffset>Q.ZERO) && q<e.activation) {
@@ -28,9 +29,9 @@ class Pcm(val session: Session, private val sampler: Sampler) {
             }
             val sourceEntry=e.sourceStart+e.activation-e.start+e.sourceOffset
             val original=e.sourceStart+q-e.start+e.sourceOffset
-            return session.clock.seconds(e.activation.value())+sourceClock.seconds(original.value())-sourceClock.seconds(sourceEntry.value())
+            return timing.clock.seconds(e.activation.value())+sourceClock.seconds(original.value())-sourceClock.seconds(sourceEntry.value())
         }
-        return session.clock.performedSeconds(plan.performed(q.value(),e))
+        return timing.clock.performedSeconds(timing.performed(q.value(),e))
     }
     private val tones: List<Tone>
     private val intervalIndex: IntervalIndex<Tone>
@@ -44,8 +45,8 @@ class Pcm(val session: Session, private val sampler: Sampler) {
     private val dynamicMarks=plan.score.tracks.associate { track ->
         track.id to plan.dynamics.filter { it.trackId==null || it.trackId==track.id }
             .sortedWith(compareBy<Dynamic> { it.at }.thenBy { it.trackId!=null }).map {
-                DynamicMark(session.clock.seconds(it.at.value()),session.clock.performed(it.at.value()),it.velocity,
-                    it.rampEnd?.let { q -> session.clock.performed(q.value()) },it.endVelocity)
+                DynamicMark(timing.clock.seconds(it.at.value()),timing.clock.performed(it.at.value()),it.velocity,
+                    it.rampEnd?.let { q -> timing.clock.performed(q.value()) },it.endVelocity)
             }
     }
     private fun dynamicGain(track: String,time: Double): Double {
@@ -55,7 +56,7 @@ class Pcm(val session: Session, private val sampler: Sampler) {
         while(lo<hi) { val mid=(lo+hi+1)/2;if(marks[mid].time<=time) lo=mid else hi=mid-1 }
         val m=marks[lo]
         return m.velocity+(if(m.end!=null) (m.endVelocity!!-m.velocity)*
-            ((session.clock.performedAtSeconds(time)-m.position)/(m.end-m.position)).coerceIn(0.0,1.0) else 0.0)
+            ((timing.clock.performedAtSeconds(time)-m.position)/(m.end-m.position)).coerceIn(0.0,1.0) else 0.0)
     }
     init {
         if(session.sequence.runtimePlan==null) session.sequence.validateExpression()
@@ -134,7 +135,7 @@ class Pcm(val session: Session, private val sampler: Sampler) {
                 val end=groups.getOrNull(i+1)?.first()?.start ?: group.maxOf { it.end }
                 musicCheck(end>first.start,"TIMING","/score/voices/"+n.event.voiceId+"/"+n.note.id,
                     "Strum delay or release leaves no sound; reduce tempo or stroke delay")
-                output+=Tone(n.id+"/attack/"+i,group,first.start,end,sampler.source(first.pitch.roundToInt()),session.clock.seconds(n.event.activation.value()))
+                output+=Tone(n.id+"/attack/"+i,group,first.start,end,sampler.source(first.pitch.roundToInt()),timing.clock.seconds(n.event.activation.value()))
             }
         }
         // Before-beat ornaments steal from the previous sound on their own string.
@@ -155,8 +156,8 @@ class Pcm(val session: Session, private val sampler: Sampler) {
     }
     fun activeNotes(tick: Double): List<PlanNote> {
         if(tick<session.preDuration.value()*session.quarter) return emptyList()
-        val local=session.localTick(tick)/session.quarter
-        val time=session.clock.seconds(local)
+        val local=timing.localTick(tick)/session.quarter
+        val time=timing.clock.seconds(local)
         return candidates(time,time+1e-9).flatMap { tone ->
             val part=tone.parts.lastOrNull { it.start<=time } ?: tone.parts.first()
             listOf(part.note)
@@ -165,16 +166,16 @@ class Pcm(val session: Session, private val sampler: Sampler) {
     fun block(start: Long,count: Int,guitar: Boolean,click: Boolean): ShortArray {
         require(count>=0)
         val mix=FloatArray(count)
-        val startTick=session.tick(start); val endTick=session.tick(start+count)
+        val startTick=timing.tick(start); val endTick=timing.tick(start+count)
         if(guitar) {
-            val first=max(0,session.loopAt(startTick)-1); val last=max(0,session.loopAt(endTick))
+            val first=max(0,timing.loopAt(startTick)-1); val last=max(0,timing.loopAt(endTick))
             for(loop in first..last) {
                 if(session.repeats>0 && loop>=session.repeats) break
-                val rangeStart=session.loopStartFrame(loop)
-                val rangeEnd=session.loopStartFrame(loop+1)
-                val base=session.preSeconds+loop*session.loopSeconds-session.sourceStartSeconds
+                val rangeStart=timing.loopStartFrame(loop)
+                val rangeEnd=timing.loopStartFrame(loop+1)
+                val base=timing.preSeconds+loop*timing.loopSeconds-timing.sourceStartSeconds
                 val a=start.toDouble()/SAMPLE_RATE-base;val b=(start+count).toDouble()/SAMPLE_RATE-base
-                candidates(maxOf(a,session.sourceStartSeconds),minOf(b,session.sourceStartSeconds+session.loopSeconds)).forEach { tone ->
+                candidates(maxOf(a,timing.sourceStartSeconds),minOf(b,timing.sourceStartSeconds+timing.loopSeconds)).forEach { tone ->
                     val onset=((base+tone.start)*SAMPLE_RATE).roundToLong()
                     val stop=((base+tone.end)*SAMPLE_RATE).roundToLong()
                     val gate=((base+tone.activation)*SAMPLE_RATE).roundToLong()
@@ -251,18 +252,18 @@ class Pcm(val session: Session, private val sampler: Sampler) {
     }
     private fun clicks(a: Long,b: Long,mix: FloatArray) {
         val pre=session.preDuration.value()
-        if(pre>0 && a<session.loopStartFrame(0)) {
-            session.preMeter.groups.forEachIndexed { i,q -> addClick(a,b,mix,session.frame(q.value()*session.quarter),i==0) }
+        if(pre>0 && a<timing.loopStartFrame(0)) {
+            session.preMeter.groups.forEachIndexed { i,q -> addClick(a,b,mix,timing.frame(q.value()*session.quarter),i==0) }
             if(session.leadIn>Q.ZERO) session.preMeter.groups.filter { it<session.leadIn }.forEachIndexed { i,q ->
-                addClick(a,b,mix,session.frame((session.preMeter.duration+q).value()*session.quarter),i==0)
+                addClick(a,b,mix,timing.frame((session.preMeter.duration+q).value()*session.quarter),i==0)
             }
         }
-        val first=max(0,session.loopAt(session.tick(a))-1);val last=max(0,session.loopAt(session.tick(b)))
+        val first=max(0,timing.loopAt(timing.tick(a))-1);val last=max(0,timing.loopAt(timing.tick(b)))
         for(loop in first..last) {
             if(session.repeats>0 && loop>=session.repeats) break
-            val local=session.localTick(session.tick(a))/session.quarter
+            val local=timing.localTick(timing.tick(a))/session.quarter
             val from=plan.visitAt(local)-1
-            val until=plan.visitAt(session.localTick(session.tick(b))/session.quarter)+1
+            val until=plan.visitAt(timing.localTick(timing.tick(b))/session.quarter)+1
             val indices=if(from<=until) max(0,from)..min(plan.visits.lastIndex,until) else plan.visits.indices
             for(i in indices) {
                 val v=plan.visits[i]
@@ -271,7 +272,7 @@ class Pcm(val session: Session, private val sampler: Sampler) {
                     val local=q-v.measure.leadIn-sourceOffset
                     val written=v.start+local
                     if(local>=Q.ZERO && written>=session.rangeStart && written<session.rangeEnd && local<v.duration)
-                        addClick(a,b,mix,session.noteFrame(loop,session.clock.performed(written.value())),group==0)
+                        addClick(a,b,mix,timing.noteFrame(loop,timing.clock.performed(written.value())),group==0)
                 }
             }
         }

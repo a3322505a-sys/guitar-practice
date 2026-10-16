@@ -22,7 +22,7 @@ class AudioComparisonTest {
         val output=File("../output/audio-comparison").apply { mkdirs() }
         val report=StringBuilder("example,bank,frames,rms_dbfs,peak_dbfs,normalization_db\n")
         for((name,sequence) in examples) for((label,bank) in listOf("old-electric" to SoundBank.ELECTRIC,"new-nylon" to SoundBank.NYLON)) {
-            val sampler=Sampler(bank) { root -> File("src/main/assets/${bank.folder}/$root.pcm").readBytes() }
+            val sampler=Sampler(bank) { root -> File(if(bank==SoundBank.NYLON) "../assets/soundfont-source/${bank.folder}/$root.pcm" else "src/debug/assets/${bank.folder}/$root.pcm").readBytes() }
             val session=Session(sequence,90,false,1)
             val renderer=Pcm(session,sampler)
             val count=session.frame(sequence.length.toDouble()).toInt()

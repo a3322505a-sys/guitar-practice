@@ -10,7 +10,7 @@ names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 sha='6f4eb1b092acc88f5448cea1a0001bd07b971af8'
 base='https://raw.githubusercontent.com/freepats/spanish-classical-guitar/'+sha+'/'
 cache=project/'.local/nylon-source'; cache.mkdir(parents=True,exist_ok=True)
-out=project/'app/src/main/assets/guitar-nylon'; out.mkdir(parents=True,exist_ok=True)
+out=project/'assets/soundfont-source/guitar-nylon'; out.mkdir(parents=True,exist_ok=True)
 # Preserve original electric bank for development-side comparison, not runtime switching.
 def fetch(path):
     p=cache/Path(path).name

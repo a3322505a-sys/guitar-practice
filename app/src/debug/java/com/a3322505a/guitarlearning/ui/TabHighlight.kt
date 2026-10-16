@@ -5,10 +5,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.a3322505a.guitarlearning.practice.Cursor
 import com.a3322505a.guitarlearning.audio.Phase
 
-internal fun notationCursor(cursor: Cursor?, phase: Phase) = cursor?.takeIf {
-    phase==Phase.PREPARING || phase==Phase.PLAYING || phase==Phase.PAUSED
-}
-
 /** Mature colours/shapes, fed exclusively by the new layout's anchors. */
 internal fun DrawScope.tabHighlight(layout: TabSystemLayout, playback: TabPlayback, hint: Hint, u: Float, colors: ThemeTokens) {
     val bar=layout.bars.firstOrNull { it.bar.index==playback.barIndex } ?: return

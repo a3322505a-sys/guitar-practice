@@ -13,12 +13,11 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
-import com.a3322505a.guitarlearning.audio.PracticePlayback
 import com.a3322505a.guitarlearning.alphatab.AlphaPlayback
 import com.a3322505a.guitarlearning.ui.PracticeApp
 
 class MainActivity : ComponentActivity() {
-    private lateinit var player: PracticePlayback
+    private lateinit var player: AlphaPlayback
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         immersiveStatusBar(window)

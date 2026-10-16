@@ -79,7 +79,18 @@ private enum class PracticeOverlay { NONE, PRACTICE, MANAGEMENT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PracticeApp(player: PracticePlayback) {
+fun PracticeApp(player: AlphaPlayback) {
+    PracticeWorkbench(player, player)
+}
+
+/** Debug binds its historical renderer explicitly; release only binds alphaTab. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun PracticeWorkbench(
+    player: PracticePlayback,
+    nativePlayer: AlphaPlayback?,
+    legacyTab: (@Composable (PracticeContentState, Modifier, (Int) -> Unit) -> Unit)? = null,
+) {
     val context = LocalContext.current
     val themeManager = remember { ThemeManager(context) }
     DisposableEffect(themeManager) { onDispose { themeManager.close() } }
@@ -150,7 +161,6 @@ fun PracticeApp(player: PracticePlayback) {
     val sequence = if (page == 0) scaleResult.sequence else if (chordPhrases) {
         if (phrase.unprepared) player.session?.sequence else phraseSequence
     } else checkSequence
-    val nativePlayer = player as? AlphaPlayback
     LaunchedEffect(sequence) { nativePlayer?.prepareSequence(sequence) }
     val progress = player.progress
     val session = player.session
@@ -390,6 +400,7 @@ fun PracticeApp(player: PracticePlayback) {
                                         note = "${chord.name} · 整和弦试听"
                                     }
                                 },
+                                legacyTab = legacyTab,
                             )
                         }
                     }

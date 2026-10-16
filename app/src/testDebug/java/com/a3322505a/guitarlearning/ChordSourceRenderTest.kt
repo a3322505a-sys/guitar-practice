@@ -98,6 +98,7 @@ class ChordSourceRenderTest {
         override var click=true
         override val progress=Progress()
         override val session: Session?=null
+        override val cursor: Cursor?=null
         override val active=false
         var auditionPositions=emptyList<Position>()
         var auditionCapo=0

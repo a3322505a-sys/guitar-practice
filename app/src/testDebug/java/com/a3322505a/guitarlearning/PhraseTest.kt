@@ -57,7 +57,7 @@ class PhraseTest {
     @Test fun ringStopsAtRepickedStringGripChangeAndLoopEndAndPcmIsChunkInvariant() {
         val seq=LegacyUsotsukiFixture.phrase.sequence
         assertEquals(listOf(24,12,12,6,24,12,12,6,24,12,12,6,24,12,12,6),seq.events.map { seq.soundDuration(it,it.positions.single()) })
-        val sampler=Sampler(SoundBank.NYLON) { root -> File("src/main/assets/guitar-nylon/$root.pcm").readBytes() }
+        val sampler=Sampler(SoundBank.NYLON) { root -> File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
         val session=Session(seq,80,false,1)
         val pcm=Pcm(session,sampler)
         val count=session.frame(96.0).toInt()
