@@ -64,8 +64,8 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         set(value) {
             if(field==value) return
             field = value
-            view?.api?.metronomeVolume = if (value) 0.5 else 0.0
-            if(sequence!=null) view?.api?.countInVolume = if(value && session?.follow==true) 0.7 else 0.0
+            view?.api?.metronomeVolume = if (value) AlphaTone.CLICK else 0.0
+            if(sequence!=null) view?.api?.countInVolume = if(value && session?.follow==true) AlphaTone.CLICK else 0.0
         }
     var solo = false
         set(value) { field = value; applyMix() }
@@ -182,9 +182,11 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
             api.changeTrackMute(alphaTab.collections.List(track), !guitar || solo && track !== selectedTrack)
+            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume))
         }
         if (!guitar) positions = emptyList()
-        api.metronomeVolume = if (click) 0.5 else 0.0
+        api.masterVolume = AlphaTone.MASTER
+        api.metronomeVolume = if (click) AlphaTone.CLICK else 0.0
     }
     private fun onReady() {
         val api = view?.api ?: return
@@ -229,7 +231,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             val visits = checkNotNull(projection).visits
             api.playbackRange = PlaybackRange().apply { startTick = visits[first].start; endTick = visits[last].end }
             api.playbackSpeed = speed
-            api.countInVolume = if (pre && (sequence==null || click)) 0.7 else 0.0
+            api.countInVolume = if (pre && (sequence==null || click)) AlphaTone.CLICK else 0.0
             api.isLooping = repeats == 0 || repeats > 1
             applyMix(); currentTick = visits[first].start; currentVisit = first
             val trackLookup = alphaTab.core.ecmaScript.Set<Double>(

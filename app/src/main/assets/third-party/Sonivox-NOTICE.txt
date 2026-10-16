@@ -8,3 +8,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+Modified for guitar-practice v92: program 24 uses CC0 FreePats nylon PCM.
+Bank 128, program 0, key 33 uses an original generated soft wood click.
+Other GM presets and percussion keys are retained. See practice-soundfont.md.
