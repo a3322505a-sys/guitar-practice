@@ -25,6 +25,7 @@ internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean 
                     row.forEach { i ->
                         OutlinedButton({onSelect(i)},modifier=Modifier.weight(1f).heightIn(min=if (compact) 48.dp else 56.dp),
                             shape=MaterialTheme.shapes.medium,
+                            colors=ButtonDefaults.outlinedButtonColors(contentColor=PracticeSkin.colors.primaryText),
                             border=BorderStroke(1.dp,if(i==selected) PracticeSkin.colors.primary else PracticeSkin.colors.border),
                             contentPadding=if (compact) PaddingValues(horizontal=6.dp,vertical=4.dp) else PaddingValues(10.dp)) {
                             Text(titles[i], style=MaterialTheme.typography.labelLarge)

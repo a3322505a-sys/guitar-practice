@@ -27,10 +27,10 @@ class ThemeManagerTest {
 
     @Test fun selectionSurvivesManagerRecreationAndResetRestoresForest() {
         val first = manager()
-        first.select("coastal_blue")
-        assertEquals("coastal_blue", first.current.id)
+        first.select("studio_dark")
+        assertEquals("studio_dark", first.current.id)
         val restarted = manager()
-        assertEquals("coastal_blue", restarted.current.id)
+        assertEquals("studio_dark", restarted.current.id)
         restarted.reset()
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals(ThemeRegistry.default, first.current)

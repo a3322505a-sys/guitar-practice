@@ -79,4 +79,5 @@ data class AppThemeSpec(
     val description: String,
     val colors: ThemeTokens,
     val metrics: ThemeMetrics = ThemeMetrics(),
+    val isDark: Boolean = false,
 )

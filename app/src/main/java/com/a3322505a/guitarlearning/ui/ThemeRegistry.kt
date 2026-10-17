@@ -25,6 +25,9 @@ object ThemeRegistry {
         skin("ochre_vibe", "琥珀黄 · Ochre Vibe", "燕麦奶 × 姜黄棕 × 松林绿",
             0xFFF5EFE0, 0xFFB07219, 0xFF2D6A4F,
             surface = 0xFFFDFBF6, nodeLight = 0xFFEFE2C6, border = 0xFFCCA05A),
+        skin("studio_dark", "黑金暗夜 · Studio Dark", "碳素黑 × 复古金 × 电光青",
+            0xFF14171A, 0xFFD99B26, 0xFF38BDF8,
+            surface = 0xFF1E2328, nodeLight = 0xFF2B323B, border = 0xFF6B7D90, dark = true),
     )
 
     val default: AppThemeSpec get() = all.first()
@@ -33,47 +36,55 @@ object ThemeRegistry {
     private fun skin(
         id: String, name: String, description: String, background: Long, primary: Long, accent: Long,
         surface: Long? = null, nodeLight: Long? = null, border: Long? = null,
+        dark: Boolean = false,
     ): AppThemeSpec {
         val page = Color(background)
         val main = Color(primary)
         val highlight = Color(accent)
         val cardSurface = surface?.let { Color(it) } ?: Color.White
-        val ink = Color(0xFF1E272D)
-        val secondary = Color(0xFF525E68)
-        val tertiary = Color(0xFF5B6771)
+        val ink = Color(if (dark) 0xFFF3F4F6 else 0xFF1E272D)
+        val secondary = Color(if (dark) 0xFFB8C1CC else 0xFF525E68)
+        val tertiary = Color(if (dark) 0xFFA3AFBD else 0xFF5B6771)
         val mainWash = nodeLight?.let { Color(it) } ?: lerp(cardSurface, main, .14f)
         val normalNoteFill = nodeLight?.let { Color(it) } ?: lerp(cardSurface, main, .20f)
         val accentWash = lerp(cardSurface, highlight, .16f)
-        val consoleBg = if (surface != null) page else lerp(page, main, .06f)
+        val consoleBg = if (dark) Color(0xFF242B33) else if (surface != null) page else lerp(page, main, .06f)
         val stageWell = if (surface != null) cardSurface else lerp(cardSurface, page, .58f)
         val outline = border?.let { Color(it) } ?: lerp(page, ink, .14f)
-        val onMain = readableOn(main, ink)
-        val onHighlight = readableOn(highlight, ink)
-        val onNormalNote = readableOn(normalNoteFill, ink)
+        val darkInk = if (dark) page else ink
+        val onMain = readableOn(main, darkInk)
+        val onHighlight = readableOn(highlight, darkInk)
+        val onNormalNote = if (dark) ink else readableOn(normalNoteFill, ink)
         return AppThemeSpec(id, name, description, ThemeTokens(
             background = page, surface = cardSurface, surfaceSecondary = consoleBg,
             primary = main, primaryContainer = mainWash, accent = highlight, accentContainer = accentWash,
             onPrimary = onMain, onAccent = onHighlight, onSurface = ink,
             textPrimary = ink, textSecondary = secondary, textTertiary = tertiary, border = outline,
-            success = Color(0xFF197449), warning = Color(0xFF855400), danger = Color(0xFFB23B42),
-            disabled = Color(0xFF9DA6AE), scrim = Color(0xFF152128).copy(alpha = .42f),
+            success = Color(if (dark) 0xFF6EE7B7 else 0xFF197449),
+            warning = Color(if (dark) 0xFFFCD34D else 0xFF855400),
+            danger = Color(if (dark) 0xFFFDA4AF else 0xFFB23B42),
+            disabled = Color(if (dark) 0xFF8492A3 else 0xFF9DA6AE),
+            scrim = Color(if (dark) 0xFF101418 else 0xFF152128).copy(alpha = if (dark) .72f else .42f),
             fretboardNoteNormal = normalNoteFill, fretboardNoteActive = highlight, fretboardRoot = main,
             onFretboardNoteNormal = onNormalNote, onFretboardNoteActive = onHighlight, onFretboardRoot = onMain,
             chordDot = main, onChordDot = onMain,
             progressComplete = if (surface != null) highlight else main, progressPending = outline,
             notationInk = ink, notationStaff = lerp(stageWell, secondary, .62f),
             notationHighlight = mainWash, notationActive = accentWash, notationSecondary = secondary,
-            diagramSurface = stageWell, diagramGrid = lerp(stageWell, secondary, .40f),
+            diagramSurface = stageWell, diagramGrid = lerp(stageWell, secondary, if (dark) .60f else .40f),
             primaryText = readablePrimary(main, ink, listOf(page, cardSurface, consoleBg, mainWash, stageWell)),
             fretboardNoteStroke = border?.let { Color(it) } ?: main.copy(alpha = .65f),
-        ))
+        ), isDark = dark)
     }
 
-    // Filled controls keep the exact palette; small primary labels need a darker ink on pale containers.
+    // Filled controls keep the exact palette; small labels use readable ink on either light or dark containers.
     private fun readablePrimary(primary: Color, ink: Color, backgrounds: List<Color>): Color {
         var candidate = primary
         repeat(20) {
-            if (backgrounds.all { (it.luminance() + .05f) / (candidate.luminance() + .05f) >= 4.5f }) return candidate
+            if (backgrounds.all {
+                val a = it.luminance(); val b = candidate.luminance()
+                (maxOf(a, b) + .05f) / (minOf(a, b) + .05f) >= 4.5f
+            }) return candidate
             candidate = lerp(candidate, ink, .1f)
         }
         return ink

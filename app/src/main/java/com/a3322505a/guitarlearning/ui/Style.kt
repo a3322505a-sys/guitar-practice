@@ -44,9 +44,14 @@ fun PracticeTheme(
 ) {
     val c = theme.colors
     val m = theme.metrics
-    CompositionLocalProvider(LocalLargePracticeControls provides largeControls, LocalPracticeTheme provides theme) {
+    val baseColors = if (theme.isDark) darkColorScheme() else lightColorScheme()
+    CompositionLocalProvider(
+        LocalLargePracticeControls provides largeControls,
+        LocalPracticeTheme provides theme,
+        LocalContentColor provides c.textPrimary,
+    ) {
         MaterialTheme(
-            colorScheme = lightColorScheme(
+            colorScheme = baseColors.copy(
                 primary = c.primary, onPrimary = c.onPrimary,
                 primaryContainer = c.primaryContainer, onPrimaryContainer = c.textPrimary,
                 secondary = c.primary, onSecondary = c.onPrimary,

@@ -70,15 +70,18 @@ class ThemeRenderTest {
             val reader=ThemeManager(compose.activity)
             assertEquals(theme.id,reader.current.id);reader.close()
         }
-        compose.onNodeWithTag("theme-coastal_blue").performScrollTo().performClick()
-        capture("appearance-coastal")
+        compose.onNodeWithTag("theme-studio_dark").performScrollTo().performClick()
+        capture("appearance-studio-dark")
         compose.onNodeWithText("完成").performClick()
-        capture("coastal-phone")
+        capture("studio-dark-phone-chord")
+        compose.onNodeWithTag("config-summary").performClick();expand()
+        capture("studio-dark-content")
+        compose.onNodeWithText("完成").performClick()
         compose.activityRule.scenario.recreate();compose.waitForIdle()
-        ThemeManager(compose.activity).let { assertEquals("coastal_blue",it.current.id);it.close() }
+        ThemeManager(compose.activity).let { assertEquals("studio_dark",it.current.id);it.close() }
         preferences();expand()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-coastal_blue").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("theme-studio_dark").performScrollTo().assertIsSelected()
         compose.onNodeWithTag("theme-reset").performScrollTo().performClick()
         ThemeManager(compose.activity).let { assertEquals("forest",it.current.id);it.close() }
     }
@@ -95,9 +98,10 @@ class ThemeRenderTest {
             val session=player.session
             preferences();expand()
             compose.onNodeWithText("外观").performClick()
-            compose.onNodeWithTag("theme-sunburst").performScrollTo().performClick()
+            compose.onNodeWithTag("theme-studio_dark").performScrollTo().performClick()
             assertSame(session,player.session)
             assertEquals(Phase.PLAYING,player.progress.phase)
+            capture("studio-dark-playing")
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("fretboard").assertIsDisplayed()
             assertSame(session,player.session)
@@ -110,14 +114,14 @@ class ThemeRenderTest {
         preferences()
         compose.onNodeWithTag("practice-side-panel").assertIsDisplayed()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-lagoon_teal").performScrollTo().performClick()
-        capture("lagoon_teal-landscape-side")
+        compose.onNodeWithTag("theme-studio_dark").performScrollTo().performClick()
+        capture("studio-dark-landscape-side")
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletKeepsSharedSkeleton() {
         capture("forest-tablet")
         preferences()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-ochre_vibe").performScrollTo().performClick()
-        capture("ochre-tablet-side")
+        compose.onNodeWithTag("theme-studio_dark").performScrollTo().performClick()
+        capture("studio-dark-tablet-side")
     }
 }
