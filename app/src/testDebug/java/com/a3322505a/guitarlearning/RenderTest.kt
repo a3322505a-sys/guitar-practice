@@ -33,6 +33,12 @@ import java.util.concurrent.atomic.AtomicLong
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RenderTest {
     @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    private fun preferences() {
+        if (compose.onAllNodesWithTag("preferences-button").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("management-button").performClick()
+            compose.onNodeWithText("练习偏好").performClick()
+        } else compose.onNodeWithTag("preferences-button").performClick()
+    }
     private fun expandSettings() {
         val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty()) compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
@@ -51,8 +57,15 @@ class RenderTest {
     private fun showBoard() {
         if(compose.onAllNodesWithTag("tablature").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("dock-toggle").performClick()
     }
+    private fun toggleHint(title: String) {
+        val wasTab = compose.onAllNodesWithTag("tablature").fetchSemanticsNodes().isNotEmpty()
+        if (wasTab) showBoard()
+        compose.onNodeWithTag("board-label-menu").performClick()
+        compose.onNodeWithText(title).performClick()
+        if (wasTab) compose.onNodeWithTag("dock-toggle").performClick()
+    }
     private fun openPreferences() {
-        closePanel(); compose.onNodeWithTag("preferences-button").performClick(); expandSettings()
+        closePanel(); preferences(); expandSettings()
     }
     private fun advanced() {
         if(compose.onAllNodesWithText("高级 ▾").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("advanced-toggle").performScrollTo().performClick()
@@ -165,10 +178,10 @@ class RenderTest {
                 resumed.head.set(end)
                 compose.waitUntil(8000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();player.progress.phase==Phase.ENDED }
                 assertEquals(expected,bounds())
-                compose.onNodeWithText("撤提示").performClick();assertEquals(expected,bounds())
+                toggleHint("隐藏 / 盲弹");assertEquals(expected,bounds())
                 compose.onNodeWithTag("phrase-cue").assertTextEquals("已撤提示")
                 if(phrase.sequence.sections.isEmpty()) compose.onNodeWithContentDescription("指板，提示已隐藏").assertIsDisplayed()
-                compose.onNodeWithText("恢复提示").performClick()
+                toggleHint("显示提示")
                 compose.onNodeWithText("结束").performClick()
             }
         } finally { player.release() }
@@ -212,13 +225,13 @@ class RenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("phone-chord-tab")
-        compose.onNodeWithText("撤提示").performClick()
+        toggleHint("隐藏 / 盲弹")
         val descriptions=compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription)).fetchSemanticsNodes()
         assertFalse(descriptions.any { node -> node.config[SemanticsProperties.ContentDescription].any { it.contains("品；") } })
         capture("phone-tab-hidden")
         showBoard()
         compose.onNodeWithText("已撤提示").assertIsDisplayed()
-        compose.onNodeWithText("恢复提示").performClick()
+        toggleHint("显示提示")
         category("和弦学习")
         openContent()
         compose.onAllNodesWithText("D")[0].performScrollTo().performClick()
@@ -389,11 +402,11 @@ class RenderTest {
         compose.onNodeWithText("6 弦 0 品",substring=true).assertIsDisplayed()
         compose.onNodeWithTag("open-string-5").assertIsNotEnabled()
         capture("pm-compact-open-strings","v65")
-        compose.onNodeWithText("撤提示").performClick()
+        toggleHint("隐藏 / 盲弹")
         compose.onNodeWithContentDescription("指板，提示已隐藏").assertIsDisplayed()
         compose.onNodeWithTag("open-string-6").assertIsNotEnabled()
         assertEquals(viewport,compose.onNodeWithTag("diagram-viewport").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithText("恢复提示").performClick()
+        toggleHint("显示提示")
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
         capture("pm-rhythmic-tab","v65")
@@ -601,7 +614,7 @@ class RenderTest {
             category("和弦学习")
             assertNull(player.session)
             compose.onNodeWithText("C · 逐弦检查").assertIsDisplayed()
-            compose.onNodeWithText("撤提示").performClick()
+            toggleHint("隐藏 / 盲弹")
             compose.onNodeWithText("根音 C · 三音 E · 五音 G").assertDoesNotExist()
             val tapped=mutableListOf<Position>()
             compose.activity.setContent {
@@ -688,9 +701,9 @@ class RenderTest {
             compose.onNodeWithText("听和弦").assertDoesNotExist()
             compose.onNodeWithContentDescription("当前 5 弦 3 品；下一 4 弦 0 品；",substring=true).assertIsDisplayed()
             capture("single-note-board")
-            compose.onNodeWithText("撤提示").performClick()
+            toggleHint("隐藏 / 盲弹")
             compose.onNodeWithContentDescription("当前 5 弦 3 品；下一 4 弦 0 品；",substring=true).assertDoesNotExist()
-            compose.onNodeWithText("恢复提示").performClick()
+            toggleHint("显示提示")
             compose.onNodeWithText("听示范").performClick()
             assertEquals(Phrases.singleNote.sequence,player.session!!.sequence)
             compose.onNodeWithText("结束").performClick()

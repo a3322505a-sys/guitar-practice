@@ -61,6 +61,7 @@ internal fun PracticeContent(
     onTap: (Position) -> Unit,
     onAudition: (Chord) -> Unit,
     legacyTab: (@Composable (PracticeContentState, Modifier, (Int) -> Unit) -> Unit)? = null,
+    onHint: () -> Unit = {},
 ) = with(state) {
     val colors = PracticeSkin.colors
     val metrics = PracticeSkin.metrics
@@ -176,6 +177,7 @@ internal fun PracticeContent(
                             }
                         }
                         if (selected) {
+                            BoardLabelMenu(hint, onHint, title = if (page == 0) "音名" else "指法")
                             ViewSwitch(false, onView)
                         }
                     }

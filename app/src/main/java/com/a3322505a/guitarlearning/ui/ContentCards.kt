@@ -9,18 +9,29 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
-internal fun ContentCards(titles: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean = false, onSelect: (Int) -> Unit) {
     val fontScale=LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns=(maxWidth/(144.dp*fontScale)).toInt().coerceIn(1,6)
-        val width=(maxWidth-8.dp*(columns-1))/columns
-        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            titles.forEachIndexed { i,title ->
-                OutlinedButton({onSelect(i)},modifier=Modifier.width(width).heightIn(min=56.dp),
-                    shape=MaterialTheme.shapes.medium,
-                    border=BorderStroke(1.dp,if(i==selected) PracticeSkin.colors.primary else PracticeSkin.colors.border),
-                    contentPadding=PaddingValues(10.dp)) { Text(title) }
+        val columns=if (compact) when {
+            maxWidth < 400.dp*fontScale -> 3
+            maxWidth < 480.dp*fontScale -> 4
+            else -> 5
+        }
+            else (maxWidth/(144.dp*fontScale)).toInt().coerceIn(1,6)
+        val gap=if (compact) 6.dp else 8.dp
+        Column(verticalArrangement=Arrangement.spacedBy(gap)) {
+            titles.indices.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(gap)) {
+                    row.forEach { i ->
+                        OutlinedButton({onSelect(i)},modifier=Modifier.weight(1f).heightIn(min=if (compact) 48.dp else 56.dp),
+                            shape=MaterialTheme.shapes.medium,
+                            border=BorderStroke(1.dp,if(i==selected) PracticeSkin.colors.primary else PracticeSkin.colors.border),
+                            contentPadding=if (compact) PaddingValues(horizontal=6.dp,vertical=4.dp) else PaddingValues(10.dp)) {
+                            Text(titles[i], style=MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                    repeat(columns-row.size) { Spacer(Modifier.weight(1f)) }
+                }
             }
         }
     }
