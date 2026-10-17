@@ -37,6 +37,10 @@ internal data class PracticeSettingsState(
     val mainTrackId: String? = null,
     val soloTrack: Boolean = false,
     val unavailableReason: String = "",
+    val content: ContentPresentation = ContentPresentation(com.a3322505a.guitarlearning.assets.song.LibrarySnapshot(
+        emptyList(), catalogueGroups.values.flatten(), emptyList(), chords = chordGroups.values.flatten(),
+    )),
+    val activeSourceFilter: String = BASIC_CONTENT,
 )
 
 @Composable

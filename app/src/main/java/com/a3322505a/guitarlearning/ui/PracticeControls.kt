@@ -4,6 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -415,6 +418,8 @@ internal fun WorkbenchPanel(
     onGuitar: (Boolean) -> Unit,
     onClick: (Boolean) -> Unit,
     themeManager: ThemeManager,
+    onSourceFilter: (String) -> Unit = {},
+    onManagePackages: () -> Unit = {},
 ) {
     val body: @Composable () -> Unit = {
         Column(Modifier.fillMaxSize().padding(14.dp).navigationBarsPadding().testTag("practice-settings"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -423,7 +428,7 @@ internal fun WorkbenchPanel(
                 TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text("完成") }
             }
             if (contentOnly) {
-                WorkbenchContentChoices(state, onCategory, onScale, onChord, onPhrase, onRange, Modifier.weight(1f))
+                WorkbenchContentChoices(state, onCategory, onScale, onChord, onPhrase, onRange, Modifier.weight(1f), onSourceFilter, onManagePackages)
             } else {
                 var tab by rememberSaveable { mutableIntStateOf(0) }
                 PracticeSegments(listOf("跟练", "声音", "外观"), tab, { tab = it }, Modifier.fillMaxWidth())
@@ -474,7 +479,7 @@ internal fun WorkbenchPanel(
 }
 
 @Composable
-private fun WorkbenchContentChoices(
+internal fun WorkbenchContentChoices(
     state: PracticeSettingsState,
     onCategory: (Int) -> Unit,
     onScale: (ScaleOptions) -> Unit,
@@ -482,49 +487,99 @@ private fun WorkbenchContentChoices(
     onPhrase: (com.a3322505a.guitarlearning.practice.Phrase) -> Unit,
     onRange: (com.a3322505a.guitarlearning.practice.BarRange) -> Unit,
     modifier: Modifier,
+    onSourceFilter: (String) -> Unit = {},
+    onManagePackages: () -> Unit = {},
 ) = with(state) {
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val effectiveSource = content.effectiveSource(activeSourceFilter, chordPhrases)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         PracticeSegments(listOf("音阶", "和弦", "歌曲与短句"), if (page == 0) 0 else if (chordPhrases) 2 else 1, onCategory, Modifier.fillMaxWidth())
-        if (page == 0) {
-            Label("音阶") {
-                Text("调性", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
-                Choices(Tonality.entries.map { it.title }, scale.key.ordinal) { onScale(scale.copy(key = Tonality.entries[it])) }
-                Text("把位指型", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
-                ContentCards(Patterns.all.map { "${it.solfege} · ${it.caged}" }, scale.pattern, compact = true) { onScale(scale.copy(pattern = it)) }
+        if (page != 0) {
+            val sourceScroll = rememberLazyListState()
+            LaunchedEffect(effectiveSource, content.sources) {
+                val index = content.sources.indexOfFirst { it.id == effectiveSource }
+                if (index >= 0) sourceScroll.animateScrollToItem(index)
             }
-            Label("练习方式") {
-                Choices(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal) {
-                    val exercise = com.a3322505a.guitarlearning.practice.ScaleExercise.entries[it]
-                    onScale(scale.copy(exercise = exercise, octave = if (exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CONNECTION) false else scale.octave))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(Modifier.weight(1f).testTag("content-source-filters"), state = sourceScroll, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(content.sources, key = { it.id }) { source ->
+                        FilterChip(
+                            selected = effectiveSource == source.id,
+                            onClick = { onSourceFilter(source.id) },
+                            label = { Text(source.title, maxLines = 1) },
+                            modifier = Modifier.heightIn(min = 48.dp).testTag("content-source-${source.id}"),
+                            shape = RoundedCornerShape(50),
+                        )
+                    }
                 }
-                Choices(listOf("一八度", "整型音域"), if (scale.octave) 0 else 1) { onScale(scale.copy(octave = it == 0)) }
-                Choices(listOf("每拍1音", "每拍2音", "每拍3音"), scale.notesPerBeat - 1) { onScale(scale.copy(notesPerBeat = it + 1)) }
-                if (scale.exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CHANGE_START) Choices((1..7).map(Int::toString), scale.startDegree - 1) { onScale(scale.copy(startDegree = it + 1)) }
-            }
-        } else if (!chordPhrases) {
-            chordGroups.forEach { (group, items) ->
-                Label(group) { ContentCards(items.map { it.name }, items.indexOf(first), compact = true) { onChord(items[it]) } }
-            }
-        } else {
-            catalogueGroups.forEach { (group, items) ->
-                Label(group) { ContentCards(items.map { it.title }, items.indexOfFirst { it.id == family.id }) { onPhrase(items[it]) } }
-            }
-            var details by rememberSaveable(phrase.id) { mutableStateOf(false) }
-            TextButton(onClick = { details = !details }, modifier = Modifier.heightIn(min = 48.dp)) { Text(if (details) "收起段落与版本" else "段落与版本 ▾") }
-            if (details && !phrase.unprepared) {
-                if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }
-                Text(phrase.passage + " · " + phrase.conditions, style = MaterialTheme.typography.bodySmall)
-                Label("练习范围") {
-                    Text("${phrase.sequence.barLabel(range.first)}–${phrase.sequence.barLabel(range.last)} 小节")
-                    TextButton(onClick = { onRange(wholeRange) }) { Text("整句") }
-                    Text("起始")
-                    Choices((0..wholeRange.last).map { phrase.sequence.barLabel(it) }, range.first) { onRange(com.a3322505a.guitarlearning.practice.BarRange(it, maxOf(it, range.last))) }
-                    Text("结束")
-                    val endings = (range.first..wholeRange.last).toList()
-                    Choices(endings.map { phrase.sequence.barLabel(it) }, endings.indexOf(range.last)) { onRange(com.a3322505a.guitarlearning.practice.BarRange(range.first, endings[it])) }
-                }
+                AssistChip(
+                    onClick = onManagePackages,
+                    label = { Text("管理") },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("content-package-management")
+                        .semantics { contentDescription = "管理导入曲包" },
+                    shape = RoundedCornerShape(50),
+                )
             }
         }
-        if (sequence == null) Text(unavailableReason.ifBlank { "正在准备内容…" }, color = PracticeSkin.colors.danger)
+        key(page, chordPhrases, effectiveSource) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).testTag("content-card-list"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (page == 0) {
+                    Label("音阶") {
+                        Text("调性", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
+                        Choices(Tonality.entries.map { it.title }, scale.key.ordinal) { onScale(scale.copy(key = Tonality.entries[it])) }
+                        Text("把位指型", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
+                        ContentCards(Patterns.all.map { "${it.solfege} · ${it.caged}" }, scale.pattern, compact = true) { onScale(scale.copy(pattern = it)) }
+                    }
+                    Label("练习方式") {
+                        Choices(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal) {
+                            val exercise = com.a3322505a.guitarlearning.practice.ScaleExercise.entries[it]
+                            onScale(scale.copy(exercise = exercise, octave = if (exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CONNECTION) false else scale.octave))
+                        }
+                        Choices(listOf("一八度", "整型音域"), if (scale.octave) 0 else 1) { onScale(scale.copy(octave = it == 0)) }
+                        Choices(listOf("每拍1音", "每拍2音", "每拍3音"), scale.notesPerBeat - 1) { onScale(scale.copy(notesPerBeat = it + 1)) }
+                        if (scale.exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CHANGE_START) Choices((1..7).map(Int::toString), scale.startDegree - 1) { onScale(scale.copy(startDegree = it + 1)) }
+                    }
+                } else if (!chordPhrases) {
+                    val sections = content.chordSections(effectiveSource)
+                    sections.forEach { (group, items) ->
+                        if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
+                        ContentCards(items.map { it.name }, items.indexOfFirst { it.id == first.id }, compact = true,
+                            cardTexts = items.map(content::chordText)) { onChord(items[it]) }
+                    }
+                } else {
+                    val sections = content.phraseSections(effectiveSource)
+                    sections.forEach { (group, items) ->
+                        if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
+                        ContentCards(items.map { it.title }, items.indexOfFirst { it.id == family.id },
+                            cardTexts = items.map(content::phraseText)) { onPhrase(items[it]) }
+                    }
+                    if (content.sourceOf(family) == effectiveSource) {
+                        var details by rememberSaveable(phrase.id) { mutableStateOf(false) }
+                        TextButton(onClick = { details = !details }, modifier = Modifier.heightIn(min = 48.dp)) { Text(if (details) "收起段落与版本" else "段落与版本 ▾") }
+                        if (details && !phrase.unprepared) {
+                            if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }
+                            Text(phrase.passage + " · " + phrase.conditions, style = MaterialTheme.typography.bodySmall)
+                            Label("练习范围") {
+                                Text("${phrase.sequence.barLabel(range.first)}–${phrase.sequence.barLabel(range.last)} 小节")
+                                TextButton(onClick = { onRange(wholeRange) }) { Text("整句") }
+                                Text("起始")
+                                Choices((0..wholeRange.last).map { phrase.sequence.barLabel(it) }, range.first) { onRange(com.a3322505a.guitarlearning.practice.BarRange(it, maxOf(it, range.last))) }
+                                Text("结束")
+                                val endings = (range.first..wholeRange.last).toList()
+                                Choices(endings.map { phrase.sequence.barLabel(it) }, endings.indexOf(range.last)) { onRange(com.a3322505a.guitarlearning.practice.BarRange(range.first, endings[it])) }
+                            }
+                        }
+                    }
+                }
+                if (sequence == null) Text(unavailableReason.ifBlank { "正在准备内容…" }, color = PracticeSkin.colors.danger)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContentSectionTitle(title: String, count: Int) {
+    Row(Modifier.fillMaxWidth().testTag("content-section-$title"), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PracticeSkin.colors.textPrimary)
+        Text(count.toString(), style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
     }
 }

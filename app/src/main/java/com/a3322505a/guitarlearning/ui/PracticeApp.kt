@@ -110,6 +110,11 @@ internal fun PracticeWorkbench(
     }
     var librarySnapshot by remember { mutableStateOf(repository.snapshot) }
     var libraryReady by remember { mutableStateOf(false) }
+    val contentPresentation = remember(librarySnapshot) { ContentPresentation(librarySnapshot) }
+    var activeSourceFilter by rememberSaveable { mutableStateOf(BASIC_CONTENT) }
+    LaunchedEffect(libraryReady, contentPresentation) {
+        activeSourceFilter = contentPresentation.restoredSource(activeSourceFilter, libraryReady)
+    }
     var preparedEpoch by remember { mutableIntStateOf(0) }
     val phraseStore = remember { PhraseSettingsStore(preferences, repository::named) }
     var page by rememberSaveable { mutableIntStateOf(0) }
@@ -494,6 +499,7 @@ internal fun PracticeWorkbench(
                                 phrase.relatedId?.let { repository.named(it).title }, bpm, repeats, firstBar, lastBar, range, wholeRange, guitar, click,
                                 moreExercisesOpen, beatsPerBar, sequence, displayedSequence, scaleResult, sourceTempo, tempoMultiplier, selectedTrackId, soloTrack,
                                 if (page == 0) scaleResult.reason else if (!libraryReady) "正在加载曲库…" else if (!chordPhrases) chordUnavailable ?: note else note,
+                                content = contentPresentation, activeSourceFilter = activeSourceFilter,
                             ),
                             contentOnly = overlay == PracticeOverlay.CONTENT,
                             sidePanel = sidePanel,
@@ -508,6 +514,8 @@ internal fun PracticeWorkbench(
                             onGuitar = { guitar = it; player.guitar = it; preferences.edit().putBoolean("guitar", it).apply() },
                             onClick = { click = it; player.click = it; preferences.edit().putBoolean("click", it).apply() },
                             themeManager = themeManager,
+                            onSourceFilter = { activeSourceFilter = it },
+                            onManagePackages = { overlay = PracticeOverlay.MANAGEMENT },
                         )
                     }
                 }
