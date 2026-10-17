@@ -234,7 +234,7 @@ private fun PracticeSettingsContent(
                         } else if (chordPhrases) {
                             Label("选择短句") {
                                 catalogueGroups.forEach { (use, items) ->
-                                    Text(use, style = MaterialTheme.typography.labelLarge, color = PracticeSkin.colors.primary)
+                                    Text(use, style = MaterialTheme.typography.labelLarge, color = PracticeSkin.colors.primaryText)
                                     Choices(items.map { it.title }, items.indexOfFirst { it.id == family.id }) { onPhrase(items[it]) }
                                 }
 
@@ -254,7 +254,7 @@ private fun PracticeSettingsContent(
                                     Text("${phrase.technique} · ${phrase.tempoLabel} ${phrase.sourceBpm} BPM · ${phrase.difficulty}", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
                                     Text("${phrase.category} · ${phrase.source}", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
                                     Text(phrase.sequence.explanation, style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
-                                    Text("目标：${phrase.goal} 建议起步 ${phrase.suggestedBpm} BPM。", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.primary)
+                                    Text("目标：${phrase.goal} 建议起步 ${phrase.suggestedBpm} BPM。", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.primaryText)
                                     phrase.relatedId?.let { Text("基础素材：${relatedTitle}", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary) }
                                 }
                             }
@@ -286,10 +286,10 @@ private fun PracticeSettingsContent(
                         } else {
                             Label("选择和弦") {
                                 chordGroups.forEach { (group, items) ->
-                                    Text(group, fontWeight = FontWeight.Bold, color = PracticeSkin.colors.primary)
+                                    Text(group, fontWeight = FontWeight.Bold, color = PracticeSkin.colors.primaryText)
                                     Choices(items.map { it.name }, items.indexOf(first)) { onChord(items[it]) }
                                 }
-                                if (first.source.isNotBlank()) Text("${first.conditions}。${first.source}", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.primary)
+                                if (first.source.isNotBlank()) Text("${first.conditions}。${first.source}", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.primaryText)
                                 Text("先看根音和组成音，点图中的音位试听，再听整和弦。", style = MaterialTheme.typography.bodySmall, color = PracticeSkin.colors.textSecondary)
                             }
                         }

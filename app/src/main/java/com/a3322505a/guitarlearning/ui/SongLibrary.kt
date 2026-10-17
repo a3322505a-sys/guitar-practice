@@ -105,7 +105,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
         Surface(color=Color.Transparent,modifier=Modifier.fillMaxSize().testTag("management-sheet")) {
         Column(Modifier.fillMaxSize().practiceBackground().displayCutoutPadding().navigationBarsPadding().padding(12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                Text("设置与帮助",style=MaterialTheme.typography.titleLarge,color=PracticeSkin.colors.primary,modifier=Modifier.weight(1f))
+                Text("设置与帮助",style=MaterialTheme.typography.titleLarge,color=PracticeSkin.colors.primaryText,modifier=Modifier.weight(1f))
                 OutlinedButton(enabled=!committing,onClick={close()},modifier=Modifier.heightIn(min=48.dp), shape=MaterialTheme.shapes.small) { Text("完成") }
             }
             PracticeSegments(listOf("曲包管理","帮助说明","主题 / 外观"),tab,{tab=it},Modifier.fillMaxWidth())
@@ -116,14 +116,14 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                     DiagramHelp(displayedSequence)
                 } else {
                 PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
-                    Text("导入曲包",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primary)
+                    Text("导入曲包",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
                     Text("选择经过审核的 .gpractice 文件；导入后可离线使用。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
                     PracticeAction("选择曲包",enabled=!busy && candidate==null,onClick={picker.launch(arrayOf("*/*"))})
                 if(busy) {
                     Text(if(committing) "正在完成导入，请稍候…" else "正在检查曲包…")
                     if(!committing) TextButton(onClick={if(cancellation?.cancel()!=false) operation?.cancel()}, shape=MaterialTheme.shapes.small) { Text("取消检查") }
                 }
-                if(message.isNotBlank()) Text(message,color=PracticeSkin.colors.primary,style=MaterialTheme.typography.bodySmall)
+                if(message.isNotBlank()) Text(message,color=PracticeSkin.colors.primaryText,style=MaterialTheme.typography.bodySmall)
                 }
                 candidate?.let { preview ->
                     val song=preview.song
@@ -139,13 +139,13 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                     TextButton(enabled=!busy,onClick={candidate=null;discard(preview)}, shape=MaterialTheme.shapes.small) { Text("取消导入") }
                     }
                 }
-                Text("已启用曲包 · ${snapshot.packages.size}",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primary)
+                Text("已启用曲包 · ${snapshot.packages.size}",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
                 snapshot.packages.forEach { pkg ->
                     Surface(shape=MaterialTheme.shapes.large,color=PracticeSkin.colors.surface,border=BorderStroke(PracticeSkin.metrics.borderWidth,PracticeSkin.colors.border),modifier=Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Text(pkg.title,style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.textPrimary)
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                        Text("已启用 · 修订 "+pkg.identity.revision,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,color=PracticeSkin.colors.primary)
+                        Text("已启用 · 修订 "+pkg.identity.revision,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,color=PracticeSkin.colors.primaryText)
                         OutlinedButton(enabled=!busy,onClick={action { repository.disable(pkg.identity.packageId) }}, shape=MaterialTheme.shapes.small) { Text("停用") }
                     }
                         repository.revisions(pkg.identity.packageId).filter { it.revision<pkg.identity.revision }.firstOrNull()?.let { prior ->
@@ -165,13 +165,13 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
 @Composable
 private fun DiagramHelp(displayedSequence: Sequence?) {
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
-        Text("读指板与和弦图",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primary)
+        Text("读指板与和弦图",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("横向指板上方是 1 弦，下方是 6 弦；左侧数字为弦号，上方数字为品位。",style=MaterialTheme.typography.bodySmall)
             Text("绿色为路线音位，粉色为当前音，蓝色圈为下一音。同一音位可同时是当前和下一音。",style=MaterialTheme.typography.bodySmall)
             Text("和弦图左至右为 6→1 弦，金色为根音；O 为空弦，X 不弹。",style=MaterialTheme.typography.bodySmall)
     }
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
-        Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primary)
+        Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("x 为死音，P.M. 为手掌制音；拨弦、滑音、击弦、勾弦和延音按原谱标记演奏。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
             if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：保留书面时值，按长短2:1演奏；装饰音与推弦使用标准谱面标记。",style=MaterialTheme.typography.bodySmall)
             Text("撤提示用于指板的音位与演奏提示；六线谱始终保留乐谱音符。",style=MaterialTheme.typography.bodySmall)

@@ -170,7 +170,7 @@ internal fun PracticeContent(
                                     nextText,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = colors.primary,
+                                    color = colors.primaryText,
                                     maxLines = 1,
                                 )
                             }
@@ -199,7 +199,7 @@ internal fun PracticeContent(
                                     cue,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp).testTag("phrase-cue"),
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = colors.primary,
+                                    color = colors.primaryText,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -251,7 +251,7 @@ internal fun PracticeContent(
                                 shape = MaterialTheme.shapes.small,
                                 border = BorderStroke(metrics.borderWidth, colors.primary),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(containerColor = colors.primaryContainer, contentColor = colors.primary),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = colors.primaryContainer, contentColor = colors.primaryText),
                             ) {
                                 Text("听和弦", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                             }
@@ -391,7 +391,7 @@ internal fun PracticeStatus(
                     Text(
                         status,
                         style = MaterialTheme.typography.labelLarge,
-                        color = if (phase == Phase.ERROR) colors.danger else colors.primary,
+                        color = if (phase == Phase.ERROR) colors.danger else colors.primaryText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
