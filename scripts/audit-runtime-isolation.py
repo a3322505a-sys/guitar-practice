@@ -73,7 +73,7 @@ def audit(args):
     pcm = sorted(name for name in assets if name.startswith(("assets/guitar/", "assets/guitar-nylon/")) or name.endswith(".pcm"))
     assert not legacy, f"Release still references legacy DEX types: {legacy}"
     assert not pcm, f"Release contains comparison PCM assets: {pcm}"
-    for name in ["alphatab/AlphaPlayback", "alphatab/EngineProjection", "alphatab/GpPracticeActivity", "audio/Progress", "practice/Session", "practice/Cursor"]:
+    for name in ["alphatab/AlphaPlayback", "alphatab/EngineProjection", "audio/Progress", "practice/Session", "practice/Cursor"]:
         assert PACKAGE + name + ";" in defined, f"Missing active type: {name}"
     assert "LalphaTab/AlphaTabView;" in defined, "Missing actual native alphaTab view"
     old_session_methods = {"getClock", "getTotalFrames", "frame", "tick", "sourceFrames", "loopAt", "localTick", "resumeTick", "loopStartFrame", "noteFrame", "activeNotes", "movingPositions"}

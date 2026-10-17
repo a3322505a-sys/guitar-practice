@@ -80,11 +80,14 @@ defs["segment"] = obj(dict(start=ref("coordinate"),end=ref("coordinate"),formPol
     affectedNoteIds=arr(ID)),["start","end"])
 defs["practiceTeaching"] = obj(dict(category=TEXT,passage=TEXT,source=TEXT,technique=TEXT,
     use=TEXT,version=TEXT,tempoLabel=TEXT,explanation=TEXT))
+defs["noteFingering"] = obj(dict(sourceNoteId=ID,finger={"anyOf":[integer(1,4),dict(type="null")]},
+    source=dict(type="string",minLength=1,maxLength=4096),occurrence=integer(1,50000)),["sourceNoteId","source"])
+
 defs["practice"] = obj(dict(id=ID,title=TEXT,goal=TEXT,mainTrackId=ID,mixTrackIds=arr(ID,8,1),
     segments=arr(ref("segment"),256,1),suggestedTempo=integer(30,180),familyId=ID,variantOf=ID,
     relatedIds=arr(ID,256),visibility=enum("core","variant","source","hidden"),order=integer(0,100000),
     tags=arr(TEXT,64),padding=ref("q"),paddingReason=TEXT,tempoMode=enum("source","fixed"),difficulty=TEXT,
-    teaching=ref("practiceTeaching"),legacyIds=arr(ID,32)),
+    teaching=ref("practiceTeaching"),legacyIds=arr(ID,32),noteFingerings=arr(ref("noteFingering"))),
     ["id","title","goal","mainTrackId","mixTrackIds","segments"])
 defs["source"] = obj(dict(id=ID,name=TEXT,sha256=HASH,format=TEXT,version=TEXT,license=TEXT,origin=TEXT),
     ["id","name","sha256","format","license","origin"])

@@ -54,26 +54,21 @@ class SevenBlocksRenderTest {
     @Test fun sevenCompleteBlocksCanBeSelectedAndTheirExpandedRangeReachesThePlayer() {
         val player=Player(compose.activity)
         try {
-            // Finish the Activity's seed transaction before mounting another repository for the test player.
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
                 runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false) }
             compose.activity.setContent { PracticeApp(player) }
             compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithText("短句练习").performScrollTo().performClick()
-            compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNodeWithText("歌曲与短句").performClick();compose.onNodeWithText("完成").performClick()
             SevenBlocks.phrases.forEach { phrase ->
+                compose.onNodeWithTag("config-summary").performClick()
                 compose.onNodeWithText(phrase.title).performScrollTo().performClick()
-                val seq=phrase.sequence
-                if(compose.onAllNodesWithText("版本、选段与轨道 ▾").fetchSemanticsNodes().isNotEmpty()) compose.onNodeWithTag("phrase-details-toggle").performScrollTo().performClick()
-                compose.onNodeWithTag("phrase-range").performScrollTo().assertTextEquals("当前范围：${seq.barLabel(0)}–${seq.barLabel(seq.barCount-1)} 小节；完整经过范围一次计一轮。")
+                compose.onNodeWithTag("practice-settings").assertDoesNotExist()
+                compose.onNodeWithTag("config-summary").assertTextContains(phrase.title,substring=true)
             }
-            compose.onNodeWithText("完成").performClick()
             compose.onNodeWithText("听示范").performClick()
             assertEquals(SevenBlocks.phrases.last().sequence,player.session!!.sequence)
             assertEquals(2304,player.session!!.practiceLength)
             assertEquals(1,player.session!!.repeats)
-            player.stop()
         } finally { player.release() }
     }
 }

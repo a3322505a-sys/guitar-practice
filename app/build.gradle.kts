@@ -10,8 +10,8 @@ android {
         applicationId = "com.a3322505a.guitarlearning"
         minSdk = 26
         targetSdk = 35
-        versionCode = 96
-        versionName = "4.2.0-local48-isolated"
+        versionCode = 98
+        versionName = "4.3.0-local50-linked"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }

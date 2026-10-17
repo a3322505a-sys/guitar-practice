@@ -19,7 +19,7 @@ data class PlanEvent(val id: String, val event: ScoreEvent, val track: Track, va
     val effectiveNotes get() = if(suppressedNoteIds.isEmpty()) event.notes else event.notes.filter { it.id !in suppressedNoteIds }
 }
 data class PlanNote(val id: String, val note: ScoreNote, val event: PlanEvent, val start: Q, val soundEnd: Q,
-    val articulation: Articulation) {
+    val articulation: Articulation, val finger: Int? = null) {
     val track get() = event.track
     val position get() = Position(note.string,note.fret)
     val soundPitch get() = note.harmonic?.let { track.midi(note.string,note.fret)+12*log2(it.partial.toDouble()) } ?: note.midi.toDouble()
@@ -228,10 +228,44 @@ object PracticeCompiler {
             at+=practice.padding
         }
         musicCheck(visits.size<=50000,"PLAN_LIMIT","/practices/"+practice.id,"Visit budget including padding")
+        val fingerings=practice.noteFingerings.groupBy { it.sourceNoteId }
+        val voicingsById=score.voicings.associateBy { it.id }
+        val sourceHarmonies=score.harmonies.mapNotNull { h -> voicingsById[h.voicingId]?.let {
+            Triple(score.measureStarts[score.measureIndices.getValue(h.measureId)]+h.onset,h,it)
+        } }.groupBy { it.third.trackId }.mapValues { (_,v) -> v.sortedBy { it.first } }
+        val chordByEvent=mutableMapOf<String,GuitarVoicing?>()
+        fun activeVoicing(e: PlanEvent): GuitarVoicing? = chordByEvent.getOrPut(e.id) {
+            val entries=sourceHarmonies[e.track.id].orEmpty()
+            var lo=0; var hi=entries.size
+            while(lo<hi) { val mid=(lo+hi)/2; if(entries[mid].first<=e.sourceStart) lo=mid+1 else hi=mid }
+            var i=lo-1
+            var result: GuitarVoicing?=null
+            while(i>=0) {
+                val candidate=entries[i--]
+                if(candidate.second.condition?.matches(visits[e.visit].occurrence,visits[e.visit].repeatContext)!=false) {
+                    result=candidate.third; break
+                }
+            }
+            result
+        }
         val notes=events.flatMap { e -> e.effectiveNotes.map { n ->
             val art=n.articulation.over(e.event.articulation).over(Articulation.DEFAULT)
-            PlanNote(e.id+"/"+n.id,n,e,e.start,minOf(e.end,musicEnd),art)
+            val teaching=fingerings[n.id].orEmpty()
+            val explicit=teaching.firstOrNull { it.occurrence==visits[e.visit].occurrence }
+                ?: teaching.firstOrNull { it.occurrence==null }
+            val finger=if(explicit!=null) explicit.finger else {
+                activeVoicing(e)
+                    ?.takeIf { it.frets.getOrNull(n.string-1)==n.fret && n.fret>0 && !n.dead }
+                    ?.fingers?.getOrNull(n.string-1)?.takeIf { it in 1..4 }
+            }
+            PlanNote(e.id+"/"+n.id,n,e,e.start,minOf(e.end,musicEnd),art,finger)
         } }.sortedBy { it.start }
+        val fingeringRefs=notes.map { it.note.id to visits[it.event.visit].occurrence }.toSet()
+        val fingeringSources=notes.map { it.note.id }.toSet()
+        practice.noteFingerings.forEach { f ->
+            musicCheck(if(f.occurrence==null) f.sourceNoteId in fingeringSources else (f.sourceNoteId to f.occurrence) in fingeringRefs,
+                "FINGERING_REF","/practices/noteFingerings","Fingering does not refer to a note on this practice route")
+        }
         // Resolve cutoff per track and string, never by another voice's rest.
         val onString=notes.groupBy { it.track.id to it.note.string }
         val nextStart=mutableMapOf<String,Q>()

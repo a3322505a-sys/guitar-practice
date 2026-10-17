@@ -24,6 +24,23 @@ class PackageTests(unittest.TestCase):
     def rejects(self,payloads,code):
         with self.assertRaises(Blocked) as caught: validate_payloads(payloads)
         self.assertEqual(code,caught.exception.diagnostic["code"])
+    def test_reviewed_note_fingerings_keep_source_music_and_negotiate_capability(self):
+        candidate=read_container(CONTRACT/"fixtures/note-fingering.gpractice")
+        roots=validate_payloads(candidate)
+        self.assertIn("teaching.note-fingering.v1",roots["manifest.json"]["requires"])
+        original=strict_json(self.payloads["score.json"])
+        self.assertEqual(original,roots["score.json"])
+        old_caps=strict_json((CONTRACT/"capabilities.json").read_bytes())
+        old_caps["capabilities"].remove("teaching.note-fingering.v1")
+        with self.assertRaisesRegex(Blocked,"App upgrade required"):
+            validate_payloads(candidate,capabilities=old_caps)
+        s=roots["score.json"];p=deepcopy(roots["practices.json"]["practices"])
+        p[0]["noteFingerings"][1]["finger"]=5
+        with self.assertRaises(Blocked): validate_music(s,p)
+        p=deepcopy(roots["practices.json"]["practices"])
+        p[0]["noteFingerings"][1]["occurrence"]=2
+        with self.assertRaisesRegex(Blocked,"Fingering not on this practice route"): compile_summary(s,p[0])
+
     def test_all_original_shared_fixtures(self):
         for name in fixtures():
             roots=validate_payloads(read_container(CONTRACT/("fixtures/"+name+".gpractice")))

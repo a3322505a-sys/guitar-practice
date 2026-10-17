@@ -147,6 +147,7 @@ object AlphaScoreAdapter {
                                 note.string = (sourceTrack.openStringMidi.size + 1 - source.string).toDouble()
                                 note.fret = source.fret.toDouble()
                                 note.isDead = source.dead
+                                plan.noteById[event.id+"/"+source.id]?.finger?.let { note.leftHandFinger=Fingers.fromValue(it.toDouble()) }
                                 beat.addNote(note)
                                 val merged = source.articulation.over(art)
                                 applyArticulation(note, merged, event)

@@ -23,7 +23,7 @@ object SongCapabilities {
         "technique.harmonic.v1","technique.tie.v1","technique.legato.v1","technique.bend.v1",
         "technique.vibrato.v1","technique.tremolo-bar.v1","technique.tapping.v1","technique.mute.v1",
         "technique.sustain.v1","technique.strum.v1","technique.grace.v1","technique.repluck.v1","technique.dynamics.v1",
-        "catalogue.teaching.v1")
+        "catalogue.teaching.v1","teaching.note-fingering.v1")
 }
 fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
@@ -55,6 +55,8 @@ class SongReader(private val schema: SongSchema) {
             }
         }
         musicCheck(files.keys==SongLimits.FILES,"ZIP_FILES","/container","Exactly five JSON files required")
+        val declaredInput=StrictJson.parse(files.getValue("manifest.json")).objectValue().strings("requires")
+        musicCheck(declaredInput.all { it in SongCapabilities.supported },"CAPABILITY","/manifest/requires","App upgrade required")
         val roots=files.mapValues { (name,data) -> cancel();StrictJson.parse(data).also { schema.validate(name.removeSuffix(".json"),it) }.objectValue() }
         val manifest=roots.getValue("manifest.json")
         val packageId=manifest.s("packageId")

@@ -63,16 +63,18 @@ class WorkbenchRenderTest {
         assertTrue("The diagram has meaningful height",diagram.boundsInRoot.height>90)
         capture("phone-partial-content")
         expand()
-        compose.onNodeWithText("三度练习").performScrollTo().performClick()
+        compose.onNodeWithText("三度跳进").performScrollTo().performClick()
         compose.onNodeWithText("la · G").performScrollTo().performClick()
-        compose.onNodeWithText("自定义").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithTag("preferences-button").performClick();expand()
         compose.onNodeWithText("跟练").performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
         compose.onNodeWithText("声音").performClick()
         compose.onNodeWithTag("guitar-switch").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
-        compose.onNodeWithTag("management-button").performClick()
+        compose.onNodeWithTag("management-button").performClick();compose.onNodeWithText("曲包与帮助").performClick()
         compose.onNodeWithText("选择曲包").assertIsDisplayed()
         capture("management-packages")
         compose.onNodeWithText("帮助说明").performClick()
@@ -90,7 +92,7 @@ class WorkbenchRenderTest {
         compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
     }
     private fun sidePanel() {
-        compose.onNodeWithTag("config-summary").performClick()
+        compose.onNodeWithTag("preferences-button").performClick()
         val side=compose.onNodeWithTag("practice-side-panel").fetchSemanticsNode().boundsInRoot
         val diagram=compose.onNodeWithTag("tablature").fetchSemanticsNode().boundsInRoot
         assertTrue("Panel and TAB occupy separate horizontal space",diagram.right<=side.left)
@@ -164,7 +166,7 @@ class WorkbenchRenderTest {
             compose.onNodeWithText("开始跟练").performClick()
             compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
             val session=player.session
-            compose.onNodeWithTag("config-summary").performClick();expand()
+            compose.onNodeWithTag("preferences-button").performClick();expand()
             compose.onNodeWithText("跟练").performClick();assertSame(session,player.session)
             compose.onNodeWithText("声音").performClick()
             compose.onNodeWithTag("guitar-switch").performScrollTo().performClick();assertSame(session,player.session)

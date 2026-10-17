@@ -1,0 +1,25 @@
+{
+  "status": "approved",
+  "reviewer": "Codex fixture audit",
+  "method": "Original four-note ascending adjacent-fret exercise: source note IDs, strings, frets and rhythm unchanged; open string unknown and fretted notes 1,2,3 reviewed",
+  "tool": "song-package-v1",
+  "coverage": {
+    "tracks": 1,
+    "voices": 1,
+    "measures": 1,
+    "events": 4,
+    "notes": 4,
+    "rests": 0,
+    "relations": 0,
+    "techniques": 0,
+    "visits": 1,
+    "onsets": 4
+  },
+  "diagnostics": [],
+  "assumptions": [],
+  "hashes": {
+    "score.json": "9d4f2e2d1333168fe42193ce7085df8c2c7ee69f238b12e366f98b7eafef8f22",
+    "practices.json": "9201499c041ed86932bd6ba89debe9f7d5dda6be6c70c26e2380f44011c9f8cb",
+    "provenance.json": "931023a8fb8a101410627f5327537467894969c309a3e6f6f62ee24460a6c2d4"
+  }
+}

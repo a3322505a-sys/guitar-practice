@@ -54,14 +54,11 @@ class ThemeRenderTest {
     }
     @Test fun appearanceCanSwitchEveryPresetAndRestoreAfterRecreation() {
         capture("forest-phone")
-        compose.onNode(hasText("和弦") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
+        compose.onNodeWithTag("config-summary").performClick();expand()
+        compose.onNodeWithText("和弦").performClick();compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
-        compose.onNode(hasText("短句") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
-        compose.onNodeWithTag("phrase-cue").assertIsDisplayed()
-        compose.onNode(hasText("音阶") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
-        compose.onNodeWithTag("fretboard").assertIsDisplayed()
-        compose.onNodeWithTag("management-button").performClick()
-        compose.onNodeWithText("主题 / 外观").performClick()
+        compose.onNodeWithTag("preferences-button").performClick();expand()
+        compose.onNodeWithText("外观").performClick()
         ThemeRegistry.all.forEach { theme ->
             compose.onNodeWithTag("theme-${theme.id}").performScrollTo().performClick().assertIsSelected()
             val reader=ThemeManager(compose.activity)
@@ -73,7 +70,7 @@ class ThemeRenderTest {
         capture("dusty-phone")
         compose.activityRule.scenario.recreate();compose.waitForIdle()
         ThemeManager(compose.activity).let { assertEquals("dusty_pink",it.current.id);it.close() }
-        compose.onNodeWithTag("config-summary").performClick();expand()
+        compose.onNodeWithTag("preferences-button").performClick();expand()
         compose.onNodeWithText("外观").performClick()
         compose.onNodeWithTag("theme-dusty_pink").performScrollTo().assertIsSelected()
         compose.onNodeWithTag("theme-reset").performScrollTo().performClick()
@@ -90,7 +87,7 @@ class ThemeRenderTest {
             compose.onNodeWithText("开始跟练").performClick()
             compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
             val session=player.session
-            compose.onNodeWithTag("config-summary").performClick();expand()
+            compose.onNodeWithTag("preferences-button").performClick();expand()
             compose.onNodeWithText("外观").performClick()
             compose.onNodeWithTag("theme-berry").performScrollTo().performClick()
             assertSame(session,player.session)
@@ -104,7 +101,7 @@ class ThemeRenderTest {
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("forest-landscape-tab")
-        compose.onNodeWithTag("config-summary").performClick()
+        compose.onNodeWithTag("preferences-button").performClick()
         compose.onNodeWithTag("practice-side-panel").assertIsDisplayed()
         compose.onNodeWithText("外观").performClick()
         compose.onNodeWithTag("theme-sakura").performScrollTo().performClick()
@@ -112,7 +109,7 @@ class ThemeRenderTest {
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletKeepsSharedSkeleton() {
         capture("forest-tablet")
-        compose.onNodeWithTag("config-summary").performClick()
+        compose.onNodeWithTag("preferences-button").performClick()
         compose.onNodeWithText("外观").performClick()
         compose.onNodeWithTag("theme-ink_green").performScrollTo().performClick()
         capture("ink-green-tablet-side")

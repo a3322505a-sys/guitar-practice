@@ -2,7 +2,10 @@
 
 package com.a3322505a.guitarlearning.ui
 
-import android.content.Intent
+import android.content.pm.ActivityInfo
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.clipToBounds
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.*
@@ -28,7 +31,6 @@ import com.a3322505a.guitarlearning.assets.song.*
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
-import com.a3322505a.guitarlearning.practiceOrientation
 import java.io.File
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
@@ -75,7 +77,9 @@ internal fun phraseCue(event: Event?, sequence: Sequence): String {
     }.joinToString(" · ").ifBlank { "按音位弹奏" }
 }
 
-private enum class PracticeOverlay { NONE, PRACTICE, MANAGEMENT }
+enum class StageLayout { LINKED, TAB_ONLY, FRETBOARD_ONLY }
+
+private enum class PracticeOverlay { NONE, CONTENT, PRACTICE, MANAGEMENT }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,10 +128,9 @@ internal fun PracticeWorkbench(
     var hintIndex by rememberSaveable { mutableIntStateOf(preferences.getInt("hint", 0).coerceIn(0, 2)) }
     var guitar by rememberSaveable { mutableStateOf(preferences.getBoolean("guitar", true)) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
-    var viewPreference by rememberSaveable { mutableIntStateOf(0) }
+    var stageLayout by rememberSaveable { mutableStateOf(StageLayout.FRETBOARD_ONLY) }
     val activity = checkNotNull(LocalActivity.current)
     var overlay by rememberSaveable { mutableStateOf(PracticeOverlay.NONE) }
-    var settingsTab by rememberSaveable { mutableIntStateOf(0) }
     var moreExercisesOpen by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
     val hint = Hint.entries[hintIndex]
@@ -162,6 +165,11 @@ internal fun PracticeWorkbench(
         if (phrase.unprepared) player.session?.sequence else phraseSequence
     } else checkSequence
     LaunchedEffect(sequence) { nativePlayer?.prepareSequence(sequence) }
+    val activeRange=if(page==1 && chordPhrases) range else sequence?.let { BarRange(0,it.barCount-1) } ?: BarRange(0,0)
+    LaunchedEffect(sequence,bpm,repeats,activeRange,sourceTempo,tempoMultiplier) {
+        nativePlayer?.configurePractice(sequence,bpm,repeats,activeRange,sequence?.runtimePlan!=null && sourceTempo,
+            if(sequence?.runtimePlan!=null && sourceTempo) tempoMultiplier/100.0 else 1.0)
+    }
     val progress = player.progress
     val session = player.session
     val cursor = player.cursor
@@ -175,7 +183,10 @@ internal fun PracticeWorkbench(
     val phraseNow = if (showingSession && cursor?.pre == false) event else displayedSequence?.events?.firstOrNull()
     val nextEvent = phraseNow?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }
     val moving = if (showingSession && cursor?.pre == false) displayedSequence?.movingAt(cursor.localTick) else null
-    val current = if (showingSession && cursor?.pre == false) cursor.positions else event?.positions ?: emptyList()
+    val current = if (showingSession && cursor?.pre == false) {
+        nativePlayer?.focus?.positions ?: nativePlayer?.projection?.active(nativePlayer.currentTick, nativePlayer.selectedTrack?.index?.toInt() ?: 0)
+            ?: cursor.positions
+    } else event?.positions ?: emptyList()
     val section = if (showingSession && cursor?.pre == false) displayedSequence!!.sectionAt(cursor.localTick) else -1
     val harmony = displayedSequence?.sections.orEmpty()
     val shownChord = if (page == 1) harmony.getOrNull(maxOf(0, section))?.let { displayedSequence?.chordAt(it) } else first
@@ -241,6 +252,7 @@ internal fun PracticeWorkbench(
         player.active && cursor?.pre == true -> if (nativePlayer != null) "预备拍…" else "预备拍 ${cursor.beat + 1} / ${session!!.preBeats}"
         progress.phase == Phase.PLAYING -> "第 ${cursor!!.loop + 1}${if (session!!.repeats > 0) "/${session.repeats}" else ""} 轮 · 第 ${session!!.sequence.barLabel(cursor.bar)} 小节" +
             (session.plan.revisionPin?.split('/')?.getOrNull(1)?.let { " · 修订" + it } ?: "")
+        nativePlayer?.fromMeasure == true -> "已定位 · 第 ${displayedSequence?.barLabel(nativePlayer.focus!!.visit)} 小节 · 第 ${displayedSequence?.performance?.visits?.getOrNull(nativePlayer.focus!!.visit)?.occurrence} 次经过 · 从本小节练"
         progress.phase == Phase.PAUSED -> "已暂停 · 从${if (cursor?.pre == true) "预备" else "第 ${session?.sequence?.barLabel(cursor?.bar ?: 0) ?: "1"}"}小节继续"
         progress.phase == Phase.PREPARING -> "准备声音…"
         progress.phase == Phase.ENDED -> progress.message
@@ -248,7 +260,7 @@ internal fun PracticeWorkbench(
         else -> progress.message.takeIf { it.startsWith("设置已改变") } ?: "准备好，就开始一轮"
     }
     BackHandler(enabled = overlay == PracticeOverlay.NONE && (player.active || progress.phase == Phase.PAUSED)) { player.stop() }
-    BackHandler(enabled = overlay == PracticeOverlay.PRACTICE) { overlay = PracticeOverlay.NONE }
+    BackHandler(enabled = overlay == PracticeOverlay.PRACTICE || overlay == PracticeOverlay.CONTENT) { overlay = PracticeOverlay.NONE }
     val windowConfiguration = LocalConfiguration.current
     val tabletControls = minOf(windowConfiguration.screenWidthDp, windowConfiguration.screenHeightDp) >= 600
     PracticeTheme(largeControls = tabletControls, theme = themeManager.current) {
@@ -260,25 +272,15 @@ internal fun PracticeWorkbench(
                 .windowInsetsPadding(WindowInsets.captionBar)
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
         ) {
-            val tab = viewPreference == 1
-            val configuration = LocalConfiguration.current
-            LaunchedEffect(activity, tab, configuration) {
-                val orientation = practiceOrientation(activity, tab)
-                if (activity.requestedOrientation != orientation) activity.requestedOrientation = orientation
+            val tab = stageLayout == StageLayout.TAB_ONLY
+            val showNativeScore = nativePlayer != null && stageLayout != StageLayout.FRETBOARD_ONLY
+            LaunchedEffect(activity) {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
             val windowHeight = maxHeight
-            val configuring = overlay == PracticeOverlay.PRACTICE
+            val configuring = overlay == PracticeOverlay.PRACTICE || overlay == PracticeOverlay.CONTENT
             val sidePanel = maxWidth >= 600.dp || maxWidth > maxHeight
-            val panelWidth = if (configuring && sidePanel) minOf(400.dp, maxWidth * .44f) else 0.dp
-            val availableMainWidth = maxWidth - panelWidth
-            // Use the Left Studio Deck only when the remaining main workspace has at least 580.dp width,
-            // so a 600.dp window with a 264.dp side drawer open never crushes the stage below 312.dp.
-            val useStudioDeck = availableMainWidth >= 580.dp && (maxWidth >= 600.dp || maxWidth > maxHeight)
-            val deckWidth = when {
-                availableMainWidth >= 960.dp -> 248.dp
-                availableMainWidth >= 720.dp -> 224.dp
-                else -> 206.dp
-            }
+            val panelWidth = if (configuring && sidePanel) { if(overlay==PracticeOverlay.CONTENT) minOf(960.dp,maxWidth*.82f) else minOf(400.dp,maxWidth*.44f) } else 0.dp
 
             fun setBpm(value: Int) { if (value != bpm) { changed(); bpm = value } }
             fun setMultiplier(value: Int) { if (value != tempoMultiplier) { changed(); tempoMultiplier = value; phraseStore.saveTempo(phrase, sourceTempo, value) } }
@@ -287,13 +289,13 @@ internal fun PracticeWorkbench(
                 val nextPhrases = value == 2
                 if (page != nextPage || (nextPage == 1 && chordPhrases != nextPhrases)) {
                     changed(); page = nextPage
+                    stageLayout = if (nextPhrases && nativePlayer != null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY
                     if (nextPage == 1) {
                         chordPhrases = nextPhrases
                         if (nextPhrases) loadPhrase(phrase)
                     }
                 }
             }
-            val selectedCategory = if (page == 0) 0 else if (chordPhrases) 2 else 1
             val summary = if (page == 0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege}型 · ${scale.exercise.title}"
             else if (chordPhrases) phrase.title else "${first.name} · 逐弦"
             val specBadge = when {
@@ -305,13 +307,9 @@ internal fun PracticeWorkbench(
                 it.numerator.toString() + "/" + it.denominator
             } ?: "$beatsPerBar/4"
 
-            val openGp: (Boolean) -> Unit = { openLibrary ->
-                player.pause()
-                context.startActivity(Intent(context, GpPracticeActivity::class.java).putExtra("open-library", openLibrary))
-            }
             val selectView: (Int) -> Unit = { selected ->
                 overlay = PracticeOverlay.NONE
-                viewPreference = selected
+                stageLayout = if (selected == 1) StageLayout.TAB_ONLY else StageLayout.FRETBOARD_ONLY
             }
 
             val transportBlock: @Composable (Boolean) -> Unit = { verticalDeck ->
@@ -354,6 +352,7 @@ internal fun PracticeWorkbench(
                     availableHeight = windowHeight,
                     showHintAction = nativePlayer == null || !tab,
                     verticalDeck = verticalDeck,
+                    pausedTitle = if(nativePlayer?.fromMeasure==true) "从本小节练" else "继续",
                 )
             }
 
@@ -363,32 +362,53 @@ internal fun PracticeWorkbench(
 
             val stageSlot: @Composable (Modifier) -> Unit = { stageModifier ->
                 BoxWithConstraints(stageModifier) {
-                    // Reserve a real diagram above the half-height sheet, not just a card title.
                     val contentHeight = if (configuring && !sidePanel) minOf(maxHeight, (windowHeight * .48f - 112.dp).coerceAtLeast(120.dp)) else maxHeight
-                    val stageContentModifier = Modifier.fillMaxWidth().height(contentHeight)
-                    Box(stageContentModifier) {
-                        if (nativePlayer != null && tab) {
-                            PracticeContentCard(
-                                title = "练习谱面",
-                                actions = { ViewSwitch(true, selectView) },
-                                modifier = Modifier.fillMaxSize(),
-                                footer = {
-                                    PracticeStatus(status, progress.phase, beatsPerBar, cursor, showingSession, compact = true, note = note)
-                                },
-                            ) {
-                                DiagramContainer(Modifier.weight(1f).fillMaxWidth()) {
-                                    Box(Modifier.fillMaxSize().onGloballyPositioned { scoreBounds = it.boundsInRoot() })
+                    val contentState = PracticeContentState(
+                        page, chordPhrases, tab, tabletControls, scale, first, phrase, melody,
+                        sequence, displayedSequence, scaleResult, hint, renderHint, player.active, progress.phase, renderCursor, cursor,
+                        showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
+                        if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
+                    )
+                    CompositionLocalProvider(LocalStageViewSwitch provides false) {
+                        if (showNativeScore) {
+                            val fontScale = density.fontScale.coerceAtLeast(1f)
+                            val targetHeight = if (stageLayout == StageLayout.LINKED && contentHeight >= 320.dp * fontScale) {
+                                minOf(280.dp * fontScale, maxOf(180.dp * fontScale, contentHeight * .35f), contentHeight - 198.dp * fontScale)
+                            } else 0.dp
+                            val dockHeight by animateDpAsState(targetHeight, tween(180), label = "linked-fretboard-height")
+                            Column(Modifier.fillMaxWidth().height(contentHeight)) {
+                                nativePlayer?.let { native ->
+                                    BreakdownControls(native.ready,native.canStep(-1),native.canStep(1),
+                                        { native.step(-1) },{ native.step(1) },{ native.auditionFocus() })
                                 }
+                                if (stageLayout == StageLayout.LINKED && targetHeight == 0.dp) {
+                                    Text("窗口较矮，已优先显示谱面", color = PracticeSkin.colors.textSecondary, style = MaterialTheme.typography.labelSmall)
+                                }
+                                if (dockHeight > 0.dp && displayedSequence != null) {
+                                    Box(Modifier.fillMaxWidth().height(dockHeight).clipToBounds()) {
+                                        LinkedFretboardDock(
+                                            sequence = displayedSequence,
+                                            cursor = cursor?.takeIf { showingSession },
+                                            phase = progress.phase,
+                                            current = current,
+                                            range = if (page == 1 && chordPhrases) range else BarRange(0, displayedSequence.barCount - 1),
+                                            hint = renderHint,
+                                            onHint = { setHint(if (hint == Hint.HIDDEN) 0 else 2) },
+                                            onTap = ::tap,
+                                            modifier = Modifier.fillMaxSize(),
+                                            enabled = !player.active && progress.phase != Phase.PAUSED,
+                                            labelRoot = if(page==0) scale.key.root else shownChord?.root?.takeIf { it>=0 },
+                                            loopContinues = practiceSession?.let { it.repeats == 0 || (cursor?.loop ?: 0) + 1 < it.repeats } == true,
+
+                                        )
+                                    }
+                                }
+                                Box(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { scoreBounds = it.boundsInRoot() })
+                                PracticeStatus(status, progress.phase, beatsPerBar, cursor, showingSession, compact = true, note = note)
                             }
-                        }
-                        if (nativePlayer == null || !tab) {
+                        } else {
                             PracticeContent(
-                                PracticeContentState(
-                                    page, chordPhrases, tab, tabletControls, scale, first, phrase, melody,
-                                    sequence, displayedSequence, scaleResult, hint, renderHint, player.active, progress.phase, renderCursor, cursor,
-                                    showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
-                                    if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
-                                ),
+                                contentState,
                                 Modifier.fillMaxWidth().height(contentHeight),
                                 ::firstChange,
                                 selectView,
@@ -410,83 +430,46 @@ internal fun PracticeWorkbench(
             // Root coordinate anchor: NativeScore stays at a single fixed sibling index in this root Box
             // across all orientation, deck/column, view, and overlay changes so AlphaTabView never detaches.
             Box(Modifier.fillMaxSize().onGloballyPositioned { hostOrigin = it.positionInRoot() }) {
-                if (useStudioDeck) {
-                    Row(
-                        Modifier.fillMaxSize()
-                            .padding(end = panelWidth)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                Scaffold(
+                    modifier = Modifier.fillMaxSize().padding(end = panelWidth),
+                    containerColor = Color.Transparent,
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    bottomBar = { transportBlock(false) },
+                ) { padding ->
+                    Column(
+                        Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Surface(
-                            modifier = Modifier.width(deckWidth).fillMaxHeight(),
-                            shape = MaterialTheme.shapes.large,
-                            color = PracticeSkin.colors.surfaceSecondary,
-                            border = BorderStroke(PracticeSkin.metrics.borderWidth, PracticeSkin.colors.border),
-                        ) {
-                            Column(
-                                Modifier.fillMaxSize().padding(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-                                    PracticeNavigation(
-                                        summary = summary,
-                                        onSettings = { settingsTab = 0; overlay = PracticeOverlay.PRACTICE },
-                                        onManagement = { overlay = PracticeOverlay.MANAGEMENT },
-                                        compact = true,
-                                        selectedCategory = selectedCategory,
-                                        onCategory = ::category,
-                                        specBadge = specBadge,
-                                        hasNativeGp = nativePlayer != null,
-                                        onOpenGp = openGp,
-                                        verticalDeck = true,
-                                    )
-                                }
-                                transportBlock(true)
-                            }
-                        }
-                        stageSlot(Modifier.weight(1f).fillMaxHeight())
-                    }
-                } else {
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize().padding(end = panelWidth),
-                        containerColor = Color.Transparent,
-                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                        bottomBar = { transportBlock(false) },
-                    ) { padding ->
-                        Column(
-                            Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp, vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            PracticeNavigation(
-                                summary = summary,
-                                onSettings = { settingsTab = 0; overlay = PracticeOverlay.PRACTICE },
-                                onManagement = { overlay = PracticeOverlay.MANAGEMENT },
-                                compact = true,
-                                selectedCategory = selectedCategory,
-                                onCategory = ::category,
-                                specBadge = specBadge,
-                                hasNativeGp = nativePlayer != null,
-                                onOpenGp = openGp,
-                                verticalDeck = false,
-                            )
-                            stageSlot(Modifier.weight(1f).fillMaxWidth())
-                        }
+                        CompactTopBar(
+                            title = summary,
+                            subtitle = specBadge,
+                            stageLayout = stageLayout,
+                            onStageLayoutChange = { requested ->
+                                overlay = PracticeOverlay.NONE
+                                stageLayout = if (nativePlayer == null && requested == StageLayout.LINKED) StageLayout.TAB_ONLY else requested
+                            },
+                            onOpenLibrary = { overlay = PracticeOverlay.CONTENT },
+                            onOpenSettings = { overlay = PracticeOverlay.PRACTICE },
+                            onManagement = { overlay = PracticeOverlay.MANAGEMENT },
+                            linkedAvailable = nativePlayer != null,
+                        )
+                        stageSlot(Modifier.weight(1f).fillMaxWidth())
                     }
                 }
 
                 // Single fixed callsite for NativeScore: alphaTab destroys its API on detach.
                 val bounds = scoreBounds
                 val hasFrame = bounds != null && bounds.width > 0 && bounds.height > 0
-                val frame = if (tab && hasFrame) {
+                val frame = if (hasFrame) {
                     Modifier.offset {
                         IntOffset((bounds!!.left - hostOrigin.x).roundToInt(), (bounds.top - hostOrigin.y).roundToInt())
                     }.size(with(density) { bounds!!.width.toDp() }, with(density) { bounds.height.toDp() })
                 } else Modifier.fillMaxSize()
 
                 if (nativePlayer != null) {
-                    NativeScore(nativePlayer, frame, tab && displayedSequence != null && hasFrame)
+                    NativeScore(nativePlayer, frame, showNativeScore && displayedSequence != null && hasFrame)
                 }
-                if (nativePlayer != null && tab && (nativePlayer.loading || nativePlayer.error.isNotBlank())) {
+                if (showNativeScore && nativePlayer != null && (nativePlayer.loading || nativePlayer.error.isNotBlank())) {
                     Box(frame.background(PracticeSkin.colors.diagramSurface), contentAlignment = Alignment.Center) {
                         Text(nativePlayer.error.ifBlank { "正在准备谱面…" }, color = PracticeSkin.colors.danger)
                     }
@@ -500,23 +483,26 @@ internal fun PracticeWorkbench(
                 }
                 if (configuring) {
                     Box(if (sidePanel) Modifier.align(Alignment.CenterEnd).width(panelWidth).fillMaxHeight() else Modifier) {
-                        PracticeSettings(
-                            PracticeSettingsState(
+                        WorkbenchPanel(
+                            state = PracticeSettingsState(
                                 page, chordPhrases, tabletControls, scale, first, phrase,
                                 repository.family(phrase), repository.versions(phrase), librarySnapshot.catalogue.groupBy { it.use }, chords.groupBy { it.group },
                                 phrase.relatedId?.let { repository.named(it).title }, bpm, repeats, firstBar, lastBar, range, wholeRange, guitar, click,
                                 moreExercisesOpen, beatsPerBar, sequence, displayedSequence, scaleResult, sourceTempo, tempoMultiplier, selectedTrackId, soloTrack,
                                 if (page == 0) scaleResult.reason else if (!libraryReady) "正在加载曲库…" else if (!chordPhrases) chordUnavailable ?: note else note,
                             ),
-                            sidePanel, settingsTab, { settingsTab = it }, { overlay = PracticeOverlay.NONE }, ::category,
-                            { value -> if (value != repeats) { changed(); repeats = value } },
-                            { guitar = it; player.guitar = it; preferences.edit().putBoolean("guitar", it).apply() },
-                            { click = it; player.click = it; preferences.edit().putBoolean("click", it).apply() },
-                            { moreExercisesOpen = !moreExercisesOpen }, ::scaleChange, ::phraseChange, ::firstChange,
-                            { value -> if (value != range) { changed(); firstBar = value.first; lastBar = value.last } },
-                            { value -> if (value != sourceTempo) { changed(); sourceTempo = value; phraseStore.saveTempo(phrase, value, tempoMultiplier) } },
-                            { value -> if (value != selectedTrackId) { changed(); selectedTrackId = value; phrase.assetKey?.let { preferences.edit().putString("asset." + it.encoded + ".mainTrack", value).apply() } } },
-                            { value -> if (value != soloTrack) { changed(); soloTrack = value; phrase.assetKey?.let { preferences.edit().putBoolean("asset." + it.encoded + ".solo", value).apply() } } },
+                            contentOnly = overlay == PracticeOverlay.CONTENT,
+                            sidePanel = sidePanel,
+                            onClose = { overlay = PracticeOverlay.NONE },
+                            onCategory = ::category,
+                            onScale = ::scaleChange,
+                            onChord = { firstChange(it); overlay = PracticeOverlay.NONE },
+                            onPhrase = { phraseChange(it); overlay = PracticeOverlay.NONE },
+                            onRange = { value -> if (value != range) { changed(); firstBar = value.first; lastBar = value.last } },
+                            onRepeats = { value -> if (value != repeats) { changed(); repeats = value } },
+                            onSourceTempo = { value -> if (value != sourceTempo) { changed(); sourceTempo = value; phraseStore.saveTempo(phrase, value, tempoMultiplier) } },
+                            onGuitar = { guitar = it; player.guitar = it; preferences.edit().putBoolean("guitar", it).apply() },
+                            onClick = { click = it; player.click = it; preferences.edit().putBoolean("click", it).apply() },
                             themeManager = themeManager,
                         )
                     }

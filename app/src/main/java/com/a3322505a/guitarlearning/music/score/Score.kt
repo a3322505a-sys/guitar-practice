@@ -132,13 +132,18 @@ data class PracticeSegment(val start: Coordinate, val end: Coordinate, val formP
 data class PracticeTeaching(val category: String = "",val passage: String = "",val source: String = "",
     val technique: String = "",val use: String = "",val version: String? = null,val tempoLabel: String = "",
     val explanation: String = "")
+/** Reviewed teaching belongs to a practice and a source note, optionally one written occurrence. */
+data class NoteFingering(val sourceNoteId: String, val finger: Int?, val source: String,
+    val occurrence: Int? = null)
+
 data class PracticeSpec(val id: String, val title: String, val goal: String, val mainTrackId: String,
     val mixTrackIds: List<String>, val segments: List<PracticeSegment>,
     val suggestedTempo: Int = 60, val familyId: String? = null, val variantOf: String? = null,
     val relatedIds: List<String> = emptyList(), val visibility: String = "core", val order: Int = 0,
     val tags: List<String> = emptyList(), val padding: Q = Q.ZERO, val paddingReason: String? = null,
     val tempoMode: String = "source", val difficulty: String = "自行调整",
-    val teaching: PracticeTeaching? = null,val legacyIds: List<String> = emptyList())
+    val teaching: PracticeTeaching? = null,val legacyIds: List<String> = emptyList(),
+    val noteFingerings: List<NoteFingering> = emptyList())
 data class PracticeKey(val packageId: String, val practiceId: String) {
     val encoded get() = packageId.length.toString()+":"+packageId+practiceId
 }

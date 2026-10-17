@@ -398,6 +398,17 @@ def validate_music(score,practices):
         check(p["mainTrackId"] in p["mixTrackIds"] and set(p["mixTrackIds"])<=tracks.keys() and len(set(p["mixTrackIds"]))==len(p["mixTrackIds"]),
             "MUSIC","/practices","Invalid participating tracks")
         check(q(p.get("padding",rational(0)))>=0 and (not q(p.get("padding",rational(0))) or p.get("paddingReason")),"MUSIC","/practices","Padding reason")
+        assignments=set()
+        for f in p.get("noteFingerings",[]):
+            target=notes.get(f["sourceNoteId"])
+            check(target is not None and target[0]["trackId"] in p["mixTrackIds"],"MUSIC","/practices/noteFingerings","Unknown or excluded source note")
+            finger=f.get("finger")
+            check(finger is None or isinstance(finger,int) and not isinstance(finger,bool) and 1<=finger<=4,"MUSIC","/practices/noteFingerings","Finger must be 1..4 or null")
+            check(f.get("source","").strip() and ("occurrence" not in f or f["occurrence"]>0),"MUSIC","/practices/noteFingerings","Review source/occurrence required")
+            key=(f["sourceNoteId"],f.get("occurrence"))
+            check(key not in assignments,"MUSIC","/practices/noteFingerings","Duplicate fingering assignment");assignments.add(key)
+            check(finger is None or target[2]["fret"]>0 and not target[2].get("dead") and not target[2].get("harmonic"),"MUSIC","/practices/noteFingerings","Finger number needs a fretted sounding note")
+        if p.get("noteFingerings"): caps.add("teaching.note-fingering.v1")
         for segment in p["segments"]:
             for c in [segment["start"],segment["end"]]:
                 check(c["measureId"] in measure_indices and 0<=q(c.get("offset",rational(0)))<=q(score["measures"][measure_indices[c["measureId"]]]["actualDuration"]),
@@ -522,6 +533,11 @@ def compile_summary(score,practice,routes=None):
         visits.append(dict(measureIndex=-1,occurrence=1,segment=len(practice["segments"]),start=at,sourceStart=starts[-1],sourceEnd=starts[-1]+padding));at+=padding
     check(len(visits)<=50000,"PLAN_LIMIT","/practices","Visit budget including padding")
     notes=[dict(note=n,event=e) for e in events for n in e["event"]["notes"] if n["id"] not in e["suppressed"]]
+    fingering_refs={(n["note"]["id"],visits[n["event"]["visit"]]["occurrence"]) for n in notes}
+    fingering_sources={n["note"]["id"] for n in notes}
+    for f in practice.get("noteFingerings",[]):
+        check((f["sourceNoteId"] in fingering_sources if "occurrence" not in f else (f["sourceNoteId"],f["occurrence"]) in fingering_refs),
+            "FINGERING_REF","/practices/noteFingerings","Fingering not on this practice route")
     targets={(n["note"]["id"],n["event"]["start"],n["event"]["sourceStart"],visits[n["event"]["visit"]]["segment"]):i for i,n in enumerate(notes)}
     source_notes={}
     for n in notes: source_notes.setdefault(n["note"]["id"],[]).append(n)

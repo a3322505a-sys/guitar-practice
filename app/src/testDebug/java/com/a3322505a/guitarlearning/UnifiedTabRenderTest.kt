@@ -89,12 +89,13 @@ class UnifiedTabRenderTest {
                 runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
             }
             compose.activity.setContent { PracticeApp(player) }
-            compose.onNode(hasText("短句") and hasAnyAncestor(hasTestTag("mode-switch"))).performClick()
-            compose.onNodeWithTag("config-summary").performScrollTo().performClick()
-            compose.onNodeWithText("内容").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
+            compose.onNodeWithText("歌曲与短句").performClick()
+            compose.onNodeWithText("完成").performClick()
+            compose.onNodeWithTag("config-summary").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithText("嘘月 · 低音与高音分解").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("嘘月 · 低音与高音分解").performScrollTo().performClick()
-            compose.onNodeWithText("完成").performClick();compose.onNodeWithText("六线谱").performClick()
+            compose.onNodeWithText("六线谱").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("let ring",substring=true).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("tablature").assertIsDisplayed()
             compose.onNodeWithText("听示范").assertIsDisplayed()

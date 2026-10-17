@@ -19,6 +19,7 @@
     "rhythm.tuplet.v1",
     "score.polyphony.v1",
     "score.rational.v1",
+    "teaching.note-fingering.v1",
     "technique.bend.v1",
     "technique.dynamics.v1",
     "technique.grace.v1",

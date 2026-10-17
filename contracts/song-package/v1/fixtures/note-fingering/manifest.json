@@ -1,0 +1,41 @@
+{
+  "format": "guitar-practice-song",
+  "formatVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "scoreSchemaVersion": {
+    "major": 1,
+    "minor": 0
+  },
+  "packageId": "example.note-fingering",
+  "revision": 2,
+  "display": {
+    "title": "逐音指法协议样例",
+    "author": "Original test fixture",
+    "summary": "经过审核的本地练习"
+  },
+  "requires": [
+    "guitar.six-string.v1",
+    "score.rational.v1",
+    "teaching.note-fingering.v1"
+  ],
+  "files": {
+    "score.json": {
+      "bytes": 3048,
+      "sha256": "9d4f2e2d1333168fe42193ce7085df8c2c7ee69f238b12e366f98b7eafef8f22"
+    },
+    "practices.json": {
+      "bytes": 1298,
+      "sha256": "9201499c041ed86932bd6ba89debe9f7d5dda6be6c70c26e2380f44011c9f8cb"
+    },
+    "provenance.json": {
+      "bytes": 853,
+      "sha256": "931023a8fb8a101410627f5327537467894969c309a3e6f6f62ee24460a6c2d4"
+    },
+    "review.json": {
+      "bytes": 792,
+      "sha256": "f9dd88e7cb5fb094536e15ee2a045ff655d298539ed074ade0a50d46780a6dc1"
+    }
+  }
+}

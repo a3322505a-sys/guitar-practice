@@ -60,6 +60,7 @@ internal fun PracticeTransport(
     availableHeight: Dp = Dp.Infinity,
     showHintAction: Boolean = true,
     verticalDeck: Boolean = false,
+    pausedTitle: String = "继续",
 ) {
     PracticeTheme(theme = PracticeSkin.theme) {
         val colors = PracticeSkin.colors
@@ -70,7 +71,7 @@ internal fun PracticeTransport(
         BoxWithConstraints(Modifier.fillMaxWidth().testTag("transport-bar")) {
             val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
             val popupWidth = maxWidth.coerceAtMost(360.dp).coerceAtLeast(240.dp)
-            val singleRow = !verticalDeck && maxWidth >= 680.dp * scale && (availableHeight < 600.dp * scale || maxWidth >= 1000.dp)
+            val singleRow = !verticalDeck && maxWidth >= 600.dp * scale && (availableHeight < 600.dp * scale || maxWidth >= 1000.dp)
 
             val slowerAction: @Composable () -> Unit = {
                 TextButton(
@@ -216,7 +217,7 @@ internal fun PracticeTransport(
                     TransportMode.IDLE -> "开始跟练"
                     TransportMode.ENDED -> "再练一次"
                     TransportMode.PLAYING -> "暂停"
-                    TransportMode.PAUSED -> "继续"
+                    TransportMode.PAUSED -> pausedTitle
                     TransportMode.PREPARING -> "准备中…"
                     TransportMode.PREVIEW -> "试听中"
                     TransportMode.ERROR -> "播放失败"
@@ -244,7 +245,7 @@ internal fun PracticeTransport(
                                 TransportMode.IDLE, TransportMode.ENDED ->
                                     TransportAction("听示范", enabled = hasSequence, modifier = Modifier.weight(1f), onClick = onDemo)
                                 TransportMode.PLAYING, TransportMode.PAUSED ->
-                                    TransportAction("重来", modifier = Modifier.weight(1f), onClick = onRestart)
+                                    TransportAction("本轮重来", modifier = Modifier.weight(1f), onClick = onRestart)
                                 else -> Unit
                             }
                             if (mode != TransportMode.IDLE) {
@@ -276,7 +277,7 @@ internal fun PracticeTransport(
                             TransportMode.IDLE, TransportMode.ENDED ->
                                 TransportAction("听示范", enabled = hasSequence, modifier = Modifier.weight(1f, fill = !singleRow), onClick = onDemo)
                             TransportMode.PLAYING, TransportMode.PAUSED ->
-                                TransportAction("重来", modifier = Modifier.weight(1f, fill = !singleRow), onClick = onRestart)
+                                TransportAction("本轮重来", modifier = Modifier.weight(1f, fill = !singleRow), onClick = onRestart)
                             else -> Unit
                         }
                         if (mode != TransportMode.IDLE) {

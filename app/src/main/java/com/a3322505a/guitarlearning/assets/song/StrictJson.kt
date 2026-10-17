@@ -143,6 +143,12 @@ class SongSchema(load: (String)->ByteArray) {
             }
             return
         }
+        val alternatives=schema["anyOf"] as? List<*>
+        if(alternatives!=null) {
+            check(alternatives.any { rule ->
+                try { visit(rule.objectValue(),data,path,root); true } catch(e: MusicError) { false }
+            },"Value does not match any permitted type")
+        }
         val options=schema["enum"] as? List<*>
         if(options!=null) check(options.any { equalJson(it,data) },"Value outside enum")
         when(schema["type"]) {
@@ -167,6 +173,7 @@ class SongSchema(load: (String)->ByteArray) {
             }
             "string" -> {
                 check(data is String,"Expected string"); val text=data.textValue()
+                (schema["minLength"] as? BigDecimal)?.let { check(text.codePointCount(0,text.length)>=it.toInt(),"Text too short") }
                 (schema["maxLength"] as? BigDecimal)?.let { check(text.codePointCount(0,text.length)<=it.toInt(),"Text too long") }
                 (schema["pattern"] as? String)?.let { check(Regex(it).containsMatchIn(text),"Invalid identifier") }
             }
@@ -177,6 +184,7 @@ class SongSchema(load: (String)->ByteArray) {
                 (schema["maximum"] as? BigDecimal)?.let { check(number<=it,"Number above limit") }
             }
             "boolean" -> check(data is Boolean,"Expected boolean")
+            "null" -> check(data==null,"Expected null")
         }
     }
     private fun equalJson(a: Any?, b: Any?) = if(a is BigDecimal && b is BigDecimal) a.compareTo(b)==0 else a==b

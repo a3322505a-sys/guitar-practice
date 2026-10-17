@@ -10,8 +10,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import android.view.View
+import android.view.MotionEvent
+import android.view.ViewConfiguration
+import android.content.Context
+import android.widget.FrameLayout
 import com.a3322505a.guitarlearning.ui.PracticeSkin
 import com.a3322505a.guitarlearning.ui.ThemeTokens
+
+/** Observe gestures without intercepting the native scroll container. */
+internal class PracticeScoreHost(context: Context) : FrameLayout(context) {
+    val native = AlphaTabView(context,null)
+    init { addView(native,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)) }
+    private var x=0f; private var y=0f; private var down=0L
+    private var moved=false; private var tapped=false
+    private val slop=ViewConfiguration.get(context).scaledTouchSlop
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        when(event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { x=event.x; y=event.y; down=event.eventTime; moved=false; tapped=false }
+            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> { moved=true; tapped=false }
+            MotionEvent.ACTION_MOVE -> if(kotlin.math.abs(event.x-x)>slop || kotlin.math.abs(event.y-y)>slop) moved=true
+            MotionEvent.ACTION_UP -> tapped=!moved && event.eventTime-down<ViewConfiguration.getLongPressTimeout()
+        }
+        return super.dispatchTouchEvent(event)
+    }
+    fun consumeTap(): Boolean = tapped.also { tapped=false }
+}
 
 private fun Color.scoreColor() = alphaTab.model.Color(
     (red * 255).toDouble(), (green * 255).toDouble(), (blue * 255).toDouble(), (alpha * 255).toDouble())
@@ -47,18 +70,18 @@ internal fun applyScoreResources(resources: alphaTab.RenderingResources, colors:
 fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean) {
     val colors = PracticeSkin.colors
     val applied = remember(player) { arrayOfNulls<ThemeTokens>(1) }
-    AndroidView(factory = { context -> AlphaTabView(context, null).also {
-        it.barCursorFillColor = colors.notationHighlight.copy(alpha = .18f).toArgb()
-        it.beatCursorFillColor = colors.accent.copy(alpha = .35f).toArgb()
-        it.selectionFillColor = colors.primaryContainer.copy(alpha = .6f).toArgb()
-        player.attach(it)
+    AndroidView(factory = { context -> PracticeScoreHost(context).also { host ->
+        host.native.barCursorFillColor = colors.notationHighlight.copy(alpha = .18f).toArgb()
+        host.native.beatCursorFillColor = colors.accent.copy(alpha = .35f).toArgb()
+        host.native.selectionFillColor = colors.primaryContainer.copy(alpha = .6f).toArgb()
+        player.attach(host.native,host::consumeTap)
     } },
         modifier = modifier, update = {
             it.visibility = if (visible) View.VISIBLE else View.INVISIBLE
             if (applied[0] != colors) {
-                applyScoreSkin(it, colors)
+                applyScoreSkin(it.native, colors)
                 applied[0] = colors
             }
         },
-        onRelease = { player.detach(it) })
+        onRelease = { player.detach(it.native) })
 }

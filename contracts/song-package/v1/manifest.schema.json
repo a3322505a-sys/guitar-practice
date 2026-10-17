@@ -1353,6 +1353,42 @@
       "required": [],
       "additionalProperties": false
     },
+    "noteFingering": {
+      "type": "object",
+      "properties": {
+        "sourceNoteId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "finger": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "occurrence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000
+        }
+      },
+      "required": [
+        "sourceNoteId",
+        "source"
+      ],
+      "additionalProperties": false
+    },
     "practice": {
       "type": "object",
       "properties": {
@@ -1461,6 +1497,14 @@
           },
           "minItems": 0,
           "maxItems": 32
+        },
+        "noteFingerings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/noteFingering"
+          },
+          "minItems": 0,
+          "maxItems": 200000
         }
       },
       "required": [

@@ -59,8 +59,7 @@ class ChordSourceRenderTest {
         val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
             compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
-        compose.onNodeWithText("内容").performClick()
-        compose.onNodeWithText("和弦学习").performScrollTo().performClick()
+        compose.onNodeWithText("和弦").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         val chords=SongTestLibrary.repository().reload().chords
         chords.forEachIndexed { index,chord ->

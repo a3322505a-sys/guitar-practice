@@ -92,7 +92,7 @@ internal fun PracticeContent(
         // Decide from the complete route, so rests/dead notes never resize the card.
         val openStringsOnly = melody && displayedSequence!!.route.isNotEmpty() && displayedSequence.route.all { it.fret == 0 }
         // A short window scrolls the whole chord page, never labels inside its diagram.
-        val chordPageScroll = page == 1 && !configuring && maxHeight < 560.dp * fontScale
+        val chordPageScroll = !configuring && maxHeight < (if(page==0) 280.dp else 560.dp) * fontScale
         val chordScrollState = remember(page) { ScrollState(0) }
 
         val cardContent: @Composable (Chord, Boolean) -> Unit = card@{ cardChord, selected ->
@@ -342,7 +342,7 @@ internal fun PracticeContent(
                 .testTag("chord-page")
                 .then(if (chordPageScroll) Modifier.verticalScroll(chordScrollState) else Modifier),
         ) {
-            Box(Modifier.fillMaxWidth().height(if (chordPageScroll) 580.dp * fontScale else availableHeight)) {
+            Box(Modifier.fillMaxWidth().height(if (chordPageScroll) (if(page==0) 300.dp else 580.dp) * fontScale else availableHeight)) {
                 if (page == 1 && !chordPhrases) {
                     ChordDeck(
                         chords.indexOf(first),
