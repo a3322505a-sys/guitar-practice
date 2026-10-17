@@ -3,15 +3,17 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+val tabletReview = providers.gradleProperty("tabletReview").map { it.toBoolean() }.getOrElse(false)
 android {
     namespace = "com.a3322505a.guitarlearning"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.a3322505a.guitarlearning"
+        applicationId = if (tabletReview) "com.a3322505a.guitarlearning.tablet98" else "com.a3322505a.guitarlearning"
+        manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
         versionCode = 98
-        versionName = "4.3.0-local50-linked"
+        versionName = "4.3.0-local50-linked" + if (tabletReview) "-review" else ""
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }
