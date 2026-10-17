@@ -44,6 +44,8 @@ data class ThemeTokens(
     val notationSecondary: Color,
     val diagramSurface: Color,
     val diagramGrid: Color,
+    val primaryText: Color = primary,
+    val fretboardNoteStroke: Color = primary.copy(alpha = .65f),
 )
 
 @Immutable
@@ -77,4 +79,5 @@ data class AppThemeSpec(
     val description: String,
     val colors: ThemeTokens,
     val metrics: ThemeMetrics = ThemeMetrics(),
+    val isDark: Boolean = false,
 )

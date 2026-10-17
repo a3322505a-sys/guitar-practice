@@ -158,7 +158,7 @@ internal fun Choices(options: List<String>, selected: Int, onSelect: (Int) -> Un
                                 Text(
                                     options[i],
                                     fontWeight = if (checked) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (checked) colors.primary else colors.textSecondary,
+                                    color = if (checked) colors.primaryText else colors.textSecondary,
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                             }
@@ -264,7 +264,7 @@ internal fun PracticeNavigation(
                         Text(
                             specBadge,
                             style = MaterialTheme.typography.labelSmall,
-                            color = colors.primary,
+                            color = colors.primaryText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -280,13 +280,13 @@ internal fun PracticeNavigation(
                             specBadge,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = colors.primary,
+                            color = colors.primaryText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
-                Text("调整 ▾", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.primary)
+                Text("调整 ▾", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.primaryText)
             }
         }
     }

@@ -181,7 +181,7 @@ fun Fretboard(
                         "$fretNumber",
                         gridLeft + (fretNumber - animatedLow + 0.5f) * cell,
                         16.dp.toPx() * vertical,
-                        if (isMarker) colors.primary else colors.textSecondary,
+                        if (isMarker) colors.primaryText else colors.textSecondary,
                         bold = isMarker,
                     )
                 }
@@ -222,7 +222,7 @@ fun Fretboard(
                         center,
                     )
                     if (!active && !root) {
-                        drawCircle(colors.primary.copy(alpha = 0.65f), radius, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
+                        drawCircle(colors.fretboardNoteStroke, radius, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
                     } else if (root && !active) {
                         drawCircle(colors.primary.copy(alpha = 0.32f), 16.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
                     }
@@ -255,7 +255,7 @@ fun Fretboard(
                             "${movingItem.source.fret}${movingItem.mark}${movingItem.target.fret}",
                             (moveIndex + 1) * size.width / (movingPositions.size + 1),
                             205.dp.toPx() * vertical,
-                            color = colors.primary,
+                            color = colors.primaryText,
                             bold = true,
                         )
                     }
@@ -321,7 +321,7 @@ private fun OpenStringBoard(
                             style = MaterialTheme.typography.labelLarge,
                             color = if (shown) ink else colors.textSecondary,
                         )
-                        Text(if (shown) "O" else "", style = MaterialTheme.typography.labelSmall, color = if (active) ink else colors.primary)
+                        Text(if (shown) "O" else "", style = MaterialTheme.typography.labelSmall, color = if (active) ink else colors.primaryText)
                     }
                 }
             }
@@ -404,7 +404,7 @@ fun ChordDiagram(
                 center,
             )
             if (!active && !root) {
-                drawCircle(colors.primary.copy(alpha = 0.7f), 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
+                drawCircle(colors.fretboardNoteStroke, 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
             } else if (root && !active) {
                 drawCircle(colors.primary.copy(alpha = 0.35f), 15.5f * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
             }

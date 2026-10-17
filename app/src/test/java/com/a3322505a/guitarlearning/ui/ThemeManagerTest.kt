@@ -27,10 +27,10 @@ class ThemeManagerTest {
 
     @Test fun selectionSurvivesManagerRecreationAndResetRestoresForest() {
         val first = manager()
-        first.select("dusty_pink")
-        assertEquals("dusty_pink", first.current.id)
+        first.select("studio_dark")
+        assertEquals("studio_dark", first.current.id)
         val restarted = manager()
-        assertEquals("dusty_pink", restarted.current.id)
+        assertEquals("studio_dark", restarted.current.id)
         restarted.reset()
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals(ThemeRegistry.default, first.current)
@@ -43,9 +43,9 @@ class ThemeManagerTest {
         gp.select("deep_sea")
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals("deep_sea", main.current.id)
-        main.select("sakura")
+        main.select("lagoon_teal")
         shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("sakura", gp.current.id)
+        assertEquals("lagoon_teal", gp.current.id)
     }
 
     @Test fun unknownStoredThemeAndUnknownSelectionUseTheDefault() {

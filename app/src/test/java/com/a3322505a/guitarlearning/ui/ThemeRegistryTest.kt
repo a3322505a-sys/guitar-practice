@@ -13,6 +13,15 @@ class ThemeRegistryTest {
         assertEquals(Color(0xFFFFFFFF), c.surface)
         assertEquals(Color(0xFF057A55), c.primary)
         assertEquals(Color(0xFFF59E0B), c.accent)
+        val night = ThemeRegistry.find("studio_dark")
+        assertTrue(night.isDark)
+        assertEquals("黑金暗夜 · Studio Dark", night.displayName)
+        assertEquals(Color(0xFF14171A), night.colors.background)
+        assertEquals(Color(0xFF1E2328), night.colors.surface)
+        assertEquals(Color(0xFFD99B26), night.colors.primary)
+        assertEquals(Color(0xFF38BDF8), night.colors.accent)
+        assertEquals(Color(0xFF2B323B), night.colors.fretboardNoteNormal)
+        assertEquals(Color(0xFFF3F4F6), night.colors.textPrimary)
     }
 
     @Test fun everyPresetHasReadableTextAndMusicalMarkers() {
@@ -22,15 +31,21 @@ class ThemeRegistryTest {
             val c = theme.colors
             listOf(
                 c.textPrimary to c.background,
+                c.textPrimary to c.surfaceSecondary,
                 c.textSecondary to c.surface,
                 c.textTertiary to c.surfaceSecondary,
-                c.primary to c.surface,
+                c.primaryText to c.background,
+                c.primaryText to c.surface,
+                c.primaryText to c.primaryContainer,
+                c.primaryText to c.diagramSurface,
                 c.onPrimary to c.primary,
                 c.onAccent to c.accent,
                 c.onFretboardNoteNormal to c.fretboardNoteNormal,
                 c.onFretboardNoteActive to c.fretboardNoteActive,
                 c.onFretboardRoot to c.fretboardRoot,
                 c.onChordDot to c.chordDot,
+                c.notationInk to c.diagramSurface,
+                c.notationSecondary to c.diagramSurface,
             ).forEach { (foreground, background) ->
                 assertTrue("${theme.id}: contrast ${contrast(foreground, background)}", contrast(foreground, background) >= 4.5f)
             }
