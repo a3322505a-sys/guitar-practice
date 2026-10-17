@@ -12,8 +12,8 @@ android {
         manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 101
-        versionName = "4.3.3-local53-content" + if (tabletReview) "-review" else ""
+        versionCode = 102
+        versionName = "1.0.0"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }
@@ -30,14 +30,6 @@ android {
     sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
     testOptions { unitTests.isIncludeAndroidResources = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-}
-androidComponents {
-    onVariants(selector().withBuildType("p0")) { variant ->
-        variant.outputs.forEach {
-            it.versionCode.set(86)
-            it.versionName.set("4.0.0-local38-alphatab-p0")
-        }
-    }
 }
 dependencies {
     implementation("net.alphatab:alphaTab:1.8.4")
