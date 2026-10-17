@@ -23,8 +23,8 @@
 
 - 合并 PR 时，只对**本仓库** `codex/feat/fix/chore/docs/refactor` 短期分支操作；
 - 必须同时满足“分支 SHA 未变”和“分支没有未合并提交（ahead=0）”才删除；不删除 `main`。
-- 2026-10-17 记录的 18 条历史 `codex/*` 分支也按**固定名称 + 固定 SHA + 再次比较**处理；改名、推进或出现未合并提交的分支不会被误删。
-- 事件：主线 push（重试旧分支清理）、PR merged（清理新分支），另支持手动重跑。
+- 2026-10-17 的 18 条旧分支已经安全清理，旧 SHA 审计快照保存在 [PR #16 的历史提交](https://github.com/a3322505a-sys/guitar-practice-private/pull/16)，执行证据见 [Branch hygiene 运行记录](https://github.com/a3322505a-sys/guitar-practice-private/actions/runs/38994332474)。不保留一次性的轮询代码。
+- 事件：仅 PR merged（清理新分支）；普通主线 push 不再额外扫描历史分支。
 - 如果 GitHub Actions 的 token 写权限被策略限制，任务会失败并留下日志；这不等于已经删除分支。请以 GitHub Branches 列表复核结果。
 
 ## GitHub 仓库设置（需管理员在网页完成）
@@ -38,6 +38,6 @@
 
 ## 本次清理的界限
 
-2026-10-17 审计时 `main` 为 `66730d4bc87f2fdba814983b0cce81e8dd5440da`：18 个 `codex/*` 分支均为 `ahead=0`，没有开启的 PR。自动清理脚本内保留 18 条分支的审计 SHA。删除的只是 Git ref，不回滚、Squash 或重写已有代码和历史。
+2026-10-17 审计时 `main` 为 `66730d4bc87f2fdba814983b0cce81e8dd5440da`：18 个 `codex/*` 分支均为 `ahead=0`，没有开启的 PR。清理成功后只剩 `main`；旧分支 SHA 由 PR #16 的历史提交留存。删除的只是 Git ref，不回滚、Squash 或重写已有代码和历史。
 
 仓库当前在 GitHub 是 **Public**（虽然名字包含 `private`）。本次不修改可见性；如需私有请单独核对 Settings → General → Danger Zone 的可见性选项。
