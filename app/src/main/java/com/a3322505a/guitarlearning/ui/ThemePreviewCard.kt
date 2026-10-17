@@ -34,7 +34,7 @@ fun ThemePreviewCard(theme: AppThemeSpec, selected: Boolean, onSelect: () -> Uni
                 Text(theme.displayName, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), color = c.textPrimary)
                 if (selected) {
                     Surface(color = c.primaryContainer, shape = RoundedCornerShape(m.cornerSmall), border = BorderStroke(m.borderWidth, c.primary)) {
-                        Text("✓ 当前主题", color = c.primary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        Text("✓ 当前主题", color = c.primaryText, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
                     }
                 }
             }
@@ -62,7 +62,7 @@ fun ThemePreviewCard(theme: AppThemeSpec, selected: Boolean, onSelect: () -> Uni
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Box(Modifier.size(14.dp).background(c.fretboardRoot, CircleShape), contentAlignment = Alignment.Center) {}
-                            Box(Modifier.size(12.dp).background(c.fretboardNoteNormal, CircleShape).border(1.dp, c.primary, CircleShape))
+                            Box(Modifier.size(12.dp).background(c.fretboardNoteNormal, CircleShape).border(1.dp, c.fretboardNoteStroke, CircleShape))
                             Box(Modifier.size(14.dp).background(c.fretboardNoteActive, CircleShape).border(1.5.dp, c.textPrimary, CircleShape))
                             Text("C · 60 BPM", color = c.textPrimary, style = MaterialTheme.typography.labelSmall)
                         }
@@ -83,7 +83,8 @@ internal fun ThemePicker(manager: ThemeManager) {
     ThemeRegistry.all.forEach { theme ->
         ThemePreviewCard(theme, manager.current.id == theme.id, { manager.select(theme.id) })
     }
-    OutlinedButton(onClick = manager::reset, modifier = Modifier.fillMaxWidth().testTag("theme-reset"), shape = MaterialTheme.shapes.small) {
+    OutlinedButton(onClick = manager::reset, modifier = Modifier.fillMaxWidth().testTag("theme-reset"), shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = PracticeSkin.colors.primaryText)) {
         Text("恢复默认主题")
     }
 }
