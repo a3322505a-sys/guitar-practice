@@ -1,5 +1,7 @@
 # 吉他练习
 
+仓库协作与 Agent 交付规则见 [Git 分支与交付约定](docs/git-governance.md)。
+
 离线 Android 吉他练习 App，单 `:app` 模块。当前版本为 **v96 / 4.2.0-local48-isolated**，包名 `com.a3322505a.guitarlearning`，沿用长期签名和用户设置。[v96 APK](output/guitar-practice-4.2.0-local48-isolated-v96.apk)；[alphaTab 构建隔离与回归记录](docs/v96-alphaTab-release-isolation.md)；[Gemini Studio Deck 重设计与验证](docs/v95-Gemini-Studio-Deck.md)；[主题系统](docs/v93-UI与主题系统.md)；[v92 音色与验证](docs/v92-音色优化.md)；本地主工作目录未提交的 v82 排版工作独立保留。
 
 v96 从远端 v95 支线独立施工，保留 Studio Deck、11 套主题、原生谱面固定挂载、全部功能及音乐语义。旧 PCM 播放、设备帧时钟和自研 TAB 只编入 debug；release 直接由源集隔离，不依赖压缩器移除。正式 SoundFont 与混音保持，尼龙 PCM 作为生产原料独立保留，见 [音色生产输入](assets/README.md)。

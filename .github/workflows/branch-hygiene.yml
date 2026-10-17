@@ -1,0 +1,89 @@
+name: Branch hygiene
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: branch-hygiene
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete only verified merged branch refs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const base = context.payload.repository.default_branch;
+            const safeToDelete = async (branch, expectedSha) => {
+              if (!branch || branch === base) return false;
+              let ref;
+              try {
+                ref = await github.rest.git.getRef({ owner, repo, ref: 'heads/' + branch });
+              } catch (err) {
+                if (err.status === 404) return false;
+                throw err;
+              }
+              if (ref.data.object.sha !== expectedSha) {
+                core.info('Skipping moved branch ' + branch);
+                return false;
+              }
+              const compare = await github.rest.repos.compareCommits({ owner, repo, base, head: branch });
+              if (compare.data.ahead_by !== 0) {
+                core.info('Skipping unmerged branch ' + branch);
+                return false;
+              }
+              return true;
+            };
+            const prune = async (branch, sha) => {
+              if (!(await safeToDelete(branch, sha))) return;
+              try {
+                await github.rest.git.deleteRef({ owner, repo, ref: 'heads/' + branch });
+                core.info('Deleted merged branch ' + branch);
+              } catch (err) {
+                if (err.status !== 404) throw err;
+              }
+            };
+            if (context.eventName === 'pull_request') {
+              const pr = context.payload.pull_request;
+              if (pr.head.repo.full_name !== owner + '/' + repo) return;
+              const branch = pr.head.ref;
+              if (!/^(codex|feat|fix|chore|docs|refactor)\//.test(branch)) return;
+              await prune(branch, pr.head.sha);
+              return;
+            }
+            // One-time recovery of pre-existing, already merged Codex branches.
+            // SHA guard prevents touching a branch reused for new work.
+            const oldBranches = {
+              'codex/alphatab-practice-v90': '2c9af269b6ac19c649d3b6c5b6c054a4eecb4615',
+              'codex/alphatab-release-isolation-v96': '5223993800e700219d4c7526a5f0faef08f64b97',
+              'codex/alphatab-tone-v92': '8602b9437f415b83ac5c13fa2444256ac2600f6f',
+              'codex/gemini-studio-deck-v95': 'bd9d469f0f5b9d71882156df1fac79b5ff079f5d',
+              'codex/mozart-k265-phrase-v61': 'b13ee7f7ecf2a7fb039542a25ca095a757f8022f',
+              'codex/music-song-packages-v75': '64521f98b936d847a6e582c5d1e43e6a40b2f325',
+              'codex/phrase-kernel-v63': '4df62ad22ba47400651401ba9682a0783221da7f',
+              'codex/practice-cards-connections-phrases-v60': 'fa247dd9de6b97bce38de38d94dc0402555ba7f4',
+              'codex/practice-five-fixes': 'e67ee5d4f05944fa04e4298b2189fd1af62364a6',
+              'codex/practice-workbench-v80': '6290df92812355e5535cf5324253c06729b622a9',
+              'codex/remaining-song-packages-v77': '68aecd2c41e6967ab649090b48f6a7033c784e42',
+              'codex/shayou-full-phrases-v68': 'b81389311e0367897752aca6a89d8fa68aa3ff12',
+              'codex/tablature-button-orientation-v58': '85ba9d1c5e3d709de76ae0d7b762d390bdb4b754',
+              'codex/ui-skins-v93': 'c8b7809c0d167071368b2d57e06fbbcc65f306d0',
+              'codex/ui-tab-risk-v81': '595c44ca86f22438d065386392c15caf02a57301',
+              'codex/v72-asset-ui-contract': '59d7c345de2f2b895a86a0db8ef0c92acd812efa',
+              'codex/v91-chords-tab-cursor': 'b02fd12e4c97c6b1c202c41766e7dc1e123c302f',
+              'codex/your-trip-pdf-v72': '3249fc831cd4f286568fd3afc26fa06634971fb7',
+            };
+            for (const [branch, sha] of Object.entries(oldBranches)) {
+              await prune(branch, sha);
+            }
