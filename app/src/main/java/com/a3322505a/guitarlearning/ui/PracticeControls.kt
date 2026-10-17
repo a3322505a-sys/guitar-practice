@@ -344,12 +344,13 @@ internal fun CompactTopBar(
     val colors = PracticeSkin.colors
     var moreOpen by remember { mutableStateOf(false) }
     val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val actions: @Composable () -> Unit = {
+    val actions: @Composable (Boolean) -> Unit = { compact ->
         TextButton(
             onClick = {
                 onStageLayoutChange(if (stageLayout == StageLayout.TAB_ONLY) { if (linkedAvailable) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY } else StageLayout.TAB_ONLY)
             },
             modifier = Modifier.heightIn(min = 48.dp).testTag("dock-toggle"),
+            contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
             Text(when (stageLayout) {
                 StageLayout.LINKED -> "收起指板"
@@ -357,10 +358,13 @@ internal fun CompactTopBar(
                 StageLayout.FRETBOARD_ONLY -> "六线谱"
             }, maxLines = 1)
         }
-        TextButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 48.dp).testTag("preferences-button")) { Text("偏好") }
+        if (!compact) TextButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 48.dp).testTag("preferences-button")) { Text("偏好") }
         Box {
-            TextButton(onClick = { moreOpen = true }, modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("management-button")) { Text("⋯", fontSize = 22.sp) }
+            IconButton(onClick = { moreOpen = true }, modifier = Modifier.size(48.dp).testTag("management-button").semantics { contentDescription = if (compact) "偏好与更多" else "更多" }) {
+                Text(if (compact) "⚙" else "⋯", fontSize = 22.sp)
+            }
             DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                if (compact) DropdownMenuItem(text = { Text("练习偏好") }, onClick = { moreOpen = false; onOpenSettings() })
                 DropdownMenuItem(text = { Text("仅指板") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.FRETBOARD_ONLY) })
                 DropdownMenuItem(text = { Text("仅六线谱") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.TAB_ONLY) })
                 if (linkedAvailable) DropdownMenuItem(text = { Text("指板 + 六线谱") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.LINKED) })
@@ -386,16 +390,10 @@ internal fun CompactTopBar(
         }
     }
     BoxWithConstraints(Modifier.fillMaxWidth().testTag("practice-navigation")) {
-        if (maxWidth >= 520.dp * scale) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                summary(Modifier.weight(1f))
-                actions()
-            }
-        } else {
-            Column(Modifier.fillMaxWidth()) {
-                summary(Modifier.fillMaxWidth())
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) { actions() }
-            }
+        val compact = maxWidth < 520.dp * scale
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            summary(Modifier.weight(1f))
+            actions(compact)
         }
     }
 }
@@ -488,9 +486,11 @@ private fun WorkbenchContentChoices(
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         PracticeSegments(listOf("音阶", "和弦", "歌曲与短句"), if (page == 0) 0 else if (chordPhrases) 2 else 1, onCategory, Modifier.fillMaxWidth())
         if (page == 0) {
-            Label("音阶与指型") {
+            Label("音阶") {
+                Text("调性", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
                 Choices(Tonality.entries.map { it.title }, scale.key.ordinal) { onScale(scale.copy(key = Tonality.entries[it])) }
-                Choices(Patterns.all.map { "${it.solfege} · ${it.caged}" }, scale.pattern) { onScale(scale.copy(pattern = it)) }
+                Text("把位指型", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
+                ContentCards(Patterns.all.map { "${it.solfege} · ${it.caged}" }, scale.pattern, compact = true) { onScale(scale.copy(pattern = it)) }
             }
             Label("练习方式") {
                 Choices(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal) {
@@ -503,7 +503,7 @@ private fun WorkbenchContentChoices(
             }
         } else if (!chordPhrases) {
             chordGroups.forEach { (group, items) ->
-                Label(group) { ContentCards(items.map { it.name }, items.indexOf(first)) { onChord(items[it]) } }
+                Label(group) { ContentCards(items.map { it.name }, items.indexOf(first), compact = true) { onChord(items[it]) } }
             }
         } else {
             catalogueGroups.forEach { (group, items) ->

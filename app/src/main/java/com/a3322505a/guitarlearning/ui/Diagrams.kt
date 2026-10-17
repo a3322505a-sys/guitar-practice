@@ -508,6 +508,41 @@ internal class LessonBoardIndex(private val plan: PerformancePlan) {
 }
 
 @Composable
+internal fun BoardLabelMenu(
+    hint: Hint,
+    onHint: () -> Unit,
+    title: String = "提示",
+    status: String? = null,
+    labels: String? = null,
+    labelRoot: Int? = null,
+    onLabel: (String) -> Unit = {},
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("board-label-menu"),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (status != null) Text(status, style = MaterialTheme.typography.labelSmall, color = PracticeSkin.colors.textSecondary, maxLines = 1)
+                Text((if (hint == Hint.HIDDEN) "盲弹" else title) + " ▾", maxLines = 1)
+            }
+        }
+        DropdownMenu(expanded, { expanded = false }) {
+            if (labels != null) {
+                listOf("fingers" to "可靠指法", "notes" to "实际音名", "degrees" to "级数").forEach { (id, name) ->
+                    DropdownMenuItem(text = { Text(name) }, enabled = id != "degrees" || labelRoot != null, onClick = {
+                        onLabel(id)
+                        expanded = false
+                    })
+                }
+            }
+            DropdownMenuItem(text = { Text(if (hint == Hint.HIDDEN) "显示提示" else "隐藏 / 盲弹") }, onClick = {
+                onHint(); expanded = false
+            })
+        }
+    }
+}
+
+@Composable
 internal fun LinkedFretboardDock(
     sequence: Sequence,
     cursor: Cursor?,
@@ -521,10 +556,10 @@ internal fun LinkedFretboardDock(
     enabled: Boolean = false,
     loopContinues: Boolean = false,
     labelRoot: Int? = null,
+    controls: @Composable () -> Unit = {},
 ) {
     val preferences=LocalContext.current.getSharedPreferences("practice-settings",0)
     var labels by rememberSaveable { mutableStateOf(preferences.getString("board-labels","fingers") ?: "fingers") }
-    var labelMenu by remember { mutableStateOf(false) }
     val plan = remember(sequence) { sequence.performance }
     val index = remember(plan) { LessonBoardIndex(plan) }
     val visit = (cursor?.bar ?: range.first).coerceIn(range.first, range.last)
@@ -548,38 +583,19 @@ internal fun LinkedFretboardDock(
     val atFocus=remember(plan) { com.a3322505a.guitarlearning.practice.compile.PracticeFocusIndex(plan) }.at(q,range)
     val teachingArrow=if(active.size==1 && upcoming.size==1 && active.single()!=upcoming.single() &&
         atFocus?.notes?.all { it.articulation.ornament==null && it.note.harmonic==null }==true) active.single() to upcoming.single() else null
-    BoxWithConstraints(modifier) {
-        val dockHeight = maxHeight
+    Box(modifier) {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    when {
-                        cursor?.pre == true -> "预备拍"
-                        target?.rest == true -> "当前休止"
-                        target?.dead == true -> "死音 X · 按谱演奏"
-                        else -> "第 ${sequence.barLabel(visit)} 小节 · 音位"
-                    } + if (next.second) " · 下一组：循环返回" else if (upcoming.isNotEmpty()) {
-                        if(target?.rest==true) " · 等待 ${"%.2f".format((next.first!!.at-q).coerceAtLeast(0.0))} 拍" else " · 虚线：下一音位"
-                    } else "",
-                    Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
-                    color = PracticeSkin.colors.textSecondary, maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                Box(Modifier.weight(1f)) { controls() }
+                BoardLabelMenu(
+                    hint = hint, onHint = onHint,
+                    title = when (labels) { "notes" -> "音名"; "degrees" -> "级数"; else -> "指法" },
+                    status = "第 ${sequence.barLabel(visit)} 小节",
+                    labels = labels, labelRoot = labelRoot,
+                    onLabel = { labels = it; preferences.edit().putString("board-labels", it).apply() },
                 )
-                Box {
-                    TextButton(onClick={labelMenu=true},modifier=Modifier.heightIn(min=48.dp)) {
-                        Text(when(labels) { "notes" -> "音名 ▾"; "degrees" -> "级数 ▾"; else -> "指法 ▾" })
-                    }
-                    DropdownMenu(labelMenu,{labelMenu=false}) {
-                        listOf("fingers" to "可靠指法","notes" to "实际音名","degrees" to "级数").forEach { (id,title) ->
-                            DropdownMenuItem(text={ Text(title) },enabled=id!="degrees" || labelRoot!=null,onClick={
-                                labels=id; preferences.edit().putString("board-labels",id).apply(); labelMenu=false
-                            })
-                        }
-                    }
-                }
-                TextButton(onClick = onHint, modifier = Modifier.heightIn(min = 48.dp)) { Text(if (hint == Hint.HIDDEN) "显示提示" else "隐藏提示") }
             }
-            Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
                 Fretboard(
                     positions = positions,
                     key = null,
@@ -587,7 +603,7 @@ internal fun LinkedFretboardDock(
                     degrees = false,
                     current = active,
                     enabled = enabled,
-                    height = (dockHeight - 48.dp).coerceAtLeast(1.dp),
+                    height = maxHeight.coerceAtLeast(1.dp),
                     onTap = onTap,
                     upcoming = upcoming,
                     showLegend = false,

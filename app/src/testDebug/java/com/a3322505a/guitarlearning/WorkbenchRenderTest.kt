@@ -29,6 +29,12 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WorkbenchRenderTest {
     @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    private fun preferences() {
+        if (compose.onAllNodesWithTag("preferences-button").fetchSemanticsNodes().isEmpty()) {
+            compose.onNodeWithTag("management-button").performClick()
+            compose.onNodeWithText("练习偏好").performClick()
+        } else compose.onNodeWithTag("preferences-button").performClick()
+    }
     private fun expand() {
         val matcher=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) compose.onNode(matcher).performSemanticsAction(SemanticsActions.Expand) { it() }
@@ -63,11 +69,15 @@ class WorkbenchRenderTest {
         assertTrue("The diagram has meaningful height",diagram.boundsInRoot.height>90)
         capture("phone-partial-content")
         expand()
+        capture("phone-expanded-content")
+        compose.onNodeWithText("和弦").performClick()
+        capture("phone-chord-content")
+        compose.onNodeWithText("音阶").performClick()
         compose.onNodeWithText("三度跳进").performScrollTo().performClick()
         compose.onNodeWithText("la · G").performScrollTo().performClick()
         compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithTag("preferences-button").performClick();expand()
+        preferences();expand()
         compose.onNodeWithText("跟练").performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
         compose.onNodeWithText("声音").performClick()
@@ -90,9 +100,28 @@ class WorkbenchRenderTest {
         };compose.waitForIdle()
         compose.onNodeWithTag("management-sheet").assertDoesNotExist()
         compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
+        // Render the production linked toolbar without loading the native score engine on the host.
+        compose.activity.setContent {
+            PracticeTheme {
+                Column(Modifier.fillMaxSize()) {
+                    CompactTopBar("M01 · 单音短句", "第 1–4 小节", StageLayout.LINKED, {}, {}, {}, {}, true)
+                    LinkedFretboardDock(
+                        sequence = com.a3322505a.guitarlearning.practice.Phrases.singleNote.sequence,
+                        cursor = null, phase = Phase.IDLE, current = emptyList(),
+                        range = com.a3322505a.guitarlearning.practice.BarRange(0, 0),
+                        hint = Hint.FULL, onHint = {}, onTap = {},
+                        modifier = Modifier.fillMaxWidth().height(218.dp),
+                        controls = { BreakdownControls(true, false, true, {}, {}, {}) },
+                    )
+                }
+            }
+        }
+        capture("phone-linked-toolbar")
+        compose.onNodeWithTag("board-label-menu").performClick()
+        capture("phone-linked-label-menu")
     }
     private fun sidePanel() {
-        compose.onNodeWithTag("preferences-button").performClick()
+        preferences()
         val side=compose.onNodeWithTag("practice-side-panel").fetchSemanticsNode().boundsInRoot
         val diagram=compose.onNodeWithTag("tablature").fetchSemanticsNode().boundsInRoot
         assertTrue("Panel and TAB occupy separate horizontal space",diagram.right<=side.left)
@@ -155,6 +184,18 @@ class WorkbenchRenderTest {
         compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
         compose.activityRule.scenario.recreate();compose.waitForIdle()
         compose.onNodeWithText("六线谱").performClick();sidePanel();capture("tablet-large-text-side")
+        compose.activity.setContent { CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
+            PracticeTheme {
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    listOf(420.dp, 550.dp).forEach { width ->
+                        Column(Modifier.width(width)) {
+                            ContentCards(com.a3322505a.guitarlearning.music.Chords.all.map { it.name }, 0, compact = true) {}
+                        }
+                    }
+                }
+            }
+        } }
+        capture("tablet-chord-grids")
     }
     @Test fun overlayTabsSoundsAndSliderPreviewKeepSessionUntilSpeedIsCommitted() {
         val player=Player(compose.activity) { ManualSink() }
@@ -166,7 +207,7 @@ class WorkbenchRenderTest {
             compose.onNodeWithText("开始跟练").performClick()
             compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
             val session=player.session
-            compose.onNodeWithTag("preferences-button").performClick();expand()
+            preferences();expand()
             compose.onNodeWithText("跟练").performClick();assertSame(session,player.session)
             compose.onNodeWithText("声音").performClick()
             compose.onNodeWithTag("guitar-switch").performScrollTo().performClick();assertSame(session,player.session)

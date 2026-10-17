@@ -350,7 +350,7 @@ internal fun PracticeWorkbench(
                     },
                     { player.stop(); note = "" },
                     availableHeight = windowHeight,
-                    showHintAction = nativePlayer == null || !tab,
+                    showHintAction = false,
                     verticalDeck = verticalDeck,
                     pausedTitle = if(nativePlayer?.fromMeasure==true) "从本小节练" else "继续",
                 )
@@ -376,11 +376,14 @@ internal fun PracticeWorkbench(
                                 minOf(280.dp * fontScale, maxOf(180.dp * fontScale, contentHeight * .35f), contentHeight - 198.dp * fontScale)
                             } else 0.dp
                             val dockHeight by animateDpAsState(targetHeight, tween(180), label = "linked-fretboard-height")
-                            Column(Modifier.fillMaxWidth().height(contentHeight)) {
+                            val breakdown: @Composable () -> Unit = {
                                 nativePlayer?.let { native ->
                                     BreakdownControls(native.ready,native.canStep(-1),native.canStep(1),
                                         { native.step(-1) },{ native.step(1) },{ native.auditionFocus() })
                                 }
+                            }
+                            Column(Modifier.fillMaxWidth().height(contentHeight)) {
+                                if (dockHeight == 0.dp || displayedSequence == null) breakdown()
                                 if (stageLayout == StageLayout.LINKED && targetHeight == 0.dp) {
                                     Text("窗口较矮，已优先显示谱面", color = PracticeSkin.colors.textSecondary, style = MaterialTheme.typography.labelSmall)
                                 }
@@ -399,7 +402,7 @@ internal fun PracticeWorkbench(
                                             enabled = !player.active && progress.phase != Phase.PAUSED,
                                             labelRoot = if(page==0) scale.key.root else shownChord?.root?.takeIf { it>=0 },
                                             loopContinues = practiceSession?.let { it.repeats == 0 || (cursor?.loop ?: 0) + 1 < it.repeats } == true,
-
+                                            controls = breakdown,
                                         )
                                     }
                                 }
@@ -421,6 +424,7 @@ internal fun PracticeWorkbench(
                                     }
                                 },
                                 legacyTab = legacyTab,
+                                onHint = { setHint(if (hint == Hint.HIDDEN) 0 else 2) },
                             )
                         }
                     }

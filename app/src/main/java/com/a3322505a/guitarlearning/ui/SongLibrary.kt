@@ -174,7 +174,7 @@ private fun DiagramHelp(displayedSequence: Sequence?) {
         Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primary)
             Text("x 为死音，P.M. 为手掌制音；拨弦、滑音、击弦、勾弦和延音按原谱标记演奏。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
             if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：保留书面时值，按长短2:1演奏；装饰音与推弦使用标准谱面标记。",style=MaterialTheme.typography.bodySmall)
-            Text("撤提示用于指板的音位与演奏提示；六线谱始终保留乐谱音符。",style=MaterialTheme.typography.bodySmall)
+            Text("在指板标注菜单选择“隐藏 / 盲弹”可隐藏音位与演奏提示；六线谱始终保留乐谱音符。",style=MaterialTheme.typography.bodySmall)
     }
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
         Text("跟练与指法",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.textPrimary)
