@@ -62,4 +62,6 @@
 | 普通音与技巧 | [普通下一音细环](screenshots/teaching-ui/plain-next-note-ring.png)、[滑音](screenshots/teaching-ui/technique-SL01.png)、[击弦](screenshots/teaching-ui/technique-H01.png)、[勾弦](screenshots/teaching-ui/technique-P01.png) |
 | 曲包筛选 | [斜阳原品位 Tag](screenshots/teaching-ui/phone-shayou-chords-dark.png) |
 
-主机测试不证明真机音色、音频连续性或严格音画同步。本轮没有 QQ 发送、GitHub 推送或合并。
+主机测试不证明真机音色、音频连续性或严格音画同步。初次本地交付时没有 QQ 发送、GitHub 推送或合并。
+
+后续交付：用户要求同步 GitHub 并发包后，代码提交 `99d1232600344df8bb1b1759b8d230e42a6c4a96` 已推送至 [codex/teaching-ui-p1-p8](https://github.com/a3322505a-sys/guitar-practice/tree/codex/teaching-ui-p1-p8)，独立读取远端分支确认 SHA 一致。GitHub 返回仓库已迁移到 `a3322505a-sys/guitar-practice`。上述 APK 已于 2026-10-17 通过 QQ 发送，消息 ID `2015418011`；从该消息的私聊文件 URL 下载回读，字节数与 SHA-256 均和本地一致。记录在 `output/qq-v103-delivery.json`。本次仅同步任务分支，没有合并 main；传输完整性不替代真机体验验收。
