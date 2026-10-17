@@ -70,15 +70,15 @@ class ThemeRenderTest {
             val reader=ThemeManager(compose.activity)
             assertEquals(theme.id,reader.current.id);reader.close()
         }
-        compose.onNodeWithTag("theme-dusty_pink").performScrollTo().performClick()
-        capture("appearance-dusty")
+        compose.onNodeWithTag("theme-coastal_blue").performScrollTo().performClick()
+        capture("appearance-coastal")
         compose.onNodeWithText("完成").performClick()
-        capture("dusty-phone")
+        capture("coastal-phone")
         compose.activityRule.scenario.recreate();compose.waitForIdle()
-        ThemeManager(compose.activity).let { assertEquals("dusty_pink",it.current.id);it.close() }
+        ThemeManager(compose.activity).let { assertEquals("coastal_blue",it.current.id);it.close() }
         preferences();expand()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-dusty_pink").performScrollTo().assertIsSelected()
+        compose.onNodeWithTag("theme-coastal_blue").performScrollTo().assertIsSelected()
         compose.onNodeWithTag("theme-reset").performScrollTo().performClick()
         ThemeManager(compose.activity).let { assertEquals("forest",it.current.id);it.close() }
     }
@@ -95,7 +95,7 @@ class ThemeRenderTest {
             val session=player.session
             preferences();expand()
             compose.onNodeWithText("外观").performClick()
-            compose.onNodeWithTag("theme-berry").performScrollTo().performClick()
+            compose.onNodeWithTag("theme-sunburst").performScrollTo().performClick()
             assertSame(session,player.session)
             assertEquals(Phase.PLAYING,player.progress.phase)
             compose.onNodeWithText("完成").performClick()
@@ -110,14 +110,14 @@ class ThemeRenderTest {
         preferences()
         compose.onNodeWithTag("practice-side-panel").assertIsDisplayed()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-sakura").performScrollTo().performClick()
-        capture("sakura-landscape-side")
+        compose.onNodeWithTag("theme-lagoon_teal").performScrollTo().performClick()
+        capture("lagoon_teal-landscape-side")
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletKeepsSharedSkeleton() {
         capture("forest-tablet")
         preferences()
         compose.onNodeWithText("外观").performClick()
-        compose.onNodeWithTag("theme-ink_green").performScrollTo().performClick()
-        capture("ink-green-tablet-side")
+        compose.onNodeWithTag("theme-ochre_vibe").performScrollTo().performClick()
+        capture("ochre-tablet-side")
     }
 }

@@ -93,7 +93,7 @@ internal fun PracticeTransport(
                         onClick = { expanded = !expanded },
                         modifier = Modifier.heightIn(min = 48.dp).testTag("tempo-button"),
                         shape = MaterialTheme.shapes.small,
-                        colors = ButtonDefaults.textButtonColors(contentColor = colors.primary),
+                        colors = ButtonDefaults.textButtonColors(contentColor = colors.primaryText),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
                     ) {
                         Text(
@@ -135,7 +135,7 @@ internal fun PracticeTransport(
                                                     contentPadding = PaddingValues(8.dp),
                                                     colors = ButtonDefaults.outlinedButtonColors(
                                                         containerColor = if (value == multiplier) colors.primaryContainer else colors.surface,
-                                                        contentColor = if (value == multiplier) colors.primary else colors.textSecondary,
+                                                        contentColor = if (value == multiplier) colors.primaryText else colors.textSecondary,
                                                     ),
                                                 ) { Text("$value%") }
                                             }
