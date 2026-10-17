@@ -2,6 +2,7 @@ package com.a3322505a.guitarlearning.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -10,24 +11,29 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean = false, cardTexts: List<ContentCardText>? = null, onSelect: (Int) -> Unit) {
+internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean = false, cardTexts: List<ContentCardText>? = null,
+    singleLinePrimary: Boolean = false, onSelect: (Int) -> Unit) {
     val fontScale=LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns=if (cardTexts != null) (maxWidth / ((if (compact) 96.dp else 152.dp) * fontScale)).toInt().coerceIn(1, if (compact) 5 else 6)
+        val columns=(if (cardTexts != null) (maxWidth / ((if (compact) 96.dp else 152.dp) * fontScale)).toInt().coerceIn(1, if (compact || singleLinePrimary) 5 else 6)
         else if (compact) when {
             maxWidth < 400.dp*fontScale -> 3
             maxWidth < 480.dp*fontScale -> 4
             else -> 5
         }
-            else (maxWidth/(144.dp*fontScale)).toInt().coerceIn(1,6)
+            else (maxWidth/(144.dp*fontScale)).toInt().coerceIn(1,6)).coerceAtMost(titles.size.coerceAtLeast(1))
         val gap=if (compact) 6.dp else 8.dp
-        Column(verticalArrangement=Arrangement.spacedBy(gap)) {
+        Column(Modifier.selectableGroup(), verticalArrangement=Arrangement.spacedBy(gap)) {
             titles.indices.chunked(columns).forEach { row ->
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(gap)) {
                     row.forEach { i ->
@@ -36,7 +42,11 @@ internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean 
                             val colors = PracticeSkin.colors
                             Surface(
                                 onClick = { onSelect(i) },
-                                modifier = Modifier.weight(1f).heightIn(min = if (compact) 60.dp else 76.dp).semantics { this.selected = checked },
+                                modifier = Modifier.weight(1f).heightIn(min = if (compact) 60.dp else 76.dp).semantics {
+                                    this.selected = checked
+                                    role = Role.RadioButton
+                                    contentDescription = listOfNotNull(titles[i], cardTexts[i].tag).joinToString("，")
+                                },
                                 shape = MaterialTheme.shapes.medium,
                                 color = if (checked) colors.primary.copy(alpha = .10f).compositeOver(colors.surface) else colors.surface,
                                 border = BorderStroke(if (checked) 1.5.dp else 1.dp, if (checked) colors.primary else colors.border),
@@ -47,11 +57,12 @@ internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean 
                                     horizontalAlignment = Alignment.Start,
                                     verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                                 ) {
-                                    if (!compact && text.tag != null) Text(text.tag, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary)
+                                    if (text.tag != null) Text(text.tag, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     if (compact) {
                                         // Measure once per layout. Never shrink through a recomposition loop.
                                         val measurer = rememberTextMeasurer()
-                                        val style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (checked) FontWeight.Bold else FontWeight.Normal)
+                                        val style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (checked) FontWeight.Bold else FontWeight.SemiBold)
                                         BoxWithConstraints(Modifier.fillMaxWidth()) {
                                             val width = with(LocalDensity.current) { maxWidth.toPx() }
                                             val measured = measurer.measure(text.primary, style = style, maxLines = 1).size.width
@@ -59,8 +70,10 @@ internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean 
                                             Text(text.primary, style = style.copy(fontSize = size), color = colors.textPrimary)
                                         }
                                     } else Text(text.primary, style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = if (checked) FontWeight.Bold else FontWeight.Normal, color = colors.textPrimary)
-                                    if (compact && text.tag != null) Text(text.tag, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary)
+                                        maxLines = if (singleLinePrimary) 1 else Int.MAX_VALUE,
+                                        softWrap = !singleLinePrimary,
+                                        overflow = TextOverflow.Ellipsis,
+                                        fontWeight = if (checked) FontWeight.Bold else FontWeight.SemiBold, color = colors.textPrimary)
                                 }
                             }
                         } else {

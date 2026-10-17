@@ -8,6 +8,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.a3322505a.guitarlearning.audio.*
+import com.a3322505a.guitarlearning.assets.song.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 import com.a3322505a.guitarlearning.ui.*
@@ -19,6 +20,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28],qualifiers="w411dp-h891dp-mdpi")
@@ -91,13 +97,83 @@ class ChordSourceRenderTest {
         compose.onNodeWithTag("previous-chord").assertIsNotEnabled()
     }
 
+    @Test fun newlyImportedPackageKeepsVoicingsThroughSelectionAuditionStartAndHarmonyChanges() {
+        compose.waitUntil(15000) { File(compose.activity.filesDir, "songs/active-index.json").exists() }
+        // A new external identity, using reviewed musical bytes unchanged, enters the actual import path.
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            ZipInputStream(File("src/main/assets/song-packages/usotsuki-v1.gpractice").inputStream()).use { input ->
+                while (true) {
+                    val entry = input.nextEntry ?: break
+                    val bytes = input.readBytes()
+                    val data = if (entry.name == "manifest.json") {
+                        val manifest = StrictJson.parse(bytes).objectValue()
+                        StrictJson.encode(manifest + mapOf("packageId" to "example.teaching",
+                            "display" to (manifest["display"].objectValue() + ("title" to "新载入验收"))))
+                    } else bytes
+                    zip.putNextEntry(ZipEntry(entry.name)); zip.write(data); zip.closeEntry()
+                }
+            }
+        }
+        val repo = SongTestLibrary.repository(File(compose.activity.filesDir, "songs"))
+        repo.reload()
+        val snapshot = repo.commit(repo.prepare(ByteArrayInputStream(output.toByteArray())))
+        val content = ContentPresentation(snapshot)
+        val imported = content.chordSections("example.teaching").flatMap { it.items }
+        assertEquals(4, imported.size)
+        assertTrue(imported.all { encodedPackageId(it.id) == "example.teaching" })
+        val player = RecordingChordPlayback()
+        compose.activity.setContent { PracticeApp(player) }
+        compose.onNodeWithTag("config-summary").performClick()
+        val expand = SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
+        if (compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
+            compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
+        compose.onNodeWithText("和弦").performClick()
+        compose.waitUntil(15000) { runCatching {
+            compose.onNodeWithTag("content-source-filters").performScrollToKey("example.teaching")
+        }.isSuccess }
+        compose.onNodeWithTag("content-source-example.teaching").performClick()
+        val selected = imported.last()
+        compose.onNodeWithText(content.chordText(selected).primary).performClick()
+        compose.onNodeWithTag("chord-diagram").assertContentDescriptionContains(selected.name, substring = true)
+        compose.onNodeWithText("听和弦").performClick()
+        assertEquals(selected.positions, player.auditionPositions)
+        compose.onNodeWithText("开始跟练").performClick()
+        assertEquals(selected.id, player.started!!.sections.single().sourceChord!!.id)
+        assertEquals(selected.frets, player.started!!.chordAt(player.started!!.sections.single())!!.frets)
+        compose.onNodeWithTag("config-summary").performClick()
+        if (compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
+            compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
+        compose.onNodeWithText("歌曲与短句").performClick()
+        compose.onNodeWithTag("content-source-example.teaching").assertIsSelected()
+        val phrase = content.phraseSections("example.teaching").flatMap { it.items }.first()
+        compose.onNodeWithText(content.phraseText(phrase).primary).performScrollTo().performClick()
+        compose.waitUntil(15000) { compose.onAllNodesWithTag("chord-diagram").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("开始跟练").performClick()
+        val sequence = player.started!!
+        assertEquals(phrase.id, repo.resolve(phrase.id).id)
+        assertEquals(4, sequence.sections.size)
+        compose.runOnIdle { player.testSession = Session(sequence, 60, false, 1); player.testProgress = Progress(Phase.PAUSED) }
+        sequence.sections.forEach { section ->
+            val chord = sequence.chordAt(section)!!
+            val source = imported.single { it.id.endsWith(section.voicingId!!) }
+            assertEquals(source.frets, chord.frets)
+            assertEquals(source.fingers, chord.fingers)
+            compose.runOnIdle { player.testCursor = Cursor(false, 0, section.tick.toDouble(), sequence.barAt(section.tick.toDouble()), 0, positions = chord.positions) }
+            compose.onNodeWithTag("chord-diagram").assertContentDescriptionContains(chord.name, substring = true)
+        }
+    }
+
     /** Captures the real UI requests and compiles starts; device audio is a separate boundary. */
     private class RecordingChordPlayback : PracticePlayback {
         override var guitar=true
         override var click=true
-        override val progress=Progress()
-        override val session: Session?=null
-        override val cursor: Cursor?=null
+        var testProgress by mutableStateOf(Progress())
+        var testSession by mutableStateOf<Session?>(null)
+        var testCursor by mutableStateOf<Cursor?>(null)
+        override val progress get() = testProgress
+        override val session get() = testSession
+        override val cursor get() = testCursor
         override val active=false
         var auditionPositions=emptyList<Position>()
         var auditionCapo=0

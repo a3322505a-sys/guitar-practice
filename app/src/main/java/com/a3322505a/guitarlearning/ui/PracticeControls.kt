@@ -523,20 +523,29 @@ internal fun WorkbenchContentChoices(
         key(page, chordPhrases, effectiveSource) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).testTag("content-card-list"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (page == 0) {
-                    Label("音阶") {
-                        Text("调性", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
-                        Choices(Tonality.entries.map { it.title }, scale.key.ordinal) { onScale(scale.copy(key = Tonality.entries[it])) }
-                        Text("把位指型", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
-                        ContentCards(Patterns.all.map { "${it.solfege} · ${it.caged}" }, scale.pattern, compact = true) { onScale(scale.copy(pattern = it)) }
+                    ScaleContentSection("1. 调性 · 关系大小调") {
+                        ContentCards(Tonality.entries.map { it.title }, scale.key.ordinal,
+                            cardTexts = Tonality.entries.map(::tonalityText), singleLinePrimary = true) { onScale(scale.copy(key = Tonality.entries[it])) }
                     }
-                    Label("练习方式") {
-                        Choices(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal) {
+                    ScaleContentSection("2. 把位指型 · 五指型串联") {
+                        ContentCards(Patterns.all.map { it.title }, scale.pattern,
+                            cardTexts = Patterns.all.map(::patternText), singleLinePrimary = true) { onScale(scale.copy(pattern = it)) }
+                    }
+                    ScaleContentSection("3. 练习模式 · 模进与走向") {
+                        ContentCards(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal,
+                            cardTexts = com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map(::scaleExerciseText), singleLinePrimary = true) {
                             val exercise = com.a3322505a.guitarlearning.practice.ScaleExercise.entries[it]
                             onScale(scale.copy(exercise = exercise, octave = if (exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CONNECTION) false else scale.octave))
                         }
-                        Choices(listOf("一八度", "整型音域"), if (scale.octave) 0 else 1) { onScale(scale.copy(octave = it == 0)) }
-                        Choices(listOf("每拍1音", "每拍2音", "每拍3音"), scale.notesPerBeat - 1) { onScale(scale.copy(notesPerBeat = it + 1)) }
                         if (scale.exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CHANGE_START) Choices((1..7).map(Int::toString), scale.startDegree - 1) { onScale(scale.copy(startDegree = it + 1)) }
+                    }
+                    ScaleContentSection("4. 音域范围") {
+                        ContentCards(listOf("整型音域", "一八度"), if (scale.octave) 1 else 0,
+                            cardTexts = rangeCardTexts, singleLinePrimary = true) { onScale(scale.copy(octave = it == 1)) }
+                    }
+                    ScaleContentSection("5. 节奏细分") {
+                        ContentCards(rhythmCardTexts.map { it.primary }, scale.notesPerBeat - 1,
+                            cardTexts = rhythmCardTexts, singleLinePrimary = true) { onScale(scale.copy(notesPerBeat = it + 1)) }
                     }
                 } else if (!chordPhrases) {
                     val sections = content.chordSections(effectiveSource)
@@ -573,6 +582,14 @@ internal fun WorkbenchContentChoices(
                 if (sequence == null) Text(unavailableReason.ifBlank { "正在准备内容…" }, color = PracticeSkin.colors.danger)
             }
         }
+    }
+}
+
+@Composable
+private fun ScaleContentSection(title: String, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxWidth().testTag("scale-section-$title"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PracticeSkin.colors.textPrimary)
+        content()
     }
 }
 

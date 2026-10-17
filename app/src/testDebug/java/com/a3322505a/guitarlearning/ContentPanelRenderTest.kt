@@ -30,7 +30,7 @@ class ContentPanelRenderTest {
     private fun ready() {
         compose.waitUntil(15000) {
             Shadows.shadowOf(Looper.getMainLooper()).idle()
-            File(compose.activity.filesDir, "songs/active-index.json").let { it.exists() && it.readText().contains("local.yourtrip") }
+            runCatching { File(compose.activity.filesDir, "songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
         }
         compose.waitForIdle()
     }
@@ -65,7 +65,7 @@ class ContentPanelRenderTest {
             val at = IntArray(2); it.getLocationOnScreen(at)
             canvas.save(); canvas.translate((at[0] - origin[0]).toFloat(), (at[1] - origin[1]).toFloat()); it.draw(canvas); canvas.restore()
         }
-        File("../.local/content-panel-v101/$name.png").apply { parentFile!!.mkdirs(); outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        File("../.local/teaching-ui/$name.png").apply { parentFile!!.mkdirs(); outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         bitmap.recycle()
     }
 
@@ -73,16 +73,16 @@ class ContentPanelRenderTest {
         ready()
         ThemeManager(compose.activity).let { it.select("studio_dark"); it.close() }
         open(); compose.onNodeWithText("歌曲与短句").performClick()
-        compose.onNodeWithTag("content-section-单音").assertIsDisplayed()
-        compose.onNodeWithText("C 大调小句").assertIsDisplayed()
-        compose.onNodeWithText("2 变奏").assertIsDisplayed()
+        compose.onNodeWithTag("content-section-基本功热身 · 七个Block").assertIsDisplayed()
+        compose.onNodeWithText("C 大调小句").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("2 变奏").performScrollTo().assertIsDisplayed()
         capture("phone-basic-dark")
-        compose.onNodeWithText("7p5").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("勾弦 7p5").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("content-source-filters").assertIsDisplayed()
         compose.onNodeWithText("歌曲与短句").assertIsDisplayed()
         compose.onNodeWithTag("content-package-management").assertIsDisplayed()
         capture("phone-techniques-dark")
-        compose.onNodeWithText("完整版").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("节奏句（完整版）").performScrollTo().assertIsDisplayed()
         capture("phone-rhythm-dark")
         source("local.usotsuki")
         compose.onNodeWithText("低音与高音分解").assertIsDisplayed()
@@ -128,10 +128,12 @@ class ContentPanelRenderTest {
     }
 
     @Test @Config(qualifiers = "w360dp-h780dp-mdpi") fun largeFontReflowsCardsAndKeepsPinnedControlsAvailable() {
+        ready()
         RuntimeEnvironment.setFontScale(1.5f)
         try {
             compose.activityRule.scenario.recreate()
             ready(); open(); compose.onNodeWithText("歌曲与短句").performClick()
+            compose.waitUntil(15000) { compose.onAllNodesWithText("3 再现与结尾").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("3 再现与结尾").performScrollTo().assertIsDisplayed()
             compose.onNodeWithText("完成").assertIsDisplayed()
             compose.onNodeWithTag("content-package-management").assertIsDisplayed()
@@ -159,4 +161,36 @@ class ContentPanelRenderTest {
             assertEquals(summary, compose.onNodeWithTag("config-summary").fetchSemanticsNode().config[SemanticsProperties.Text])
         } finally { player.release() }
     }
+
+    private fun scaleSections(name: String) {
+        ready(); open()
+        compose.onNodeWithTag("scale-section-1. 调性 · 关系大小调").assertIsDisplayed()
+        compose.onNodeWithText("A 自然小调", useUnmergedTree = true).performScrollTo().performClick()
+        compose.onNodeWithText("A 自然小调").assertIsSelected()
+        compose.onNodeWithText("sol 指型").performScrollTo().performClick()
+        compose.onNodeWithText("sol 指型").assertIsSelected()
+        capture("$name-patterns")
+        compose.onNodeWithText("三度跳进").performScrollTo().performClick()
+        compose.onNodeWithText("完整把位").performScrollTo().performClick()
+        compose.onNodeWithText("每拍3音").performScrollTo().performClick()
+        compose.onNodeWithText("完整把位").assertIsSelected()
+        compose.onNodeWithText("每拍3音").assertIsSelected()
+        compose.onNodeWithTag("scale-section-4. 音域范围").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("scale-section-5. 节奏细分").assertExists()
+        capture("$name-range-rhythm")
+        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithTag("config-summary").assertTextContains("每拍3音", substring = true).assertTextContains("sol", substring = true)
+        compose.onNodeWithText("开始跟练").assertIsDisplayed()
+    }
+
+    @Test fun phoneScaleSectionsKeepTwoIndependentSelections() = scaleSections("phone-scale")
+
+    @Test @Config(qualifiers = "w360dp-h780dp-mdpi") fun narrowLargeScaleTitlesAndIndependentChoicesStayReadable() {
+        ready()
+        RuntimeEnvironment.setFontScale(1.5f)
+        try { compose.activityRule.scenario.recreate(); scaleSections("narrow-large-scale") }
+        finally { RuntimeEnvironment.setFontScale(1f) }
+    }
+
+    @Test @Config(qualifiers = "w1024dp-h768dp-mdpi") fun tabletScaleSectionsAndFollowControlsStayVisible() = scaleSections("tablet-scale")
 }

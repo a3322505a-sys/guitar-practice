@@ -74,7 +74,7 @@ class WorkbenchRenderTest {
         capture("phone-chord-content")
         compose.onNodeWithText("音阶").performClick()
         compose.onNodeWithText("三度跳进").performScrollTo().performClick()
-        compose.onNodeWithText("la · G").performScrollTo().performClick()
+        compose.onNodeWithText("la 指型").performScrollTo().performClick()
         compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("完成").performClick()
         preferences();expand()

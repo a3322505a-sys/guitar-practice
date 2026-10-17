@@ -3,8 +3,11 @@ package com.a3322505a.guitarlearning.ui
 import com.a3322505a.guitarlearning.SongTestLibrary
 import com.a3322505a.guitarlearning.assets.song.LibrarySnapshot
 import com.a3322505a.guitarlearning.music.Chords
+import com.a3322505a.guitarlearning.music.Patterns
+import com.a3322505a.guitarlearning.music.Tonality
 import com.a3322505a.guitarlearning.music.score.PracticeKey
 import com.a3322505a.guitarlearning.practice.Phrases
+import com.a3322505a.guitarlearning.practice.*
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,7 +35,7 @@ class ContentPresentationTest {
     @Test fun sourcesUsePackageIdentityAndPureNamesWithMozartInBasicSingleNotes() {
         assertEquals(listOf("基础训练", "斜阳", "嘘月", "Your Trip"), content.sources.map { it.title })
         assertEquals(content.sources.size, content.sources.map { it.id }.distinct().size)
-        val single = content.phraseSections(BASIC_CONTENT).single { it.title == "单音" }.items
+        val single = content.phraseSections(BASIC_CONTENT).single { it.title == "旋律与古典练习曲" }.items
         assertEquals(4, single.size)
         assertEquals(3, single.count { it.assetKey?.packageId == "local.mozart" })
         assertEquals("嘘月", sourceTitle("本地曲库 · 嘘月"))
@@ -61,22 +64,21 @@ class ContentPresentationTest {
 
     @Test fun entireBuiltinTextWhitelistIsAppliedIncludingTechniqueAndRhythmLabels() {
         val expected = mapOf(
-            "单音短句 · C 大调小句" to ContentCardText("C 大调小句", "入门短句"),
-            "莫扎特 K265 · 1 主题" to ContentCardText("1 主题", "莫扎特 K265"),
-            "莫扎特 K265 · 2 变奏" to ContentCardText("2 变奏", "莫扎特 K265"),
-            "莫扎特 K265 · 3 再现与结尾" to ContentCardText("3 再现与结尾", "莫扎特 K265"),
-            "滑音 · 5/7 与 7\\5" to ContentCardText("5/7 与 7\\5", "滑音"),
-            "击弦 · 5h7" to ContentCardText("5h7", "击弦"),
-            "勾弦 · 7p5" to ContentCardText("7p5", "勾弦"),
-            "节奏句 · 基础版" to ContentCardText("基础版", "简单和弦节奏"),
-            "节奏句 · 完整版" to ContentCardText("完整版", "综合片段"),
+            "M01" to ContentCardText("C 大调小句", "入门旋律 · 第一把位"),
+            "T01" to ContentCardText("八分与十六分", "时值转换 · 三连音"),
+            "PM01" to ContentCardText("普通与制音对照", "掌根闷音 · Palm Mute"),
+            "SL01" to ContentCardText("滑音 5/7 与 7\\5", "左手滑音 · Slide"),
+            "H01" to ContentCardText("击弦 5h7", "左手连奏 · Hammer-on"),
+            "P01" to ContentCardText("勾弦 7p5", "左手连奏 · Pull-off"),
+            "R01" to ContentCardText("节奏句（基础版）", "简单和弦节奏 · 伴奏入门"),
+            "R02" to ContentCardText("节奏句（完整版）", "综合片段 · 律动进阶"),
         )
-        expected.forEach { (raw, text) -> assertEquals(raw, text, content.phraseText(Phrases.singleNote.copy(title = raw))) }
-        val mozart = content.phraseSections(BASIC_CONTENT).single { it.title == "单音" }.items.filter { it.assetKey != null }
+        expected.forEach { (id, text) -> assertEquals(id, text, content.phraseText(Phrases.named(id).copy(title = "可变名称"))) }
+        val mozart = content.phraseSections(BASIC_CONTENT).single { it.title == "旋律与古典练习曲" }.items.filter { it.assetKey != null }
         assertEquals(listOf("1 主题", "2 变奏", "3 再现与结尾"), mozart.map { content.phraseText(it).primary })
         assertEquals("莫扎特 K265 · 2 发展", mozart[1].title)
         assertEquals(setOf("简单和弦节奏", "综合片段"), content.phraseSections(BASIC_CONTENT)
-            .single { it.title == "节奏与综合" }.items.map { it.use }.toSet())
+            .single { it.title == "节奏与综合实战" }.items.map { it.use }.toSet())
     }
 
     @Test fun songCardsLoseOnlyKnownSourcePrefixAndUnknownFormatsRemainReadable() {
@@ -87,11 +89,8 @@ class ContentPresentationTest {
                 assertNull(text.tag)
             }
         }
-        listOf("P.M. · 普通与制音对照", "三连音 · 八分与十六分").forEach {
-            assertEquals(it.substringBefore(" · "), content.phraseText(Phrases.singleNote.copy(title = it)).tag)
-        }
-        assertEquals(ContentCardText("陌生限定 · 不能丢失"), content.phraseText(Phrases.singleNote.copy(title = "陌生限定 · 不能丢失")))
-        assertEquals(ContentCardText("交替拨弦热身", "Block 01"), content.phraseText(Phrases.singleNote.copy(title = "七个Block · 1 交替拨弦热身")))
+        assertEquals(ContentCardText("陌生限定 · 不能丢失"), content.phraseText(Phrases.singleNote.copy(id = "unknown", title = "陌生限定 · 不能丢失")))
+        assertEquals(ContentCardText("交替拨弦热身", "Block 01 · 右手稳定度"), content.phraseText(Phrases.named("SB-1")))
     }
 
     @Test fun chordVoicingsKeepTheirFretQualifierAndSourceParserUsesLengthPrefix() {
@@ -100,5 +99,43 @@ class ContentPresentationTest {
         assertEquals(ContentCardText("D5/A", "低音7品"), content.chordText(chord.copy(name = "斜阳 · D5/A · 低音7品")))
         assertEquals("package:one", encodedPackageId(PracticeKey("package:one", "practice:two").encoded))
         listOf("C", "-1:a", "999999999999:a", "4:abc", "3:abc", "x:abcde").forEach { assertNull(it, encodedPackageId(it)) }
+    }
+
+    @Test fun basicTeachingGroupsAreOrderedByStableIdsAndNeverChangeSourceOrder() {
+        val chordsBefore = snapshot.chords.toList()
+        val phrasesBefore = snapshot.catalogue.toList()
+        val groups = content.chordSections(BASIC_CONTENT)
+        assertEquals(listOf(5, 3, 4), groups.map { it.items.size })
+        assertEquals(listOf("C", "G", "D", "A", "E", "Am", "Em", "Dm", "Gsus2", "Asus4(no5)", "Bm7(no5)", "D/F♯"), groups.flatMap { it.items }.map { it.id })
+        assertEquals(ContentCardText("D/F#", "第一转位 · G→Em 常用桥梁"), content.chordText(Chords.named("D/F♯")))
+        assertEquals(listOf(7, 5, 4, 2), content.phraseSections(BASIC_CONTENT).map { it.items.size })
+        assertEquals(listOf("T01", "PM01", "SL01", "H01", "P01"), content.phraseSections(BASIC_CONTENT)[1].items.map { it.id })
+        val packaged = Chords.named("C").copy(id = PracticeKey("other.song", "C").encoded)
+        assertNull(content.chordText(packaged).tag)
+        assertEquals(chordsBefore, snapshot.chords)
+        assertEquals(phrasesBefore, snapshot.catalogue)
+    }
+
+    @Test fun scaleTagsUseTrueFretExtentsAndTripletTiming() {
+        assertEquals(listOf(0 to 3, 2 to 6, 4 to 8, 7 to 10, 9 to 13), Patterns.all.map { it.positions.minOf { p -> p.fret } to it.positions.maxOf { p -> p.fret } })
+        Patterns.all.forEach { pattern ->
+            assertTrue(patternText(pattern).tag!!.contains("${pattern.positions.minOf { it.fret }}–${pattern.positions.maxOf { it.fret }}品"))
+        }
+        Tonality.entries.forEach { key ->
+            val sequence = Routes.scale(ScaleOptions(key = key, notesPerBeat = 3)).sequence!!
+            assertTrue(sequence.events.filter { it.positions.isNotEmpty() }.all { it.duration == QUARTER / 3 })
+            assertTrue(sequence.tuplets.isNotEmpty())
+        }
+        assertEquals("三连音", rhythmCardTexts[2].tag)
+        assertEquals(listOf(4, 2), Phrases.named("T01").sequence.tuplets.map { it.unit })
+        assertEquals(6, ScaleExercise.entries.map(::scaleExerciseText).size)
+    }
+
+    @Test fun packageNatureTagsAreAnchoredAndNativeFretQualifiersWin() {
+        mapOf("D5" to "强力和弦 (Power Chord)", "G5" to "强力和弦 (Power Chord)", "Bbdim7" to "减七和弦",
+            "Cdim" to "减三和弦", "D/F#" to "指定低音 · 斜杠和弦", "Dm/F" to "指定低音 · 斜杠和弦").forEach { (name, tag) ->
+            assertEquals(name, tag, chordNatureTag(name))
+        }
+        listOf("Asus4(no5)", "Bm7(no5)", "D15", "notD5", "C/unknown").forEach { assertNull(it, chordNatureTag(it)) }
     }
 }

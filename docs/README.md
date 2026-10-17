@@ -1,6 +1,6 @@
 # 开发与文档索引
 
-当前本地开发目录为 `guitar-practice/work/ui-density-v99`，分支 `chore/baseline-1.0.0`。它包含 v101 `f74111e` 的功能，Android 版本归一为 **1.0.0 / 102**。项目根目录的 v82 工作树含未提交内容，不能直接当作当前入口。详细边界见 [工作区整理记录](工作区整理-1.0.0.md)。
+当前本地开发目录为 `guitar-practice/work/ui-density-v99`。本轮分支 `codex/teaching-ui-p1-p8` 从本地 `e3a4ba5` 增量实施，版本 **1.0.1 / 103**，见 [教学化 UI 验收](教学化UI-P1-P8.md)。其基线包含 v101 `f74111e` 的功能及 `1.0.0 / 102` 版本归一。项目根目录的 v82 工作树含未提交内容，不能直接当作当前入口。详细边界见 [工作区整理记录](工作区整理-1.0.0.md)。
 
 ## 构建
 
@@ -11,7 +11,7 @@
 .\scripts\sign-local.ps1
 ```
 
-`--offline` 要求依赖已缓存；新环境需先解析依赖。正式包继续使用 `com.a3322505a.guitarlearning` 和既有长期证书。`-PtabletReview=true` 仅保留独立验收包名/标签，versionName 同样为 `1.0.0`。debug、release、p0 共享 versionCode `102`，移除了 p0 的旧 `86` 覆盖。历史 v95 对照包和待合入的长期 compare 构建是不同保留工作，不在本次版本改动内。
+`--offline` 要求依赖已缓存；新环境需先解析依赖。正式包继续使用 `com.a3322505a.guitarlearning` 和既有长期证书。`-PtabletReview=true` 仅保留独立验收包名/标签，版本与正式构建一致。debug、release、p0 共享当前版本，已移除 p0 的旧 `86` 覆盖。历史 v95 对照包和待合入的长期 compare 构建是不同保留工作，不在本次版本改动内。
 
 ## 当前有效资料
 
