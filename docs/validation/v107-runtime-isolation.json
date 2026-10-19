@@ -1,0 +1,10 @@
+{
+  "apk": "C:\\Users\\b3322\\Documents\\Codex\\projects\\guitar-practice\\work\\native-teaching-v106\\output\\guitar-practice-1.2.0-compare-v107.apk",
+  "apk_sha256": "c60920a763f6ad5c6c080b709ace25f4a99dd963b7ffccf11d6af71ed3be4493",
+  "defined_classes": 15871,
+  "legacy_type_references": [],
+  "comparison_pcm_assets": [],
+  "soundfont_sha256": "02ab9f358d1d79906e07ba8eb1d08993addfa3f23a9aaebea51e4589379a2bf8",
+  "minification": false,
+  "resource_shrinking": false
+}

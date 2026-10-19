@@ -1,0 +1,59 @@
+{
+  "createdAt": "2026-10-19T23:23:55.967851+08:00",
+  "sourceBranch": "codex/native-teaching-v106",
+  "sourceCommit": "291df1371fe4f46a03f8cb84a2d9cfe32d17b295",
+  "baseCommit": "03431ea20908aac0f698ff7c0647452a266a3f35",
+  "versionCode": 107,
+  "versionName": "1.2.0-compare",
+  "applicationId": "com.a3322505a.guitarlearning.compare",
+  "label": "吉他练习·对照",
+  "debuggable": false,
+  "apk": "output\\guitar-practice-1.2.0-compare-v107.apk",
+  "bytes": 41113332,
+  "sha256": "c60920a763f6ad5c6c080b709ace25f4a99dd963b7ffccf11d6af71ed3be4493",
+  "certificateSha256": "43b7af607adb264fb2faa79437d91dbc7e1bea7d7ce92804965fe0f1c8daf320",
+  "signatureSchemes": {
+    "1": false,
+    "2": true,
+    "3": true
+  },
+  "zipalignVerified": true,
+  "packagedAssetsMatchWorkspace": true,
+  "contractAssetsMatchWorkspace": true,
+  "finalDictionaryAndPreviewPresentInDex": true,
+  "assets": [
+    {
+      "file": "daily-practice.gpractice",
+      "bytes": 28723,
+      "sha256": "e6f0ea391c803fb39a856d8ac898bc55139f2d31c1640c8916da603955d83206"
+    },
+    {
+      "file": "demo-c.gpractice",
+      "bytes": 9856,
+      "sha256": "d2e1870fbfa8de89c0e40b7342041936563222ded41681929aa8cfc519db5c28"
+    },
+    {
+      "file": "demo-capo.gpractice",
+      "bytes": 9628,
+      "sha256": "48c4b661dc5ea35cbacfbf9688048d0d71ccfd103338cc225fd8b0fa8b1cd220"
+    },
+    {
+      "file": "demo-rock.gpractice",
+      "bytes": 9334,
+      "sha256": "45712a3765ef0395cd7f13d353557afa57e307ee25bc9085e5b1cbfa92cdb567"
+    },
+    {
+      "file": "teaching-native.gpractice",
+      "bytes": 63922,
+      "sha256": "aaddedc6b3b1ce89fb43c0c83d58ac0862efa6a74928bcd13b98212c88df5ef1"
+    }
+  ],
+  "tests": "v107-tests.json",
+  "synthesis": "v107-synthesis.json",
+  "isolation": "v107-runtime-isolation.json",
+  "realDeviceInstallVerified": false,
+  "realDeviceListeningVerified": false,
+  "longTermSyncVerified": false,
+  "githubCiRun": false,
+  "qqSent": false
+}
