@@ -300,7 +300,7 @@ internal fun PracticeContent(
                             if (page == 0) {
                                 val h = maxOf(if (configuring) 80.dp else 176.dp * fontScale, viewportHeight).coerceAtMost(310.dp * fontScale)
                                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
-                                    val positions = if (scale.exercise == ScaleExercise.CONNECTION && scale.pattern < 4) {
+                                    val positions = if (scale.exercise == ScaleExercise.CONNECTION && scale.pattern < Patterns.forKey(scale.key,scale.pentatonic).lastIndex) {
                                         (Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].positions + Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern + 1].positions).distinct()
                                     } else {
                                         Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].positions

@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class TeachingV31Test {
-    private fun teaching(id: String) = SongTestLibrary.repository.resolve(PracticeKey("local.teaching-v31",id).encoded)
+    private fun teaching(id: String) = SongTestLibrary.repository.resolve(PracticeKey("local.teaching-native",id).encoded)
 
     @Test fun theoreticalSpellingMinorDegreesAndSoundingCapoAreIndependent() {
         assertEquals(listOf("B♭","C","D","E♭","F","G","A"),KeyContext(SpelledPitch.parse("Bb"),ScaleDefinition.MAJOR).spelling.map { it.name })
@@ -50,7 +50,7 @@ class TeachingV31Test {
     @Test fun everyNewLessonAndMigratedBuiltinReachesTheOneNativeMidiAndCursorModel() {
         val repo=SongTestLibrary.repository
         val all=repo.snapshot.phrases.filter { it.assetKey?.packageId?.startsWith("local.teaching-")==true }
-        assertEquals(127,all.size)
+        assertEquals(86,all.size)
         all.forEach { descriptor ->
             val phrase=repo.resolve(descriptor.id)
             val plan=phrase.sequence.performance
@@ -61,34 +61,33 @@ class TeachingV31Test {
             assertEquals(descriptor.title,plan.visits.size,projection.visits.size)
             assertEquals(descriptor.title,plan.length.value()*960,projection.visits.last().end,1e-6)
         }
-        assertEquals(32,repo.resolve("SB-2").sequence.performance.visits.size)
-        assertEquals("SB-2",repo.resolve("SB-2").legacyIds.single())
+        assertFalse(repo.snapshot.aliases.keys.any { it.startsWith("SB-") })
     }
     @Test fun sixTeachingKeysHaveOnlyTheirRealScalePitchesAndClosedBoxesHaveNoOpenStrings() {
         Tonality.entries.forEach { key -> Patterns.forKey(key).forEach { pattern ->
             assertTrue(key.title,pattern.positions.all { it.midi%12 in key.pitchClasses })
         } }
-        listOf("A","B","G").forEach { tonic ->
-            val plan=teaching("BOX-$tonic").sequence.performance
+        listOf("Am","Bm","Em").forEach { tonic ->
+            val plan=teaching("S-$tonic-box5-pent").sequence.performance
             assertTrue(plan.notes.all { it.note.fret>0 && it.finger in 1..4 })
             assertTrue(plan.notes.all { it.note.midi%12 in plan.practice.lesson!!.key!!.pentatonic })
         }
-        val c=teaching("S-C-major").sequence.performance.notes.take(8).map { it.note.midi }
+        val c=teaching("S-C-open").sequence.performance.notes.take(8).map { it.note.midi }
         assertEquals(listOf(48,50,52,53,55,57,59,60),c)
-        assertEquals(listOf(43,45,47,48,50,52,54,55),teaching("S-G-major").sequence.performance.notes.take(8).map { it.note.midi })
+        assertEquals(listOf(43,45,47,48,50,52,54,55),teaching("S-G-open").sequence.performance.notes.take(8).map { it.note.midi })
     }
     @Test fun optionalPlaybackHasRealPrerequisitesAndRangesDoNotReverseEvents() {
-        val seq=teaching("LEAD-1").sequence
+        val seq=SongTestLibrary.repository.resolve(PracticeKey("local.demo-c","SOLO-original").encoded).sequence
         assertTrue(PracticeExtensions.canFade(seq))
-        assertTrue(PracticeExtensions.canFade(teaching("JR-2").sequence))
-        assertEquals(setOf("guitar","backing"),teaching("JR-2").sequence.performance.notes.map { it.track.id }.toSet())
+        assertTrue(PracticeExtensions.canFade(SongTestLibrary.repository.resolve(PracticeKey("local.demo-rock","SOLO-original").encoded).sequence))
+        assertEquals(setOf("original-lead","original-backing"),SongTestLibrary.repository.resolve(PracticeKey("local.demo-rock","SOLO-original").encoded).sequence.performance.notes.map { it.track.id }.toSet())
         assertFalse(PracticeExtensions.canFade(teaching("FB-1").sequence))
         assertEquals(listOf(1.0,.3,0.0,0.0),(0..3).map(PracticeExtensions::leadGain))
-        assertEquals(listOf(BarRange(3,3),BarRange(2,3),BarRange(1,3),BarRange(0,3)),PracticeExtensions.backwardRanges(seq,BarRange(0,3)))
-        val join=teaching("JOIN-C-Am").sequence.performance
-        assertEquals(listOf("FLOW-C-m-1","FLOW-Am-m-0"),join.visits.map { it.sourceMeasureId })
+        assertEquals(listOf(BarRange(2,3),BarRange(0,3)),PracticeExtensions.backwardRanges(seq,BarRange(0,3)))
+        val join=SongTestLibrary.repository.resolve(PracticeKey("local.demo-c","JOIN-original").encoded).sequence.performance
+        assertEquals(listOf("song-m-3","song-m-4"),join.visits.map { it.sourceMeasureId })
         assertEquals(Q(8),join.length)
-        assertEquals(listOf(BarRange(1,1),BarRange(0,1)),PracticeExtensions.backwardRanges(teaching("FB-1").sequence,BarRange(0,1)))
+        assertEquals(listOf(BarRange(0,1)),PracticeExtensions.backwardRanges(teaching("FB-1").sequence,BarRange(0,1)))
     }
     @Test fun globalGainsRestoreOldMutesAndRemainIndependentIncludingZero() {
         val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("v31-mix-test",0)

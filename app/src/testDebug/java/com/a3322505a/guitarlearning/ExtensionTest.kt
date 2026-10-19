@@ -1,6 +1,6 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+import com.a3322505a.guitarlearning.practice.Phrases as Phrases
 
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*

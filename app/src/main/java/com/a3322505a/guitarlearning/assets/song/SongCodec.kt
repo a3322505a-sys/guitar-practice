@@ -100,7 +100,7 @@ object SongCodec {
                 it.s("entry","reject"),it.s("exit","reject"),it.strings("affectedNoteIds")) },
             p.i("suggestedTempo",60),p["familyId"] as? String,p["variantOf"] as? String,p.strings("relatedIds"),
             p.s("visibility","core"),p.i("order"),p.strings("tags"),p.q("padding"),p["paddingReason"] as? String,
-            p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),p.strings("legacyIds"),
+            p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),
             p.objects("noteFingerings").map { NoteFingering(it.s("sourceNoteId"),it["finger"]?.intValue(),
                 it.s("source"),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
     }

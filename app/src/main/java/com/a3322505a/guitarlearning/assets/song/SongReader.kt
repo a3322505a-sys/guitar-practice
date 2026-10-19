@@ -60,6 +60,7 @@ class SongReader(private val schema: SongSchema) {
         val roots=files.mapValues { (name,data) -> cancel();StrictJson.parse(data).also { schema.validate(name.removeSuffix(".json"),it) }.objectValue() }
         val manifest=roots.getValue("manifest.json")
         val packageId=manifest.s("packageId")
+        val nativeTeaching=packageId=="local.teaching-native" || packageId.startsWith("local.demo-")
         musicCheck(builtin || !packageId.startsWith("builtin."),"NAMESPACE","/manifest/packageId","Reserved built-in namespace")
         manifest["files"].objectValue().forEach { (name,entry) ->
             val expected=entry.objectValue()
@@ -71,6 +72,14 @@ class SongReader(private val schema: SongSchema) {
             musicCheck(expected==sha256(files.getValue(name)),"REVIEW_HASH","/review/hashes/"+name,"Review targets different bytes")
         }
         val score=SongCodec.score(roots.getValue("score.json"));val practices=SongCodec.practices(roots.getValue("practices.json"))
+        if(nativeTeaching) {
+            roots.getValue("score.json").objects("voicings").forEach { v ->
+                musicCheck(v.keys.containsAll(listOf("fingers","barres","quality","teaching")),"TEACHING","/score/voicings","Native voicing must be fully authored")
+            }
+            musicCheck(score.voicings.all { v -> v.frets.indices.all { i ->
+                if(v.frets[i]>0) v.fingers[i] in 1..4 else v.fingers[i]==0
+            } } && score.harmonies.all { it.validUntil!=null && it.voicingId!=null },"TEACHING","/score","Native fingers and harmony intervals are required")
+        }
         val derived=ScoreValidation.validate(score,practices)
         val declared=manifest.strings("requires").toSet()
         musicCheck(declared==derived,"CAPABILITY_DECLARATION","/manifest/requires","Expected capabilities: "+derived.joinToString())
@@ -81,6 +90,13 @@ class SongReader(private val schema: SongSchema) {
         practices.forEach {
             cancel()
             PracticeCompiler.compile(score,it,routes=routes).also { plan ->
+                if(nativeTeaching) {
+                    val lesson=it.lesson
+                    musicCheck(lesson?.key!=null && lesson.actions.isNotEmpty() && it.teaching?.version?.isNotBlank()==true &&
+                        plan.notes.all { n -> n.note.fret==0 || n.finger in 1..4 } &&
+                        lesson.actions.all { action -> plan.events.any { e -> e.event.id==action.eventId && e.track.id==it.mainTrackId } },
+                        "TEACHING","/practices/"+it.id,"Native lessons require complete fingering and main-track anticipatory actions")
+                }
                 plannedNotes+=plan.notes.size
                 plannedVisits+=plan.visits.size
                 musicCheck(plannedNotes<=1_000_000 && plannedVisits<=50000,"PLAN_LIMIT","/practices","Aggregate planned note/visit budget")

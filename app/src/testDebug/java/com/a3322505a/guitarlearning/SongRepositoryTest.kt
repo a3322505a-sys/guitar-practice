@@ -173,7 +173,7 @@ class SongRepositoryTest {
         val input=File("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").inputStream()
         repo.commit(repo.prepare(input))
         val phrase=repo.resolve(store.selected().id)
-        assertEquals("S01",phrase.legacyId)
+        assertNotNull(phrase.assetKey)
         assertEquals(PhraseSettings(73,8,BarRange(1,1)),store.load(phrase))
         assertFalse(store.tempo(phrase).first)
         assertEquals(73,prefs.getInt("phrase.S01.bpm",0))

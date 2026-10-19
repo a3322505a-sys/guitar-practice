@@ -185,7 +185,7 @@ def condition_matches(condition,occurrence,passes):
         passes.get(id) in allowed for id,allowed in condition.get("repeatPasses",{}).items())
 
 def validate_music(score,practices):
-    teaching = any("teaching" in v for v in score["voicings"]) or any("teaching" in p or p.get("legacyIds") for p in practices)
+    teaching = any("teaching" in v for v in score["voicings"]) or any("teaching" in p for p in practices)
     caps={"score.rational.v1","guitar.six-string.v1"};ids=set()
     def add(id,path):
         check(id not in ids,"MUSIC",path,"Duplicate ID: "+id);ids.add(id)
@@ -424,8 +424,6 @@ def validate_music(score,practices):
     if score["form"].get("endings"): caps.add("form.volta.v1")
     if score["form"].get("jumps"): caps.add("form.jump.v1")
     if teaching: caps.add("catalogue.teaching.v1")
-    legacy_ids=[id for p in practices for id in p.get("legacyIds",[])]
-    check(len(set(legacy_ids))==len(legacy_ids),"MUSIC","/practices/legacyIds","Duplicate legacy ID")
     from .teaching import validate_teaching
     if validate_teaching(score, practices): caps.add("teaching.lesson.v1")
     return caps

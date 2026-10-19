@@ -1679,15 +1679,6 @@
         "lesson": {
           "$ref": "#/$defs/lesson"
         },
-        "legacyIds": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
-          },
-          "minItems": 0,
-          "maxItems": 32
-        },
         "noteFingerings": {
           "type": "array",
           "items": {

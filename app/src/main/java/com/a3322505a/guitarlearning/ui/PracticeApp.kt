@@ -103,7 +103,7 @@ internal fun PracticeWorkbench(
     val preferences = remember { context.getSharedPreferences("practice-settings", 0) }
     val repository = remember {
         SongRepository(
-            File(context.filesDir, "songs"),
+            File(context.filesDir, "songs-native-v31"),
             SongReader(SongSchema { name -> context.assets.open("song-contract/" + name).use { it.readBytes() } }),
             context.assets.list("song-packages").orEmpty().filter { it.endsWith(".gpractice") }.associateWith { name ->
                 { context.assets.open("song-packages/" + name) }
@@ -213,8 +213,11 @@ internal fun PracticeWorkbench(
     val section = if (showingSession && cursor?.pre == false) displayedSequence!!.sectionAt(cursor.localTick) else -1
     val harmony = displayedSequence?.sections.orEmpty()
     val shownChord = if (page == 1) harmony.getOrNull(if(showingSession) section else displayedSequence?.sectionAt((activeRange.first.let { displayedSequence?.barStart(it) } ?: 0).toDouble()) ?: -1)?.let { displayedSequence?.chordAt(it) } else first
-    val melody = page == 1 && chordPhrases && (harmony.isEmpty() || shownChord == null)
-    val automaticChord=if(page==0 || !chordPhrases) first else shownChord
+    val singleVoiceMelody=displayedSequence?.runtimePlan?.let { plan ->
+        plan.events.filter { it.track.id==plan.mainTrack.id }.all { it.event.notes.size<=1 }
+    } == true
+    val melody = page == 1 && chordPhrases && (singleVoiceMelody || harmony.isEmpty() || shownChord == null)
+    val automaticChord=if(page==0) Chords.named(scale.key.tonic+if(scale.key.mode==ScaleDefinition.NATURAL_MINOR) "m" else "") else if(!chordPhrases) first else shownChord
     val referenceChord=Chords.named(if(referenceChordName=="auto") phrase.lesson?.referenceChordName ?: "C" else referenceChordName)
     val boardTeaching = BoardTeachingContext(if(page==0) scale.key.context else if(chordPhrases) phrase.lesson?.key else null,
         if(referenceChordName=="auto") automaticChord ?: referenceChord else referenceChord,
@@ -421,10 +424,16 @@ internal fun PracticeWorkbench(
                         showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
                         if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
                     )
-                    CompositionLocalProvider(LocalStageViewSwitch provides false, LocalBoardTeaching provides boardTeaching,
-                        LocalSelectHint provides { value -> setHint(value.ordinal) },LocalSelectReferenceChord provides { name ->
-                            referenceChordName=name;preferences.edit().putString("reference-chord",name).apply();setHint(Hint.CHORD_TONES.ordinal)
-                        }) {
+                    CompositionLocalProvider(
+                        LocalStageViewSwitch provides false,
+                        LocalBoardTeaching provides boardTeaching,
+                        LocalSelectHint provides { value -> setHint(value.ordinal) },
+                        LocalSelectReferenceChord provides { name ->
+                            referenceChordName = name
+                            preferences.edit().putString("reference-chord",name).apply()
+                            setHint(Hint.CHORD_TONES.ordinal)
+                        },
+                    ) {
                         if (showNativeScore) {
                             val fontScale = density.fontScale.coerceAtLeast(1f)
                             val targetHeight = if (stageLayout == StageLayout.LINKED && contentHeight >= 320.dp * fontScale) {
@@ -490,7 +499,7 @@ internal fun PracticeWorkbench(
             val lessonActions: @Composable () -> Unit = {
                 if(page==1 && chordPhrases && !phrase.unprepared) {
                     fun destination(id: String): Phrase? {
-                        val global=librarySnapshot.aliases[id]?.let(repository::named)
+                        val global=librarySnapshot.phrases.firstOrNull { it.id==id }
                         val encoded=phrase.assetKey?.let { com.a3322505a.guitarlearning.music.score.PracticeKey(it.packageId,id).encoded }
                         return global ?: encoded?.let { key -> librarySnapshot.phrases.firstOrNull { it.id==key } }
                     }
@@ -632,7 +641,7 @@ internal fun PracticeWorkbench(
                         { updated ->
                             librarySnapshot = updated
                             val restored = phraseStore.selected()
-                            val current = if (restored.legacyId != null) restored else repository.named(phraseId)
+                            val current = librarySnapshot.phrases.firstOrNull { it.id==phraseId } ?: restored
                             phraseId = current.id; loadPhrase(current)
                         },
                         { overlay = PracticeOverlay.NONE },

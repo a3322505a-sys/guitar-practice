@@ -46,7 +46,10 @@ class TeachingDiagramTest {
 
     @Test fun explicitRelationsKeepTechniqueKindAndEndpointsUntilTargetOnset() {
         listOf("SL01" to listOf("/", "\\"), "H01" to listOf("h", "p"), "P01" to listOf("p", "h")).forEach { (id, marks) ->
-            val sequence = com.a3322505a.guitarlearning.SongTestLibrary.repository.resolve(id).sequence
+            val kind = when(id) { "SL01" -> Technique.SLIDE; "H01" -> Technique.HAMMER; else -> Technique.PULL }
+            val reverse = when(kind) { Technique.HAMMER -> Technique.PULL; Technique.PULL -> Technique.HAMMER; else -> kind }
+            val sequence = Sequence(listOf(Event(0,12,listOf(Position(3,5))),Event(12,12,listOf(Position(3,7))),Event(24,12,listOf(Position(3,7))),Event(36,12,listOf(Position(3,5)))),48,"独立技巧夹具",
+                links=listOf(Legato(0,12,3,kind),Legato(24,36,3,reverse)))
             val plan = sequence.performance
             val index = LessonBoardIndex(plan)
             assertEquals(2,plan.relations.size)

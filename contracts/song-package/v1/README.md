@@ -29,9 +29,9 @@
 
 逐音指法使用练习中的 `noteFingerings` 数组，并声明能力 `teaching.note-fingering.v1`。每项包含 `sourceNoteId`、审核依据 `source`、可选 `finger`（1–4 或 null）和可选 `occurrence`。它是练习教学数据，不修改 score 音符。相同 sourceNoteId/occurrence 不得重复；引用必须属于参与轨道和当前练习实际路线。具体经过覆盖无经过限定的指法，null 明确表示未知。空弦或死音不接受左手数字。未知数据回退实音音名；选定和弦可复用其实际 voicing 的 fingers，不按和弦名称另找按法。
 
-`fixtures/note-fingering.gpractice` 是修订 2 的原创协议样例，保留 simple 的源谱，重新绑定教学、review 和 manifest 哈希。生产工具 `validate/pack --capabilities <旧能力文件>` 会明确拒绝新能力。给现有歌曲增加或改动教学数据也必须递增修订并重新审核、绑定哈希。旧包不必重新打包。
+`fixtures/note-fingering.gpractice` 是修订 2 的原创协议样例，保留 simple 的源谱，重新绑定教学、review 和 manifest 哈希。生产工具 `validate/pack --capabilities <旧能力文件>` 会明确拒绝新能力。给现有歌曲增加或改动教学数据也必须递增修订并重新审核、绑定哈希。原生教材不复用旧包；通用协议夹具只用于解析器边界回归。
 
-v77 在原 v1 五文件协议上增加可选 `catalogue.teaching.v1` 能力：voicing.teaching 保存来源已审核的根音/三音、实音名、组别、指法说明、音程和音名标签；practice.teaching 保存分类、分句范围、来源、技法、用途、版本名、速度标签和教学说明，legacyIds 保存旧安装的设置ID。未提供的和弦分析保持未知，不从名称猜测。新增字段由严格schema验证且必须声明该能力，旧App明确拒绝；旧五文件曲包仍可读取。全局旧ID只由APK预装包接入，外部alias仍限定在各自命名空间，不覆盖内置练习。
+当前原生教学使用五文件协议的 `catalogue.teaching.v1` 与 V3.1 教学能力。voicing.teaching 保存实音根音/性质、按法与实音名、组别、来源、音程和音名；practice.teaching 保存分类、范围、来源、技法、用途、版本与说明。旧 `legacyIds` 字段及全局 ID 迁移已删除。内置教材必须显式提供每个按弦音的 1–4 指、六弦 O/X、barres（无横按为空列表）、和弦生效区间、调性与参照和弦、真实主轨动作事件。空弦/无三音等音乐上的不适用不得伪造值。内置 JSON 不允许 null 或缺失占位，SongReader 对原生包额外执行完整性约束，独立审计覆盖全部资产及跨包热身引用。
 
 APK预装包经同一Repository prepare/commit流程进入不可变修订与原子索引，运行时目录和音乐计划继续从私有曲库读取；没有另一套预装播放器或歌曲注册。历史已包含的预装修订不会再次启用已停用歌曲，用户的新修订不被预装旧版替换。
 

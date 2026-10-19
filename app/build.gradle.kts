@@ -12,11 +12,19 @@ android {
         manifestPlaceholders["appLabel"] = if (tabletReview) "å‰ä»–ç»ƒä¹ Â·è”åŠ¨éªŒæ”¶" else "å‰ä»–ç»ƒä¹ "
         minSdk = 26
         targetSdk = 35
-        versionCode = 105
-        versionName = "1.1.0"
+        versionCode = 106
+        versionName = "1.1.1"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }
+        create("compare") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".compare"
+            versionNameSuffix = "-compare"
+            manifestPlaceholders["appLabel"] = "¼ªËûÁ·Ï°¡¤¶ÔÕÕ"
+            isDebuggable = false
+            matchingFallbacks += "release"
+        }
         create("p0") {
             initWith(getByName("release"))
             isDebuggable = true

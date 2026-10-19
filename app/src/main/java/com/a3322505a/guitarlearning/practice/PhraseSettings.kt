@@ -18,18 +18,13 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         prefs.edit().putBoolean(prefix+"sourceTempo",source).putFloat(prefix+"speedPercent",multiplier.coerceIn(25.0,200.0).toFloat()).apply()
     }
     fun selected(): Phrase {
-        val pending=runCatching { prefs.getString("phrase-pending-import",null) }.getOrNull()
-        if(pending!=null && resolve(pending).assetKey!=null) return resolve(pending)
-        val id=runCatching { prefs.getString("phrase-selected",com.a3322505a.guitarlearning.music.score.PracticeKey("local.teaching-v31","FB-1").encoded) }.getOrNull() ?: "M01"
-        val selected=resolve(id)
-        if(id in MigratedPracticeIds.targets && selected.id!=MigratedPracticeIds.targets[id])
-            prefs.edit().putString("phrase-pending-import",id).apply()
-        return selected
+        val initial=com.a3322505a.guitarlearning.music.score.PracticeKey("local.teaching-native","FB-1").encoded
+        val requested=runCatching { prefs.getString("phrase-selected",initial) }.getOrNull() ?: initial
+        return resolve(requested).takeIf { it.assetKey!=null } ?: resolve(initial)
     }
     fun select(phrase: Phrase) { prefs.edit().remove("phrase-pending-import").putString("phrase-selected",phrase.id).apply() }
     fun load(phrase: Phrase,fallbackBpm: Int=60,fallbackRepeats: Int=4): PhraseSettings {
         if(phrase.assetKey!=null) {
-            migrate(phrase,fallbackBpm,fallbackRepeats)
             return loadAsset(phrase)
         }
         val settingsId=phrase.id
@@ -60,24 +55,6 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         val offset=if(sourceIndex<0) v.sourceStart else v.sourceStart-plan.score.measureStarts[sourceIndex]
         return v.measure.id+":"+v.occurrence+":"+offset+":"+v.duration
     }
-    private fun migrate(phrase: Phrase,fallbackBpm: Int,fallbackRepeats: Int) {
-        val ids=listOfNotNull(phrase.legacyId)+phrase.legacyIds
-        if(ids.isEmpty()) return
-        val selected=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
-        val legacy=selected?.takeIf { it in ids && prefs.contains("phrase.$it.bpm") }
-            ?: ids.firstOrNull { prefs.contains("phrase.$it.bpm") } ?: ids.first()
-        val prefix="asset."+phrase.assetKey!!.encoded+"."
-        if(phrase.unprepared || prefs.contains(prefix+"bpm")) return
-        fun number(key: String,default: Int)=runCatching { prefs.getInt("phrase.$legacy.$key",default) }.getOrDefault(default)
-        val bpm=number("bpm",fallbackBpm).takeIf { it in 30..180 } ?: fallbackBpm
-        val repeats=number("repeats",fallbackRepeats).takeIf { it in listOf(0,1,4,8) } ?: fallbackRepeats
-        val whole=BarRange(0,phrase.sequence.barCount-1)
-        val saved=BarRange(number("first",whole.first),number("last",whole.last))
-        val range=saved.takeIf { it.valid(phrase.sequence) } ?: whole
-        prefs.edit().putInt(prefix+"bpm",bpm).putInt(prefix+"repeats",repeats).putBoolean(prefix+"sourceTempo",false)
-            .putString(prefix+"first",anchor(phrase,range.first)).putString(prefix+"last",anchor(phrase,range.last))
-            .putString(prefix+"route",phrase.sequence.performance.routeFingerprint).apply()
-    }
     private fun loadAsset(phrase: Phrase): PhraseSettings {
         val prefix=assetPrefix(phrase)
         fun number(key: String,default: Int)=runCatching { prefs.getInt(prefix+key,default) }.getOrDefault(default)
@@ -93,10 +70,5 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         val valid=a>=0 && b>=a
         return PhraseSettings(bpm,repeats,if(valid) BarRange(a,b) else whole,first!=null && !valid)
     }
-    private fun assetPrefix(phrase: Phrase): String {
-        val current="asset."+phrase.assetKey!!.encoded+"."
-        val selected=runCatching { prefs.getString("phrase-selected",null) }.getOrNull()
-        return if(!prefs.contains(current+"bpm") && selected!=null && selected!=phrase.id && resolve(selected).id==phrase.id)
-            "asset."+selected+"." else current
-    }
+    private fun assetPrefix(phrase: Phrase) = "asset."+phrase.assetKey!!.encoded+"."
 }

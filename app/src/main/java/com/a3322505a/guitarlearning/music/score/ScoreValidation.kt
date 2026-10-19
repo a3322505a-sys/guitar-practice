@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 object ScoreValidation {
     fun validate(score: ScoreDocument, practices: List<PracticeSpec>): Set<String> {
         val capabilities=sortedSetOf("score.rational.v1","guitar.six-string.v1")
-        if(score.voicings.any { it.teaching!=null } || practices.any { it.teaching!=null || it.legacyIds.isNotEmpty() })
+        if(score.voicings.any { it.teaching!=null } || practices.any { it.teaching!=null })
             capabilities+="catalogue.teaching.v1"
         fun check(ok: Boolean, path: String, reason: String) = musicCheck(ok,"MUSIC",path,reason)
         val ids=mutableSetOf<String>()
@@ -256,8 +256,6 @@ object ScoreValidation {
             }
         }
         val practiceIds=practices.map { it.id }.toSet()
-        val legacyIds=practices.flatMap { it.legacyIds }
-        check(legacyIds.distinct().size==legacyIds.size,"/practices/legacyIds","Duplicate legacy ID")
         practices.forEach { p ->
             check(listOfNotNull(p.familyId,p.variantOf).plus(p.relatedIds).all { it in practiceIds },"/practices","Missing family/variant/related practice")
             var parent=p.variantOf; val seen=mutableSetOf(p.id)

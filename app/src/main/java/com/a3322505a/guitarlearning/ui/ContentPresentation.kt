@@ -9,7 +9,6 @@ import com.a3322505a.guitarlearning.practice.Phrase
 import com.a3322505a.guitarlearning.practice.ScaleExercise
 
 internal const val BASIC_CONTENT = "__basic__"
-private const val MOZART_PACKAGE = "local.mozart"
 
 internal data class ContentCardText(val primary: String, val tag: String? = null)
 internal data class ContentSource(val id: String, val title: String)
@@ -25,10 +24,10 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
             .sorted().map { ContentSource(it, packageNames[it] ?: it) }
 
     fun sourceOf(phrase: Phrase): String = phrase.assetKey?.packageId
-        ?.takeUnless { it == MOZART_PACKAGE || it.startsWith("local.teaching-") } ?: BASIC_CONTENT
+        ?.takeUnless { it.startsWith("local.teaching-") } ?: BASIC_CONTENT
 
     fun sourceOf(chord: Chord): String = encodedPackageId(chord.id)
-        ?.takeUnless { it == MOZART_PACKAGE || it.startsWith("local.teaching-") } ?: BASIC_CONTENT
+        ?.takeUnless { it.startsWith("local.teaching-") } ?: BASIC_CONTENT
 
     fun restoredSource(requested: String, ready: Boolean): String =
         if (!ready || sources.any { it.id == requested }) requested else BASIC_CONTENT
@@ -39,28 +38,26 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
 
     fun phraseSections(source: String, module: TeachingModule? = null): List<ContentSection<Phrase>> {
         val filtered = phrases.filter { sourceOf(it) == source && (module == null || moduleOf(it) == module) }
-        if (source == BASIC_CONTENT) return teachingSections(filtered, ::phraseTeaching, Phrase::use)
+        if (source == BASIC_CONTENT) return filtered.groupBy { it.lesson?.module?.title ?: it.use }.map { ContentSection(it.key,it.value) }
         return filtered.groupBy { sectionTitle(it.use, source) }.map { ContentSection(it.key, it.value) }
     }
 
-    fun moduleOf(phrase: Phrase) = phrase.lesson?.module ?: if(phrase.assetKey?.packageId == MOZART_PACKAGE) TeachingModule.FOUNDATIONS else TeachingModule.APPLICATION
+    fun moduleOf(phrase: Phrase) = phrase.lesson?.module ?: TeachingModule.APPLICATION
     fun chordSections(source: String): List<ContentSection<Chord>> {
         val filtered = com.a3322505a.guitarlearning.music.ChordSlots.grouped(chords.filter { sourceOf(it) == source })
-        if (source == BASIC_CONTENT) return teachingSections(filtered, { basicChords[it.id] }, Chord::group)
+        if (source == BASIC_CONTENT) return filtered.groupBy { it.group }.map { ContentSection(it.key,it.value) }
         return filtered.groupBy { sectionTitle(it.group, source) }
         .map { ContentSection(it.key, it.value) }
     }
 
     fun phraseText(phrase: Phrase): ContentCardText {
         val source = sourceOf(phrase)
-        if (source == BASIC_CONTENT) phraseTeaching(phrase)?.let { return it.text }
         if (source != BASIC_CONTENT) return ContentCardText(stripPrefix(phrase.title, packageNames[source]))
         return ContentCardText(phrase.title)
     }
 
     fun chordText(chord: Chord): ContentCardText {
         val source = sourceOf(chord)
-        if (source == BASIC_CONTENT) basicChords[chord.id]?.let { return it.text }
         val title = stripPrefix(chord.name, packageNames[source])
         val split = title.lastIndexOf(" · ")
         return if (split > 0 && title.substring(split + 3).contains("品"))
@@ -91,69 +88,6 @@ internal fun sourceTitle(raw: String): String = raw.removePrefix("本地曲库 �
 
 private fun stripPrefix(raw: String, prefix: String?): String =
     if (prefix != null && raw.startsWith("$prefix · ")) raw.removePrefix("$prefix · ").takeIf { it.isNotBlank() } ?: raw else raw
-
-private data class TeachingCard(val section: String, val text: ContentCardText, val order: Int)
-
-private fun cards(section: String, vararg values: Triple<String, String, String>) = values.mapIndexed { i, (id, primary, tag) ->
-    id to TeachingCard(section, ContentCardText(primary, tag), i)
-}.toMap()
-
-private val basicChords =
-    cards("大三和弦 · 明亮主干",
-        Triple("C", "C", "C调 I级 · 明亮主和弦"),
-        Triple("G", "G", "G调 I级 / C调 V级 · 开阔推进"),
-        Triple("D", "D", "D调 I级 · 清脆高亢"),
-        Triple("A", "A", "A调 I级 · 饱满坚定"),
-        Triple("E", "E", "E调 I级 · 摇滚基石")) +
-    cards("小三和弦 · 柔和叙事",
-        Triple("Am", "Am", "C调 vi级 · 忧郁主干"),
-        Triple("Em", "Em", "G调 vi级 / C调 iii级 · 深沉极简"),
-        Triple("Dm", "Dm", "C调 ii级 · 伤感铺垫")) +
-    cards("色彩与转位 · 进阶修饰",
-        Triple("Gsus2", "Gsus2", "挂二和弦 · 空灵悬浮 · 嘘月"),
-        Triple("Asus4(no5)", "Asus4(no5)", "挂四省五 · 现代张力 · 嘘月"),
-        Triple("Bm7(no5)", "Bm7(no5)", "小七省五 · 免横按过渡 · 嘘月"),
-        Triple("D/F♯", "D/F#", "第一转位 · G→Em 常用桥梁"))
-
-private val basicPhrases =
-    cards("基本功热身 · 七个Block",
-        Triple("SB-1", "交替拨弦热身", "Block 01 · 右手稳定度"),
-        Triple("SB-2", "换弦练习", "Block 02 · 跨弦准确度"),
-        Triple("SB-3", "手指组合练习", "Block 03 · 左手独立性"),
-        Triple("SB-4", "节奏型练习", "Block 04 · 律动控制"),
-        Triple("SB-5", "跳弦练习", "Block 05 · 大跨度拨弦"),
-        Triple("SB-6", "时值切换练习", "Block 06 · 时值切换稳定性"),
-        Triple("SB-7", "音阶综合热身", "Block 07 · 双手同步率")) +
-    cards("专项技巧 · 触弦与控制",
-        Triple("T01", "八分与十六分", "时值转换 · 三连音"),
-        Triple("PM01", "普通与制音对照", "掌根闷音 · Palm Mute"),
-        Triple("SL01", "滑音 5/7 与 7\\5", "左手滑音 · Slide"),
-        Triple("H01", "击弦 5h7", "左手连奏 · Hammer-on"),
-        Triple("P01", "勾弦 7p5", "左手连奏 · Pull-off")) +
-    cards("旋律与古典练习曲", Triple("M01", "C 大调小句", "入门旋律 · 第一把位")) +
-    cards("节奏与综合实战",
-        Triple("R01", "节奏句（基础版）", "简单和弦节奏 · 伴奏入门"),
-        Triple("R02", "节奏句（完整版）", "综合片段 · 律动进阶"))
-
-private val mozartCards = listOf(
-    "K265-A" to ContentCardText("1 主题", "莫扎特 K265 · 小星星变奏"),
-    "K265-B" to ContentCardText("2 变奏", "莫扎特 K265 · 密集十六分"),
-    "K265-C" to ContentCardText("3 再现与结尾", "莫扎特 K265 · 终章乐段"),
-).mapIndexed { i, (id, text) -> id to TeachingCard("旋律与古典练习曲", text, i + 1) }.toMap()
-
-private fun phraseTeaching(phrase: Phrase): TeachingCard? = when {
-    phrase.assetKey?.packageId == MOZART_PACKAGE -> mozartCards[phrase.assetKey.practiceId]
-    phrase.assetKey == null || phrase.assetKey.packageId == "local.teaching-legacy" -> basicPhrases[phrase.legacyIds.firstOrNull() ?: phrase.id]
-    else -> null
-}
-
-private fun <T> teachingSections(items: List<T>, teaching: (T) -> TeachingCard?, fallback: (T) -> String): List<ContentSection<T>> {
-    val order = listOf("大三和弦 · 明亮主干", "小三和弦 · 柔和叙事", "色彩与转位 · 进阶修饰",
-        "基本功热身 · 七个Block", "专项技巧 · 触弦与控制", "旋律与古典练习曲", "节奏与综合实战")
-    return items.groupBy { teaching(it)?.section ?: fallback(it) }.entries
-        .sortedBy { order.indexOf(it.key).takeIf { index -> index >= 0 } ?: Int.MAX_VALUE }
-        .map { (title, group) -> ContentSection(title, group.sortedBy { teaching(it)?.order ?: Int.MAX_VALUE }) }
-}
 
 internal fun tonalityText(key: Tonality) = ContentCardText(key.title, when (key) {
     Tonality.C_MAJOR -> "自然大调 · 明亮开阔"

@@ -1,6 +1,6 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+import com.a3322505a.guitarlearning.practice.Phrases as Phrases
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -108,7 +108,7 @@ class UnifiedTabRenderTest {
         } finally { player.release() }
     }
     @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun largeTextDenseAndHarmonicNotesKeepTheirMeasuredWidth() {
-        val dense=SevenBlocks.phrases[0].sequence
+        val dense=SongTestLibrary.repository.snapshot.phrases.filter { it.assetKey?.packageId=="local.teaching-native" }.map { SongTestLibrary.repository.resolve(it.id) }[0].sequence
         render(dense,(dense.barEnd(1)-6).toDouble(),"large-text-block-following",1.4f,true)
         val reader=com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
             File("../contracts/song-package/v1",it).readBytes() })

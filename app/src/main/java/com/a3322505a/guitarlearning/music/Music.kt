@@ -23,32 +23,18 @@ enum class Tonality(val title: String, val tonic: String, val mode: ScaleDefinit
     fun isRoot(p: Position) = p.midi % 12 == root
 }
 
-data class Pattern(val solfege: String, val caged: String, val frets: List<List<Int>>) {
+data class Pattern(val solfege: String, val caged: String, val frets: List<List<Int>>, val fingers: Map<Position,Int> = emptyMap()) {
     val title get() = if(caged.isBlank()) "$solfege · 音位范围" else "$solfege 指型 · CAGED $caged 形"
     val positions = frets.flatMapIndexed { index, row -> row.map { Position(index + 1, it) } }
 }
 
 object Patterns {
-    // Transcribed from 001 MajorScalePatterns.kt, fc7d446b; exact edge notes retained.
-    val all = listOf(
-        Pattern("mi", "C", listOf(listOf(0,1,3), listOf(0,1,3), listOf(0,2), listOf(0,2,3), listOf(0,2,3), listOf(0,1,3))),
-        Pattern("sol", "A", listOf(listOf(3,5), listOf(3,5,6), listOf(2,4,5), listOf(2,3,5), listOf(2,3,5), listOf(3,5))),
-        Pattern("la", "G", listOf(listOf(5,7,8), listOf(5,6,8), listOf(4,5,7), listOf(5,7), listOf(5,7,8), listOf(5,7,8))),
-        Pattern("si", "E", listOf(listOf(7,8,10), listOf(8,10), listOf(7,9,10), listOf(7,9,10), listOf(7,8,10), listOf(7,8,10))),
-        Pattern("re", "D", listOf(listOf(10,12,13), listOf(10,12,13), listOf(9,10,12), listOf(9,10,12), listOf(10,12), listOf(10,12,13))),
-    )
-    /** Enumerate a verified pitch collection in each fixed viewport; never translate an open grip. */
-    fun forKey(key: Tonality, pentatonic: Boolean = false): List<Pattern> {
-        val pitches = if(pentatonic) key.context.pentatonic else key.pitchClasses.toSet()
-        if(key in listOf(Tonality.C_MAJOR,Tonality.A_MINOR) && !pentatonic) return all
-        return all.mapIndexed { index,source ->
-            val range = if(source.positions.any { it.fret==0 } && key !in listOf(Tonality.C_MAJOR,Tonality.A_MINOR)) 0..4 else source.positions.minOf { it.fret }..source.positions.maxOf { it.fret }
-            source.copy(frets = Music.openMidi.map { open -> range.filter { (open+it)%12 in pitches } },
-                caged=if(key in listOf(Tonality.C_MAJOR,Tonality.A_MINOR)) source.caged else "",
-                solfege=if(key in listOf(Tonality.C_MAJOR,Tonality.A_MINOR)) source.solfege else if(index==0) "开放把位" else "把位 ${index+1}")
+    val all get() = NativeScalePatterns.byKey.getValue(Tonality.C_MAJOR)
+    fun forKey(key: Tonality, pentatonic: Boolean = false): List<Pattern> =
+        NativeScalePatterns.byKey.getValue(key).map { p ->
+            if(!pentatonic) p else p.copy(frets=p.frets.mapIndexed { i,row -> row.filter { (Music.openMidi[i]+it)%12 in key.context.pentatonic } })
         }
-    }
-    val s1 = listOf(Position(5,3), Position(4,0), Position(4,2), Position(4,3), Position(3,0), Position(3,2), Position(2,0), Position(2,1))
+    val s1 = listOf(Position(5,3),Position(4,0),Position(4,2),Position(4,3),Position(3,0),Position(3,2),Position(2,0),Position(2,1))
 }
 
 data class Chord(val name: String, val root: Int, val third: Int?, val frets: List<Int?>, val fingers: List<Int>,

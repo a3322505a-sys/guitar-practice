@@ -1,0 +1,38 @@
+[
+  {
+    "file": "demo-c.gpractice",
+    "packageId": "local.demo-c",
+    "practices": 6,
+    "explicitFrettedAssociations": 216,
+    "missing": 0,
+    "adjacentJoins": 2,
+    "independentLeadGroups": 6
+  },
+  {
+    "file": "demo-capo.gpractice",
+    "packageId": "local.demo-capo",
+    "practices": 6,
+    "explicitFrettedAssociations": 206,
+    "missing": 0,
+    "adjacentJoins": 2,
+    "independentLeadGroups": 6
+  },
+  {
+    "file": "demo-rock.gpractice",
+    "packageId": "local.demo-rock",
+    "practices": 6,
+    "explicitFrettedAssociations": 216,
+    "missing": 0,
+    "adjacentJoins": 2,
+    "independentLeadGroups": 6
+  },
+  {
+    "file": "teaching-native.gpractice",
+    "packageId": "local.teaching-native",
+    "practices": 86,
+    "explicitFrettedAssociations": 2019,
+    "missing": 0,
+    "adjacentJoins": 0,
+    "independentLeadGroups": 0
+  }
+]
