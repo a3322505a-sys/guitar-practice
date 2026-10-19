@@ -13,18 +13,9 @@ object PracticeExtensions {
     fun leadGain(round: Int) = when(round) { 0 -> 1.0; 1 -> .3; else -> 0.0 }
     fun backwardRanges(sequence: Sequence, range: BarRange): List<BarRange> {
         val plan = sequence.runtimePlan ?: return emptyList()
-        val boundaries = plan.practice.lesson?.chainStarts.orEmpty()
-        if(boundaries.size < 2 || !range.valid(sequence)) return emptyList()
-        val points = boundaries.mapNotNull { id -> plan.visits.indexOfFirst { it.sourceMeasureId == id }
-            .takeIf { it in range.first..range.last } }.distinct().sorted()
-        if(points.size < 2 || points.first() != range.first) return emptyList()
-        if((range.first..range.last).any { i -> val v=plan.visits[i]
-            v.duration != v.measure.meter.duration || v.measure.leadIn != Q.ZERO ||
-                (i>range.first && v.measure.meter != plan.visits[i-1].measure.meter)
-        }) return emptyList()
-        if(points.any { i -> val q=plan.visits[i].start
-            plan.notes.any { it.start < q && it.soundEnd > q }
-        }) return emptyList()
+        if(!range.valid(sequence)) return emptyList()
+        val boundaries = plan.practice.lesson?.chainStarts.orEmpty().toSet()
+        val points = (range.first..range.last).filter { it==range.first || boundaries.isEmpty() || plan.visits[it].sourceMeasureId in boundaries }
         return points.reversed().map { BarRange(it,range.last) }
     }
     fun action(sequence: Sequence, quarter: Double): String? {

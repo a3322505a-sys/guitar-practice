@@ -18,6 +18,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 
 import androidx.compose.ui.Modifier
@@ -344,7 +347,7 @@ fun ChordDiagram(
     val measurer = rememberTextMeasurer()
     val diagramHeight = height
     val teaching = LocalBoardTeaching.current
-    val shownRoot = if(hint==Hint.ROOTS) teaching.root ?: chord.root else chord.root
+    val shownRoot = if(hint==Hint.CHORD_TONES) teaching.chord.root else if(hint==Hint.ROOTS) teaching.key?.tonic?.pitchClass ?: if(teaching.reference) teaching.chord.root else chord.root else chord.root
     val colors = PracticeSkin.colors
     val metrics = PracticeSkin.metrics
     val barres = remember(chord, hint) { if (hint == Hint.FULL) deriveBarreSegments(chord) else emptyList() }
@@ -414,13 +417,15 @@ fun ChordDiagram(
             val center = geometry.position(p)
             val root = chord.midi(p)%12 == shownRoot
             val active = p in current
+            val emphasized = teaching.emphasized(hint, chord.midi(p))
+            val toneAlpha = if(emphasized || active) 1f else .22f
             drawCircle(
-                if (active) colors.fretboardNoteActive else if (root) colors.fretboardRoot else colors.fretboardNoteNormal,
+                (if (active) colors.fretboardNoteActive else if (root) colors.fretboardRoot else colors.fretboardNoteNormal).copy(alpha=toneAlpha),
                 13 * geometry.unit,
                 center,
             )
             if (!active && !root) {
-                drawCircle(colors.fretboardNoteStroke, 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
+                drawCircle(colors.fretboardNoteStroke.copy(alpha=toneAlpha), 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
             } else if (root && !active) {
                 drawCircle(colors.primary.copy(alpha = 0.35f), 15.5f * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
             }
@@ -429,7 +434,7 @@ fun ChordDiagram(
                 if (hint == Hint.ROOTS) (if(teaching.key!=null) "1" else "根") else if (p.fret == 0) "O" else chord.fingers[6 - p.string].takeIf { it in 1..4 }?.toString() ?: chord.noteName(p,true),
                 center.x,
                 center.y,
-                if (active) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal,
+                (if (active) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal).copy(alpha=toneAlpha),
                 bold = true,
             )
             if (active) drawCircle(colors.textPrimary, 17 * geometry.unit, center, style = Stroke((metrics.borderWidth * 2).toPx()))
@@ -580,8 +585,10 @@ internal fun BoardLabelMenu(
     onLabel: (String) -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var referencePicker by remember { mutableStateOf(false) }
     val teaching = LocalBoardTeaching.current
     val selectHint = LocalSelectHint.current
+    val selectReference = LocalSelectReferenceChord.current
     Box {
         TextButton(onClick = { expanded = true }, modifier = Modifier.heightIn(min = 48.dp).testTag("board-label-menu"),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
@@ -604,9 +611,16 @@ internal fun BoardLabelMenu(
                     selectHint(mode); expanded = false
                 })
             }
-            if(teaching.chordTones.isNullOrEmpty()) DropdownMenuItem(text={ Text("和弦音：未提供当前和弦") },enabled=false,onClick={})
+            DropdownMenuItem(text={ Text("选择参照和弦…") },onClick={ expanded=false; referencePicker=true })
         }
     }
+    if(referencePicker) AlertDialog(onDismissRequest={ referencePicker=false },title={ Text("和弦音参照") },
+        text={ LazyColumn(Modifier.heightIn(max=360.dp)) {
+            item { TextButton(onClick={ selectReference("auto");referencePicker=false }) { Text("自动跟随当前和弦／教材主和弦") } }
+            items(Chords.all,key={it.id}) { chord ->
+                TextButton(onClick={ selectReference(chord.name);referencePicker=false },modifier=Modifier.fillMaxWidth()) { Text("参照 ${chord.name}") }
+            }
+        } },confirmButton={ TextButton(onClick={ referencePicker=false }) { Text("完成") } })
 }
 
 @Composable

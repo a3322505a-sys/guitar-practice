@@ -1221,6 +1221,10 @@
         "key": {
           "$ref": "#/$defs/keyContext"
         },
+        "referenceChordName": {
+          "type": "string",
+          "maxLength": 4096
+        },
         "warmupIds": {
           "type": "array",
           "items": {
@@ -1326,7 +1330,11 @@
             "SUS_TWO",
             "SUS_FOUR_NO_FIVE",
             "MINOR_SEVENTH_NO_FIVE",
-            "POWER"
+            "POWER",
+            "SUS_FOUR",
+            "MINOR_SEVENTH",
+            "DOMINANT_SEVENTH_NO_FIVE",
+            "DIMINISHED_SEVENTH"
           ]
         }
       },

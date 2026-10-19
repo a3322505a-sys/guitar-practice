@@ -12,7 +12,7 @@ android {
         manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 104
+        versionCode = 105
         versionName = "1.1.0"
     }
     buildTypes {

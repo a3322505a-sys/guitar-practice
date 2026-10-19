@@ -6,6 +6,8 @@ QUALITIES = {
     'MAJOR': [0,4,7], 'MINOR': [0,3,7], 'MAJOR_SEVENTH': [0,4,7,11],
     'ADD_NINE': [0,2,4,7], 'SUS_TWO': [0,2,7], 'SUS_FOUR_NO_FIVE': [0,5],
     'MINOR_SEVENTH_NO_FIVE': [0,3,10], 'POWER': [0,7],
+    'SUS_FOUR': [0,5,7], 'MINOR_SEVENTH': [0,3,7,10],
+    'DOMINANT_SEVENTH_NO_FIVE': [0,4,10], 'DIMINISHED_SEVENTH': [0,3,6,9],
 }
 
 def validate_teaching(score, practices):
@@ -29,7 +31,8 @@ def validate_teaching(score, practices):
             m=re.fullmatch(r'([A-G][#♯b♭]?)([^/]*)(?:/([A-G][#♯b♭]?))?',name)
             if m:
                 def pitch(text): return (dict(C=0,D=2,E=4,F=5,G=7,A=9,B=11)[text[0]]+sum(1 if c in '#♯' else -1 for c in text[1:]))%12
-                suffix={'MAJOR':'','MINOR':'m','MAJOR_SEVENTH':'maj7','ADD_NINE':'add9','SUS_TWO':'sus2','SUS_FOUR_NO_FIVE':'sus4(no5)','MINOR_SEVENTH_NO_FIVE':'m7(no5)','POWER':'5'}[v['quality']]
+                suffix={'MAJOR':'','MINOR':'m','MAJOR_SEVENTH':'maj7','ADD_NINE':'add9','SUS_TWO':'sus2','SUS_FOUR_NO_FIVE':'sus4(no5)','MINOR_SEVENTH_NO_FIVE':'m7(no5)','POWER':'5',
+                    'SUS_FOUR':'sus4','MINOR_SEVENTH':'m7','DOMINANT_SEVENTH_NO_FIVE':'7(no5)','DIMINISHED_SEVENTH':'dim7'}[v['quality']]
                 check(pitch(m[1])==root and m[2]==suffix,'TEACHING',path,'Sounding name conflicts with root/quality')
                 if m[3]:
                     lowest=min(t['openStringMidi'][i]+t.get('capo',0)+f for i,f in enumerate(v['frets']) if f>=0)%12

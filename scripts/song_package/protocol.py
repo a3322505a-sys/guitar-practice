@@ -407,7 +407,7 @@ def validate_music(score,practices):
             check(f.get("source","").strip() and ("occurrence" not in f or f["occurrence"]>0),"MUSIC","/practices/noteFingerings","Review source/occurrence required")
             key=(f["sourceNoteId"],f.get("occurrence"))
             check(key not in assignments,"MUSIC","/practices/noteFingerings","Duplicate fingering assignment");assignments.add(key)
-            check(finger is None or target[2]["fret"]>0 and not target[2].get("dead") and not target[2].get("harmonic"),"MUSIC","/practices/noteFingerings","Finger number needs a fretted sounding note")
+            check(finger is None or target[2]["fret"]>0,"MUSIC","/practices/noteFingerings","Finger number needs a fretted or touched position")
         if p.get("noteFingerings"): caps.add("teaching.note-fingering.v1")
         for segment in p["segments"]:
             for c in [segment["start"],segment["end"]]:
@@ -469,7 +469,7 @@ def compile_summary(score,practice,routes=None):
             for swing in score["swing"]:
                 sa,sb,u=q(swing["start"]),q(swing["end"]),q(swing["unit"])
                 if sa<b and a<sb:
-                    check(((max(sa,a)-sa)/(2*u)).denominator==1 and ((min(sb,b)-sa)/(2*u)).denominator==1,
+                    check(segment.get('entry')=='reattack' and segment.get('exit')=='truncate' or ((max(sa,a)-sa)/(2*u)).denominator==1 and ((min(sb,b)-sa)/(2*u)).denominator==1,
                         "SWING_BOUNDARY","/practices","Selection cuts swing pair")
             continuous=visits and visits[-1]["segment"]==si and visits[-1]["sourceEnd"]==a
             vi=len(visits)

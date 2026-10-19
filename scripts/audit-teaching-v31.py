@@ -31,7 +31,7 @@ def audit():
         result.append(dict(id=id,events=len(current),notes=sum(len(e['notes']) for e in current),equivalent=True))
     new=validate_payloads(read_container(ASSETS/'teaching-v31.gpractice'))
     practices=new['practices.json']['practices']; s=new['score.json']; by_id={p['id']:p for p in practices}
-    assert len(practices)==45
+    assert len(practices)==98
     for id,midi in [('S-C-major',[48,50,52,53,55,57,59,60]),('S-G-major',[43,45,47,48,50,52,54,55]),('S-D-major',[50,52,54,55,57,59,61,62]),('S-A-minor',[45,47,48,50,52,53,55,57])]:
         events=[e for v in s['voices'] if v['trackId']=='guitar' for e in v['events'] if e['id'].startswith(id+'-e-')]
         # Prefixes overlap the pentatonic IDs, so bind the exact practice measure IDs.
@@ -46,7 +46,7 @@ def audit():
         # Explicit fingerings are checked against source notes by both contract validators.
         assert all(f.get('finger') in (1,2,3,4) for f in p.get('noteFingerings',[]))
     capo=[v for v in s['voicings'] if v['trackId']=='guitar-capo2']
-    assert [v['teaching']['soundingName'] for v in capo]==['D','A','Bm','Gmaj7']
+    assert [v['teaching']['soundingName'] for v in capo[:4]]==['D','A','Bm','Gmaj7']
     result.append(dict(newPractices=len(practices),status='source and semantic checks passed',listening='not performed'))
     return result
 

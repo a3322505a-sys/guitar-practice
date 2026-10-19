@@ -39,11 +39,18 @@ class TeachingV31Test {
         assertTrue(deriveBarreSegments(Chords.named("F").copy(barres=emptyList())).isEmpty())
         assertEquals(6,deriveBarreSegments(Chords.named("F")).single().fromString)
         assertNotEquals(ChordDefinition.parse("F"),ChordDefinition.parse("Fmaj7"))
+        listOf("F" to "Fmaj7","Bm" to "Bm7(no5)","G" to "Gsus2").forEach { (a,b) ->
+            val choices=ChordSlots.choices(Chords.named(a))
+            assertEquals(listOf(a,b),choices.map { it.name })
+            assertNotEquals(choices[0].quality,choices[1].quality)
+            assertNotEquals(choices[0].positions.map { choices[0].midi(it)%12 }.toSet(),choices[1].positions.map { choices[1].midi(it)%12 }.toSet())
+            assertFalse(ChordSlots.grouped(Chords.all).any { it.name==b })
+        }
     }
     @Test fun everyNewLessonAndMigratedBuiltinReachesTheOneNativeMidiAndCursorModel() {
         val repo=SongTestLibrary.repository
         val all=repo.snapshot.phrases.filter { it.assetKey?.packageId?.startsWith("local.teaching-")==true }
-        assertEquals(60,all.size)
+        assertEquals(127,all.size)
         all.forEach { descriptor ->
             val phrase=repo.resolve(descriptor.id)
             val plan=phrase.sequence.performance
@@ -73,13 +80,15 @@ class TeachingV31Test {
     @Test fun optionalPlaybackHasRealPrerequisitesAndRangesDoNotReverseEvents() {
         val seq=teaching("LEAD-1").sequence
         assertTrue(PracticeExtensions.canFade(seq))
+        assertTrue(PracticeExtensions.canFade(teaching("JR-2").sequence))
+        assertEquals(setOf("guitar","backing"),teaching("JR-2").sequence.performance.notes.map { it.track.id }.toSet())
         assertFalse(PracticeExtensions.canFade(teaching("FB-1").sequence))
         assertEquals(listOf(1.0,.3,0.0,0.0),(0..3).map(PracticeExtensions::leadGain))
         assertEquals(listOf(BarRange(3,3),BarRange(2,3),BarRange(1,3),BarRange(0,3)),PracticeExtensions.backwardRanges(seq,BarRange(0,3)))
         val join=teaching("JOIN-C-Am").sequence.performance
         assertEquals(listOf("FLOW-C-m-1","FLOW-Am-m-0"),join.visits.map { it.sourceMeasureId })
         assertEquals(Q(8),join.length)
-        assertEquals(emptyList<BarRange>(),PracticeExtensions.backwardRanges(teaching("FB-1").sequence,BarRange(0,1)))
+        assertEquals(listOf(BarRange(1,1),BarRange(0,1)),PracticeExtensions.backwardRanges(teaching("FB-1").sequence,BarRange(0,1)))
     }
     @Test fun globalGainsRestoreOldMutesAndRemainIndependentIncludingZero() {
         val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("v31-mix-test",0)
@@ -98,8 +107,8 @@ class TeachingV31Test {
         assertEquals(7,c.emphasisRoot(Hint.CHORD_TONES))
         assertFalse(c.emphasized(Hint.CHORD_TONES,60))
         assertTrue(c.emphasized(Hint.CHORD_TONES,59))
-        assertFalse(BoardTeachingContext().available.contains(Hint.CHORD_TONES))
-        assertEquals(listOf(Hint.FULL,Hint.HIDDEN),BoardTeachingContext().available)
+        assertTrue(BoardTeachingContext().available.contains(Hint.CHORD_TONES))
+        assertTrue(BoardTeachingContext(chord=Chords.named("Dm"),reference=true).title(Hint.CHORD_TONES).contains("参照"))
     }
     @Test fun effectiveBpmRetainsMidBarTempoChangesAndOneCommonScaleFactor() {
         val original=teaching("FB-1").sequence

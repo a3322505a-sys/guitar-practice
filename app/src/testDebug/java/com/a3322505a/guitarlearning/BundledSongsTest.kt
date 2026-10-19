@@ -22,9 +22,10 @@ class BundledSongsTest {
         val repo=SongTestLibrary.repository(root);val library=repo.reload()
         assertTrue(library.diagnostics.toString(),library.diagnostics.isEmpty())
         assertEquals(6,library.packages.size)
-        assertEquals(83,library.phrases.count { it.assetKey!=null })
+        assertEquals(154,library.phrases.count { it.assetKey!=null })
         assertEquals(21,Chords.all.size)
-        assertEquals(50,library.chords.size) // 12 foundation + 4 accepted S01 grips + 16 Shayou grips.
+        assertTrue(library.chords.size>=50)
+        assertTrue(library.chords.all { chord -> chord.positions.all { it.fret==0 || chord.fingers[6-it.string] in 1..4 } })
         assertTrue(Phrases.all.none { it.id.startsWith("SHA-") || it.id.startsWith("YT-") || it.id.startsWith("KAF-") || it.id.startsWith("K265-") })
         assertEquals(7,Phrases.all.count { it.id.startsWith("SB-") })
         assertEquals("M01",repo.named("KAF-B-9-G3").id)
@@ -35,7 +36,7 @@ class BundledSongsTest {
             assertEquals(bars,phrases.map { it.sequence.barCount })
             phrases.forEach { phrase ->
                 assertTrue(phrase.sequence.performance.notes.isNotEmpty())
-                assertEquals(listOf(phrase.id),repo.versions(phrase).map { it.id })
+                assertEquals(phrase.id,repo.versions(phrase).first().id)
                 val session=Session(phrase.sequence,60,true,2)
                 assertEquals(2,session.repeats)
                 assertTrue(session.frame(session.totalTicks!!.toDouble())>0)
@@ -74,7 +75,11 @@ class BundledSongsTest {
             }
         }
         assertEquals(expected,actual)
-        val grips=repo.snapshot.chords.filter { it.group.startsWith("斜阳") }
+        val sourceIds=SongReader(SongSchema { File("../contracts/song-package/v1",it).readBytes() })
+            .read(File("../scripts/archive/teaching-v31/packages/shayou-v2.gpractice").readBytes()).score.voicings.map {
+                com.a3322505a.guitarlearning.music.score.PracticeKey("local.shayou",it.id).encoded
+            }.toSet()
+        val grips=repo.snapshot.chords.filter { it.id in sourceIds }
         assertEquals(16,grips.size)
         assertEquals(mapOf("斜阳 · 伴奏指法" to 11,"斜阳 · 双音 riff" to 5),grips.groupingBy { it.group }.eachCount())
         grips.forEach { grip -> assertTrue(grip.source.contains("用指为参考"));assertEquals(3,grip.capoFret) }

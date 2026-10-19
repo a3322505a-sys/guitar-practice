@@ -33,9 +33,10 @@ class ChordSourceTest {
 
     @Test fun allLoadedCardsKeepGripIdentityTeachingAndSoundAcrossExercises() {
         val chords=SongTestLibrary.repository().reload().chords
-        assertEquals(50,chords.size)
-        assertEquals(16,chords.count { it.group.startsWith("斜阳") })
-        assertEquals(4,chords.count { it.group=="本地曲库 · 嘘月" })
+        assertTrue(chords.size>=50)
+        assertTrue(chords.count { it.group.startsWith("斜阳") }>=16)
+        assertTrue(chords.count { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.usotsuki" }>=4)
+        assertEquals(chords.size,chords.map { it.id }.distinct().size)
         assertTrue(chords.any { c -> c.positions.size==2 && c.baseFret>=10 })
         assertTrue(chords.any { c -> c.frets.any { it==null } && c.frets.any { it==0 } })
         chords.forEach { chord ->

@@ -45,7 +45,7 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
 
     fun moduleOf(phrase: Phrase) = phrase.lesson?.module ?: if(phrase.assetKey?.packageId == MOZART_PACKAGE) TeachingModule.FOUNDATIONS else TeachingModule.APPLICATION
     fun chordSections(source: String): List<ContentSection<Chord>> {
-        val filtered = chords.filter { sourceOf(it) == source }
+        val filtered = com.a3322505a.guitarlearning.music.ChordSlots.grouped(chords.filter { sourceOf(it) == source })
         if (source == BASIC_CONTENT) return teachingSections(filtered, { basicChords[it.id] }, Chord::group)
         return filtered.groupBy { sectionTitle(it.group, source) }
         .map { ContentSection(it.key, it.value) }

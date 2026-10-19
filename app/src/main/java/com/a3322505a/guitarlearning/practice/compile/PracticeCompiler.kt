@@ -143,7 +143,7 @@ object PracticeCompiler {
                 }
                 score.swing.filter { it.start<b && a<it.end }.forEach { s ->
                     val begin=maxOf(s.start,a); val end=minOf(s.end,b)
-                    musicCheck(((begin-s.start)/(s.unit*Q(2))).d==1L && ((end-s.start)/(s.unit*Q(2))).d==1L,
+                    musicCheck(segment.entry=="reattack" && segment.exit=="truncate" || ((begin-s.start)/(s.unit*Q(2))).d==1L && ((end-s.start)/(s.unit*Q(2))).d==1L,
                         "SWING_BOUNDARY","/practices/"+practice.id,"Selection/form cuts a swing pair")
                     routeSwing+=s.copy(start=at+begin-a,end=at+end-a)
                 }
@@ -250,7 +250,9 @@ object PracticeCompiler {
             var result: GuitarVoicing?=null
             while(i>=0) {
                 val candidate=entries[i--]
-                if(candidate.second.condition?.matches(visits[e.visit].occurrence,visits[e.visit].repeatContext)!=false) {
+                val until=candidate.second.validUntil
+                if((until == null || e.sourceStart < until) &&
+                    candidate.second.condition?.matches(visits[e.visit].occurrence,visits[e.visit].repeatContext)!=false) {
                     result=candidate.third; break
                 }
             }

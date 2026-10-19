@@ -62,6 +62,7 @@ class TeachingFlowRenderTest {
     }
     @Test fun suppliedVersionsSwitchDirectlyAndSingleTrackHasNoFadingControl() {
         val playback=select("POWER-E5")
+        compose.onNodeWithText("衔接练习").assertIsEnabled()
         compose.onAllNodesWithText("渐隐领奏").assertCountEquals(0)
         compose.onNodeWithText("开始跟练").performClick()
         assertEquals(6,playback.started!!.plan.notes.size)
@@ -70,6 +71,37 @@ class TeachingFlowRenderTest {
         assertEquals(4,playback.started!!.plan.notes.size)
         assertEquals("POWER-E5-dual",playback.started!!.plan.practice.id)
         assertEquals(4.0,playback.started!!.plan.length.value(),0.0)
+    }
+    @Test fun transitionLoopsBothCompleteBarsAndReturnsToTheOriginalPhrase() {
+        val playback=select("FLOW-C")
+        compose.onNodeWithText("衔接练习").performClick();playable()
+        compose.onNodeWithText("开始跟练").performClick()
+        assertEquals("JOIN-C-Am",playback.started!!.plan.practice.id)
+        assertEquals(BarRange(0,1),playback.started!!.range)
+        assertEquals(0,playback.started!!.repeats)
+        compose.onNodeWithText("返回原曲段").performClick();playable()
+        compose.onNodeWithText("开始跟练").performClick()
+        assertEquals("FLOW-C",playback.started!!.plan.practice.id)
+        assertEquals(BarRange(0,1),playback.started!!.range)
+        assertEquals(4,playback.started!!.repeats)
+    }
+    @Test fun beginnerSongVersionChangesRealHarmonyInsideTheSameSlot() {
+        val playback=select("SONG-1")
+        val alternative=compose.onNode(hasText("简化替代 ·",substring=true) and hasClickAction())
+        alternative.performClick();playable()
+        compose.onNodeWithText("开始跟练").performClick()
+        assertEquals("SONG-1-beginner",playback.started!!.plan.practice.id)
+        val names=playback.started!!.plan.harmonies.map { it.voicing!!.teaching!!.soundingName }.toSet()
+        assertTrue(names.containsAll(listOf("Fmaj7","Gsus2")))
+        assertFalse(names.contains("F"));assertFalse(names.contains("G"))
+    }
+    @Test fun aSingleNoteLessonCanSelectManualChordTonesWithoutAnAutomaticHarmony() {
+        select("FB-1")
+        compose.onAllNodesWithTag("board-label-menu").onFirst().performClick()
+        compose.onNodeWithText("选择参照和弦…").performClick()
+        compose.onNodeWithText("参照 Dm").performScrollTo().performClick()
+        compose.onAllNodesWithTag("board-label-menu").onFirst().assertTextContains("参照和弦音 · Dm",substring=true)
+        assertEquals("Dm",compose.activity.getSharedPreferences("practice-settings",0).getString("reference-chord",null))
     }
     private class CapturingPlayback : PracticePlayback {
         var started: Session?=null

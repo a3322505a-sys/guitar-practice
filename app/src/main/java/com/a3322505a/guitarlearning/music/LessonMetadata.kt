@@ -7,4 +7,4 @@ data class TeachingAction(val eventId: String, val kind: String, val text: Strin
 data class LessonMetadata(val module: TeachingModule, val key: KeyContext? = null,
     val warmupIds: List<String> = emptyList(), val transitionIds: List<String> = emptyList(),
     val leadTrackIds: List<String> = emptyList(), val chainStarts: List<String> = emptyList(),
-    val actions: List<TeachingAction> = emptyList())
+    val actions: List<TeachingAction> = emptyList(), val referenceChordName: String = "C")

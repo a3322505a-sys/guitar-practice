@@ -37,10 +37,12 @@ class SongRepository(private val root: File,private val reader: SongReader,
     companion object {
         // Process-local ownership also protects a preview during another repository's reload.
         private val candidates=Collections.synchronizedSet(mutableSetOf<String>())
+        private val storageLocks=java.util.concurrent.ConcurrentHashMap<String,Any>()
         private val stagingName=Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.gpractice")
     }
     @Volatile var snapshot=LibrarySnapshot(Phrases.all,Phrases.catalogue,emptyList())
         private set
+    private val storageLock=storageLocks.computeIfAbsent(root.canonicalPath) { Any() }
     private val index=AtomicFile(File(root,"active-index.json"))
     private data class Entry(val packageId: String,val revision: Int,val digest: String,val metadataHash: String = "") {
         val directory get() = packageId+"/"+revision+"-"+digest
@@ -68,11 +70,8 @@ class SongRepository(private val root: File,private val reader: SongReader,
         musicCheck(target.canonicalPath.startsWith(root.canonicalPath+File.separator),"PATH","/index","Path leaves song storage")
         return target
     }
-    /** Call off the UI thread. Broken packages are isolated; built-ins remain available. */
-    @Synchronized fun reload(): LibrarySnapshot {
-        root.mkdirs()
-        cleanStaging()
-        val diagnostics=mutableListOf<String>()
+    private fun readIndex(diagnostics: MutableList<String> = mutableListOf()) {
+        active=emptyList();history=emptyList()
         if(index.baseFile.exists() || File(index.baseFile.path+".bak").exists()) {
             try {
                 val data=StrictJson.parse(index.openRead().use { reader.readInput(it) }).objectValue()
@@ -82,71 +81,82 @@ class SongRepository(private val root: File,private val reader: SongReader,
                     diagnostics+="曲目索引损坏："+error.message;null } }
             } catch(e: Exception) { diagnostics+="曲库索引不可读："+e.message;active=emptyList();history=emptyList() }
         }
-        // Seed through the same reviewed import transaction. History remembers disabled seeds,
-        // so restarting does not re-enable them or replace a user's newer revision.
-        if(!seeding) {
-            seeding=true
-            try {
-                bundledSongs.forEach { (bytes,song) ->
-                    val pin=song.identity
-                    val known=history.filter { it.packageId==pin.packageId }
-                    if(known.any { it.revision>=pin.revision }) return@forEach
-                    commit(prepare(bytes.inputStream()))
-                }
-            } finally { seeding=false }
+    }
+    /** Call off the UI thread. Broken packages are isolated; built-ins remain available. */
+    @Synchronized fun reload(): LibrarySnapshot {
+        synchronized(storageLock) {
+            root.mkdirs()
+            cleanStaging()
+            val diagnostics=mutableListOf<String>()
+            readIndex(diagnostics)
+            // Seed through the same reviewed import transaction. History remembers disabled seeds,
+            // so restarting does not re-enable them or replace a user's newer revision.
+            if(!seeding) {
+                seeding=true
+                try {
+                    bundledSongs.forEach { (bytes,song) ->
+                        val pin=song.identity
+                        val known=history.filter { it.packageId==pin.packageId }
+                        if(known.any { it.revision>=pin.revision }) return@forEach
+                        commit(prepare(bytes.inputStream()))
+                    }
+                } finally { seeding=false }
+            }
+            val external=mutableListOf<Phrase>();val packages=mutableListOf<SongRevision>();val visible=mutableSetOf<String>()
+            val aliases=mutableMapOf<String,String>();val chords=mutableListOf<Chord>()
+            active.distinctBy { it.packageId }.forEach { e ->
+                try {
+                    val bytes=file(e).inputStream().use { reader.readInput(it) }
+                    musicCheck(sha256(bytes)==e.digest,"HASH","/index","Stored revision digest mismatch")
+                    val metadataFile=File(file(e).parentFile,"catalogue.json")
+                    val metadata=if(metadataFile.exists() && e.metadataHash.isNotEmpty()) {
+                        val data=metadataFile.readBytes()
+                        musicCheck(sha256(data)==e.metadataHash,"HASH","/catalogue","Catalogue bytes changed")
+                        StrictJson.parse(data).objectValue()
+                    }
+                        else reader.read(bytes).let { song -> metadata(song).also { writeMetadata(e,it) } }
+                            .let { StrictJson.parse(StrictJson.encode(it)).objectValue() }
+                    musicCheck(metadata.s("digest")==e.digest && metadata.s("packageId")==e.packageId && metadata.i("revision")==e.revision,
+                        "IDENTITY","/index","Catalogue identity mismatch")
+                    val phrases=metadata.objects("practices").map { descriptor(e,it,metadata) }
+                    val teaching=if(metadata.containsKey("voicings")) metadata else StrictJson.parse(StrictJson.encode(metadata(reader.read(bytes)))).objectValue()
+                    val tracks=teaching.objects("tracks").map { Track(it.s("id"),it.s("name"),it.list("openStringMidi").map { n -> n.intValue() },it.i("capo")) }
+                    val songChords=teaching.objects("voicings").map { v ->
+                        val voicing=SongCodec.voicing(v)
+                        voicing.chord(tracks.first { it.id==voicing.trackId },metadata.s("title"),metadata.s("source"),PracticeKey(e.packageId,voicing.id).encoded)
+                    }
+                    val legacyBindings=if(trusted(e.packageId)) metadata.objects("practices").flatMap { p ->
+                        p.strings("legacyIds").map { old -> old to PracticeKey(e.packageId,p.s("id")).encoded }
+                    }.toMap() else emptyMap()
+                    musicCheck(legacyBindings.all { (old,target) -> Phrases.all.none { it.id==old } && (aliases[old]==null || aliases[old]==target) },
+                        "ALIAS","/practices/legacyIds","Legacy ID conflicts with an existing practice")
+                    external+=phrases;chords+=if(e.packageId=="local.teaching-v31") songChords.filter { c -> Chords.all.none { it.name==c.name && it.frets==c.frets && it.fingers==c.fingers && it.capoFret==c.capoFret && it.openStringMidi==c.openStringMidi } } else songChords
+                    metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
+                    aliases+=legacyBindings
+                    metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
+                    packages+=SongRevision(e.pin,metadata.s("title"))
+                } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
+            }
+            MigratedPracticeIds.targets.forEach { (old,target) -> if(external.any { it.id==target }) aliases[old]=target }
+            snapshot=LibrarySnapshot(Collections.unmodifiableList(Phrases.all+external),
+                Collections.unmodifiableList(Phrases.catalogue+external.filter { it.id in visible }),packages.toList(),diagnostics.toList(),aliases.toMap(),
+                Collections.unmodifiableList(Chords.all+chords))
+            return snapshot
         }
-        val external=mutableListOf<Phrase>();val packages=mutableListOf<SongRevision>();val visible=mutableSetOf<String>()
-        val aliases=mutableMapOf<String,String>();val chords=mutableListOf<Chord>()
-        active.distinctBy { it.packageId }.forEach { e ->
-            try {
-                val bytes=file(e).inputStream().use { reader.readInput(it) }
-                musicCheck(sha256(bytes)==e.digest,"HASH","/index","Stored revision digest mismatch")
-                val metadataFile=File(file(e).parentFile,"catalogue.json")
-                val metadata=if(metadataFile.exists() && e.metadataHash.isNotEmpty()) {
-                    val data=metadataFile.readBytes()
-                    musicCheck(sha256(data)==e.metadataHash,"HASH","/catalogue","Catalogue bytes changed")
-                    StrictJson.parse(data).objectValue()
-                }
-                    else reader.read(bytes).let { song -> metadata(song).also { writeMetadata(e,it) } }
-                        .let { StrictJson.parse(StrictJson.encode(it)).objectValue() }
-                musicCheck(metadata.s("digest")==e.digest && metadata.s("packageId")==e.packageId && metadata.i("revision")==e.revision,
-                    "IDENTITY","/index","Catalogue identity mismatch")
-                val phrases=metadata.objects("practices").map { descriptor(e,it,metadata) }
-                val teaching=if(metadata.containsKey("voicings")) metadata else StrictJson.parse(StrictJson.encode(metadata(reader.read(bytes)))).objectValue()
-                val tracks=teaching.objects("tracks").map { Track(it.s("id"),it.s("name"),it.list("openStringMidi").map { n -> n.intValue() },it.i("capo")) }
-                val songChords=teaching.objects("voicings").map { v ->
-                    val voicing=SongCodec.voicing(v)
-                    voicing.chord(tracks.first { it.id==voicing.trackId },metadata.s("title"),metadata.s("source"),PracticeKey(e.packageId,voicing.id).encoded)
-                }
-                val legacyBindings=if(trusted(e.packageId)) metadata.objects("practices").flatMap { p ->
-                    p.strings("legacyIds").map { old -> old to PracticeKey(e.packageId,p.s("id")).encoded }
-                }.toMap() else emptyMap()
-                musicCheck(legacyBindings.all { (old,target) -> Phrases.all.none { it.id==old } && (aliases[old]==null || aliases[old]==target) },
-                    "ALIAS","/practices/legacyIds","Legacy ID conflicts with an existing practice")
-                external+=phrases;chords+=if(e.packageId=="local.teaching-v31") songChords.filter { c -> Chords.all.none { it.name==c.name && it.frets==c.frets && it.fingers==c.fingers && it.capoFret==c.capoFret && it.openStringMidi==c.openStringMidi } } else songChords
-                metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
-                aliases+=legacyBindings
-                metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
-                packages+=SongRevision(e.pin,metadata.s("title"))
-            } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
-        }
-        MigratedPracticeIds.targets.forEach { (old,target) -> if(external.any { it.id==target }) aliases[old]=target }
-        snapshot=LibrarySnapshot(Collections.unmodifiableList(Phrases.all+external),
-            Collections.unmodifiableList(Phrases.catalogue+external.filter { it.id in visible }),packages.toList(),diagnostics.toList(),aliases.toMap(),
-            Collections.unmodifiableList(Chords.all+chords))
-        return snapshot
     }
     @Synchronized fun prepare(input: java.io.InputStream,cancel: ()->Unit = {}): ImportCandidate {
-        val bytes=reader.readInput(input,cancel); val song=reader.read(bytes,cancel=cancel)
-        val stage=File(root,"staging/"+UUID.randomUUID()+".gpractice")
-        stage.parentFile!!.mkdirs()
-        musicCheck(stage.canonicalFile.parentFile?.parentFile==root.canonicalFile,"PATH","/staging","Wrong staging directory")
-        candidates.add(stage.canonicalPath)
-        try {
-            FileOutputStream(stage).use { it.write(bytes);it.fd.sync() }
-            cancel()
-            return ImportCandidate(song,stage)
-        } catch(e: Exception) { discard(stage);throw e }
+        synchronized(storageLock) {
+            val bytes=reader.readInput(input,cancel); val song=reader.read(bytes,cancel=cancel)
+            val stage=File(root,"staging/"+UUID.randomUUID()+".gpractice")
+            stage.parentFile!!.mkdirs()
+            musicCheck(stage.canonicalFile.parentFile?.parentFile==root.canonicalFile,"PATH","/staging","Wrong staging directory")
+            candidates.add(stage.canonicalPath)
+            try {
+                FileOutputStream(stage).use { it.write(bytes);it.fd.sync() }
+                cancel()
+                return ImportCandidate(song,stage)
+            } catch(e: Exception) { discard(stage);throw e }
+        }
     }
     @Synchronized fun cancel(candidate: ImportCandidate) {
         musicCheck(candidate.stagingFile.canonicalPath.startsWith(File(root,"staging").canonicalPath+File.separator),
@@ -162,60 +172,69 @@ class SongRepository(private val root: File,private val reader: SongReader,
     }
     @Synchronized fun commit(candidate: ImportCandidate,rollback: Boolean = false,cancel: ()->Unit = {},
         cancellation: ImportCancellation = ImportCancellation(),onCommitStarted: ()->Unit = {}): LibrarySnapshot {
-      try {
-        fun checkpoint() { cancellation.check();cancel() }
-        checkpoint()
-        musicCheck(candidate.stagingFile.canonicalFile.parentFile==File(root,"staging").canonicalFile,
-            "PATH","/staging","Wrong candidate storage")
-        val song=candidate.song;val id=song.identity
-        val existing=history.firstOrNull { it.packageId==id.packageId && it.revision==id.revision }
-        musicCheck(existing==null || existing.digest==id.digest,"REVISION_CONFLICT","/manifest/revision","Same revision has different content")
-        val current=active.firstOrNull { it.packageId==id.packageId }
-        musicCheck(rollback || current==null || id.revision>=current.revision,"ROLLBACK_REQUIRED","/manifest/revision","Use explicit rollback for an older revision")
-        val bytes=reader.readInput(candidate.stagingFile.inputStream(),::checkpoint)
-        musicCheck(sha256(bytes)==id.digest,"HASH","/staging","Preview bytes changed")
-        // Validate again before publication; a preview is not a write exemption.
-        val verified=reader.read(bytes,cancel=::checkpoint)
-        var e=Entry(id.packageId,id.revision,id.digest,sha256(StrictJson.encode(metadata(verified))))
-        val dest=file(e)
-        if(dest.exists()) musicCheck(sha256(reader.readInput(dest.inputStream(),::checkpoint))==id.digest,"HASH","/revision","Immutable revision changed")
-        val catalogue=File(dest.parentFile,"catalogue.json")
-        if(catalogue.exists()) {
-            val hash=sha256(catalogue.readBytes())
-            musicCheck(hash==e.metadataHash || hash==existing?.metadataHash,"HASH","/catalogue","Immutable catalogue changed")
-            // Keep a v75 cache and its hash together; reload derives any missing teaching fields from the package.
-            e=e.copy(metadataHash=hash)
+        synchronized(storageLock) {
+          try {
+            fun checkpoint() { cancellation.check();cancel() }
+            checkpoint()
+            musicCheck(candidate.stagingFile.canonicalFile.parentFile==File(root,"staging").canonicalFile,
+                "PATH","/staging","Wrong candidate storage")
+            readIndex()
+            val song=candidate.song;val id=song.identity
+            val existing=history.firstOrNull { it.packageId==id.packageId && it.revision==id.revision }
+            musicCheck(existing==null || existing.digest==id.digest,"REVISION_CONFLICT","/manifest/revision","Same revision has different content")
+            val current=active.firstOrNull { it.packageId==id.packageId }
+            musicCheck(rollback || current==null || id.revision>=current.revision,"ROLLBACK_REQUIRED","/manifest/revision","Use explicit rollback for an older revision")
+            val bytes=reader.readInput(candidate.stagingFile.inputStream(),::checkpoint)
+            musicCheck(sha256(bytes)==id.digest,"HASH","/staging","Preview bytes changed")
+            // Validate again before publication; a preview is not a write exemption.
+            val verified=reader.read(bytes,cancel=::checkpoint)
+            var e=Entry(id.packageId,id.revision,id.digest,sha256(StrictJson.encode(metadata(verified))))
+            val dest=file(e)
+            if(dest.exists()) musicCheck(sha256(reader.readInput(dest.inputStream(),::checkpoint))==id.digest,"HASH","/revision","Immutable revision changed")
+            val catalogue=File(dest.parentFile,"catalogue.json")
+            if(catalogue.exists()) {
+                val hash=sha256(catalogue.readBytes())
+                musicCheck(hash==e.metadataHash || hash==existing?.metadataHash,"HASH","/catalogue","Immutable catalogue changed")
+                // Keep a v75 cache and its hash together; reload derives any missing teaching fields from the package.
+                e=e.copy(metadataHash=hash)
+            }
+            cancellation.beginCommit(cancel)
+            onCommitStarted()
+            // No cancellation checks after this point. The caller must deliver the result even if disposed.
+            dest.parentFile!!.mkdirs()
+            if(!dest.exists()) {
+                val pending=File(dest.parentFile,"pending-"+UUID.randomUUID())
+                try {
+                    FileOutputStream(pending).use { it.write(bytes);it.fd.sync() }
+                    musicCheck(pending.renameTo(dest),"STORAGE","/revision","Cannot publish immutable file")
+                } finally { pending.delete() }
+            }
+            writeMetadata(e,metadata(verified))
+            val nextHistory=(history+e).distinct()
+            val nextActive=active.filter { it.packageId!=id.packageId }+e
+            writeIndex(nextActive,nextHistory)
+            active=nextActive;history=nextHistory
+            return reload()
+          } finally { this.cancel(candidate) }
         }
-        cancellation.beginCommit(cancel)
-        onCommitStarted()
-        // No cancellation checks after this point. The caller must deliver the result even if disposed.
-        dest.parentFile!!.mkdirs()
-        if(!dest.exists()) {
-            val pending=File(dest.parentFile,"pending-"+UUID.randomUUID())
-            try {
-                FileOutputStream(pending).use { it.write(bytes);it.fd.sync() }
-                musicCheck(pending.renameTo(dest),"STORAGE","/revision","Cannot publish immutable file")
-            } finally { pending.delete() }
-        }
-        writeMetadata(e,metadata(verified))
-        val nextHistory=(history+e).distinct()
-        val nextActive=active.filter { it.packageId!=id.packageId }+e
-        writeIndex(nextActive,nextHistory)
-        active=nextActive;history=nextHistory
-        return reload()
-      } finally { this.cancel(candidate) }
     }
     fun revisions(packageId: String) = history.filter { it.packageId==packageId }.map { it.pin }.sortedByDescending { it.revision }
     @Synchronized fun rollback(identity: PackageIdentity): LibrarySnapshot {
-        val e=history.firstOrNull { it.pin==identity } ?: throw MusicError(Diagnostic("REVISION","/index","Revision missing"))
-        val bytes=reader.readInput(file(e).inputStream());val song=reader.read(bytes)
-        musicCheck(song.identity==identity,"HASH","/revision","Rollback bytes changed")
-        writeIndex(active.filter { it.packageId!=e.packageId }+e,history)
-        return reload()
+        synchronized(storageLock) {
+            readIndex()
+            val e=history.firstOrNull { it.pin==identity } ?: throw MusicError(Diagnostic("REVISION","/index","Revision missing"))
+            val bytes=reader.readInput(file(e).inputStream());val song=reader.read(bytes)
+            musicCheck(song.identity==identity,"HASH","/revision","Rollback bytes changed")
+            writeIndex(active.filter { it.packageId!=e.packageId }+e,history)
+            return reload()
+        }
     }
     @Synchronized fun disable(packageId: String): LibrarySnapshot {
-        writeIndex(active.filter { it.packageId!=packageId },history)
-        return reload()
+        synchronized(storageLock) {
+            readIndex()
+            writeIndex(active.filter { it.packageId!=packageId },history)
+            return reload()
+        }
     }
     private fun writeIndex(activated: List<Entry>,revisions: List<Entry>) {
         fun encode(e: Entry) = "{\"packageId\":\""+e.packageId+"\",\"revision\":"+e.revision+",\"digest\":\""+e.digest+"\",\"metadataHash\":\""+e.metadataHash+"\"}"
@@ -233,19 +252,21 @@ class SongRepository(private val root: File,private val reader: SongReader,
     }
     /** Only a selected practice is compiled; cache size is independent of library/song count. */
     @Synchronized fun resolve(id: String,cancel: ()->Unit = {}): Phrase {
-        val descriptor=named(id)
-        if(!descriptor.unprepared) return descriptor
-        val key=descriptor.assetKey!!
-        val entry=active.first { it.packageId==key.packageId }
-        val song=reader.read(reader.readInput(file(entry).inputStream(),cancel),cancel=cancel)
-        val practice=song.practices.first { it.id==key.practiceId }
-        val result=phrase(song,practice)
-        val updated=prepared.toMutableMap()
-        if(updated.size>=3) updated.remove(updated.keys.first())
-        updated[result.id+"@"+song.identity.digest]=result
-        while(updated.size>1 && updated.values.sumOf { it.sequence.performance.notes.size }>100000) updated.remove(updated.keys.first())
-        prepared=updated.toMap()
-        return result
+        synchronized(storageLock) {
+            val descriptor=named(id)
+            if(!descriptor.unprepared) return descriptor
+            val key=descriptor.assetKey!!
+            val entry=active.first { it.packageId==key.packageId }
+            val song=reader.read(reader.readInput(file(entry).inputStream(),cancel),cancel=cancel)
+            val practice=song.practices.first { it.id==key.practiceId }
+            val result=phrase(song,practice)
+            val updated=prepared.toMutableMap()
+            if(updated.size>=3) updated.remove(updated.keys.first())
+            updated[result.id+"@"+song.identity.digest]=result
+            while(updated.size>1 && updated.values.sumOf { it.sequence.performance.notes.size }>100000) updated.remove(updated.keys.first())
+            prepared=updated.toMap()
+            return result
+        }
     }
     fun family(phrase: Phrase): Phrase {
         if(phrase.assetKey==null) return Phrases.family(phrase)

@@ -28,14 +28,34 @@ enum class ScaleDefinition(val title: String, val semitones: List<Int>, val degr
 
 data class KeyContext(val tonic: SpelledPitch, val scale: ScaleDefinition) {
     val pitchClasses get() = scale.semitones.map { (tonic.pitchClass + it) % 12 }
-    val spelling: List<SpelledPitch> get() = scale.semitones.mapIndexed { i, interval ->
-        val letter = "CDEFGAB"[("CDEFGAB".indexOf(tonic.letter) + scale.letters[i]) % 7]
-        val delta = Math.floorMod(tonic.pitchClass + interval - SpelledPitch(letter).pitchClass + 6, 12) - 6
-        SpelledPitch(letter, delta)
-    }
+    val spelling: List<SpelledPitch> get() = KeySpellings.notes(tonic, scale)
     fun degree(midi: Int) = scale.degrees.getOrNull(pitchClasses.indexOf(Math.floorMod(midi,12)))
     fun noteName(midi: Int) = spelling.getOrNull(pitchClasses.indexOf(Math.floorMod(midi,12)))?.name ?: Music.name(midi)
     val pentatonic get() = KeyContext(tonic, scale.pentatonic).pitchClasses.toSet()
+}
+
+/** Static key signatures; sound remains an integer MIDI pitch. */
+private object KeySpellings {
+    private val major = mapOf(
+        "C" to "C D E F G A B", "G" to "G A B C D E F#", "D" to "D E F# G A B C#",
+        "A" to "A B C# D E F# G#", "E" to "E F# G# A B C# D#", "B" to "B C# D# E F# G# A#",
+        "F♯" to "F# G# A# B C# D# E#", "C♯" to "C# D# E# F# G# A# B#",
+        "F" to "F G A Bb C D E", "B♭" to "Bb C D Eb F G A", "E♭" to "Eb F G Ab Bb C D",
+        "A♭" to "Ab Bb C Db Eb F G", "D♭" to "Db Eb F Gb Ab Bb C",
+        "G♭" to "Gb Ab Bb Cb Db Eb F", "C♭" to "Cb Db Eb Fb Gb Ab Bb")
+    private val minor = mapOf(
+        "A" to "A B C D E F G", "E" to "E F# G A B C D", "B" to "B C# D E F# G A",
+        "F♯" to "F# G# A B C# D E", "C♯" to "C# D# E F# G# A B",
+        "G♯" to "G# A# B C# D# E F#", "D♯" to "D# E# F# G# A# B C#",
+        "A♯" to "A# B# C# D# E# F# G#", "D" to "D E F G A Bb C",
+        "G" to "G A Bb C D Eb F", "C" to "C D Eb F G Ab Bb", "F" to "F G Ab Bb C Db Eb",
+        "B♭" to "Bb C Db Eb F Gb Ab", "E♭" to "Eb F Gb Ab Bb Cb Db", "A♭" to "Ab Bb Cb Db Eb Fb Gb")
+    fun notes(tonic: SpelledPitch, scale: ScaleDefinition): List<SpelledPitch> {
+        val table = if(scale in listOf(ScaleDefinition.NATURAL_MINOR, ScaleDefinition.MINOR_PENTATONIC)) minor else major
+        val names = table[tonic.name]?.split(' ')?.map(SpelledPitch::parse)
+        return scale.semitones.mapIndexed { i, interval -> names?.get(scale.letters[i])
+            ?: SpelledPitch.parse(Music.name((tonic.pitchClass + interval) % 12)) }
+    }
 }
 
 data class TuningContext(val openStringMidi: List<Int> = Music.openMidi, val capo: Int = 0) {
@@ -58,7 +78,11 @@ enum class ChordQuality(val suffix: String, val intervals: List<Int>, val degree
     SUS_TWO("sus2", listOf(0,2,7), listOf("1","2","5"), "挂二和弦"),
     SUS_FOUR_NO_FIVE("sus4(no5)", listOf(0,5), listOf("1","4"), "挂四省五"),
     MINOR_SEVENTH_NO_FIVE("m7(no5)", listOf(0,3,10), listOf("1","♭3","♭7"), "小七省五"),
-    POWER("5", listOf(0,7), listOf("1","5"), "强力和弦 · 不含三音");
+    POWER("5", listOf(0,7), listOf("1","5"), "强力和弦 · 不含三音"),
+    SUS_FOUR("sus4",listOf(0,5,7),listOf("1","4","5"),"挂四和弦"),
+    MINOR_SEVENTH("m7",listOf(0,3,7,10),listOf("1","♭3","5","♭7"),"小七和弦"),
+    DOMINANT_SEVENTH_NO_FIVE("7(no5)",listOf(0,4,10),listOf("1","3","♭7"),"属七省五"),
+    DIMINISHED_SEVENTH("dim7",listOf(0,3,6,9),listOf("1","♭3","♭5","♭♭7"),"减七和弦");
 }
 
 data class ChordDefinition(val root: SpelledPitch, val quality: ChordQuality, val bass: SpelledPitch? = null) {

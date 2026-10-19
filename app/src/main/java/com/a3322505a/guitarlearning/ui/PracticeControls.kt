@@ -344,6 +344,7 @@ internal fun CompactTopBar(
     onOpenSettings: () -> Unit,
     onManagement: () -> Unit,
     linkedAvailable: Boolean,
+    extraActions: @Composable () -> Unit = {},
 ) {
     val colors = PracticeSkin.colors
     var moreOpen by remember { mutableStateOf(false) }
@@ -363,6 +364,7 @@ internal fun CompactTopBar(
             }, maxLines = 1)
         }
         if (!compact) TextButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 48.dp).testTag("preferences-button")) { Text("偏好") }
+        extraActions()
         Box {
             IconButton(onClick = { moreOpen = true }, modifier = Modifier.size(48.dp).testTag("management-button").semantics { contentDescription = if (compact) "偏好与更多" else "更多" }) {
                 Text(if (compact) "⚙" else "⋯", fontSize = 22.sp)
@@ -491,6 +493,12 @@ internal fun WorkbenchContentChoices(
     val effectiveSource = content.effectiveSource(activeSourceFilter, chordPhrases)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         PracticeSegments(TeachingModule.entries.map { it.title }, module.ordinal, onCategory, Modifier.fillMaxWidth())
+        if(module==TeachingModule.APPLICATION) {
+            val demo=content.phraseSections(BASIC_CONTENT,TeachingModule.APPLICATION).flatMap { it.items }.firstOrNull { it.lesson?.leadTrackIds?.isNotEmpty()==true }
+            if(demo!=null) TextButton(onClick={ onSourceFilter(BASIC_CONTENT);onPhrase(demo) },modifier=Modifier.testTag("p5-direct-entry")) {
+                Text("领奏渐隐与倒序接龙 · 双轨练习")
+            }
+        }
         if (page != 0) {
             val sourceScroll = rememberLazyListState()
             LaunchedEffect(effectiveSource, content.sources) {
@@ -564,7 +572,7 @@ internal fun WorkbenchContentChoices(
                     val sections = content.chordSections(effectiveSource)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
-                        ContentCards(items.map { it.name }, items.indexOfFirst { it.id == first.id }, compact = true,
+                        ContentCards(items.map { it.name }, items.indexOfFirst { it.id == first.id || ChordSlots.slot(first)?.original==it.name }, compact = true,
                             cardTexts = items.map(content::chordText)) { onChord(items[it]) }
                     }
                 } else {

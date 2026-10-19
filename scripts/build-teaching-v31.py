@@ -12,33 +12,7 @@ from song_package.protocol import rational as rat, q, package_files, coverage, v
 from song_package.teaching import QUALITIES
 
 ROOT=Path(__file__).resolve().parents[1]
-OPEN=[64,59,55,50,45,40]
-# Low string to high string; -1 is X. Every barre is explicitly authored.
-CHORDS={
- 'C':('MAJOR',0,[-1,3,2,0,1,0],[0,3,2,0,1,0]),
- 'Am':('MINOR',9,[-1,0,2,2,1,0],[0,0,2,3,1,0]),
- 'G':('MAJOR',7,[3,2,0,0,0,3],[2,1,0,0,0,3]),
- 'Em':('MINOR',4,[0,2,2,0,0,0],[0,2,3,0,0,0]),
- 'D':('MAJOR',2,[-1,-1,0,2,3,2],[0,0,0,1,3,2]),
- 'Dm':('MINOR',2,[-1,-1,0,2,3,1],[0,0,0,2,3,1]),
- 'E':('MAJOR',4,[0,2,2,1,0,0],[0,2,3,1,0,0]),
- 'A':('MAJOR',9,[-1,0,2,2,2,0],[0,0,1,2,3,0]),
- 'Gsus2':('SUS_TWO',7,[3,-1,0,2,-1,-1],[3,0,0,1,0,0]),
- 'Asus4(no5)':('SUS_FOUR_NO_FIVE',9,[-1,0,0,2,-1,-1],[0,0,0,2,0,0]),
- 'Bm7(no5)':('MINOR_SEVENTH_NO_FIVE',11,[-1,2,0,2,-1,-1],[0,1,0,2,0,0]),
- 'D/F♯':('MAJOR',2,[2,-1,0,2,-1,-1],[1,0,0,2,0,0]),
- 'Fmaj7':('MAJOR_SEVENTH',5,[-1,-1,3,2,1,0],[0,0,3,2,1,0]),
- 'Cadd9':('ADD_NINE',0,[-1,3,2,0,3,0],[0,3,2,0,4,0]),
- 'F':('MAJOR',5,[1,3,3,2,1,1],[1,3,4,2,1,1]),
- 'Bm':('MINOR',11,[-1,2,4,4,3,2],[0,1,3,4,2,1]),
- 'E5':('POWER',4,[0,2,2,-1,-1,-1],[0,1,2,0,0,0]),
- 'A5':('POWER',9,[-1,0,2,2,-1,-1],[0,0,1,2,0,0]),
- 'G5':('POWER',7,[3,5,5,-1,-1,-1],[1,3,4,0,0,0]),
- 'C5':('POWER',0,[-1,3,5,5,-1,-1],[0,1,3,4,0,0]),
- 'D5':('POWER',2,[-1,5,7,7,-1,-1],[0,1,3,4,0,0]),
-}
-BARRES={'F':[dict(finger=1,fret=1,fromString=6,toString=1)],'Bm':[dict(finger=1,fret=2,fromString=5,toString=1)]}
-NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']
+from song_package.teaching_data import OPEN, CHORDS, BARRES, NAMES, SUBSTITUTIONS
 MAJOR_ROUTES={
  'C':[(5,3),(4,0),(4,2),(4,3),(3,0),(3,2),(2,0),(2,1)],
  'G':[(6,3),(5,0),(5,2),(5,3),(4,0),(4,2),(4,4),(3,0)],
@@ -158,7 +132,7 @@ def main():
         route=[(s,f+base) for s,f in box]
         fingers={(s,f+base):{0:1,2:3,3:4}[f] for s,f in box}
         b.phrase('BOX-'+tonic,tonic+' 小调五声 · 封闭 Box1',route+route[-2::-1],'SCALES',(tonic,'NATURAL_MINOR'),step=F(1,2),fingerings=fingers,goal='这是已核验的全封闭指型，整体换品转调；不平移开放指型。')
-    for a,c in [('Am','C'),('C','Fmaj7'),('E','Am'),('Em','Am'),('C','G'),('Am','D')]:
+    for a,c in [('Am','C'),('C','Fmaj7'),('E','Am'),('Em','Am'),('C','G'),('Am','D'),('C','F'),('Bm','A')]:
         b.phrase('CH-'+a+'-'+c,a+' ↔ '+c,[a]*4+[c]*4,'CHORDS',goal='逐弦检查后连贯换形；保留指必须同弦同品同手指。',metadata=dict(warmupIds=['FB-1']))
     for id,names,key in [('FUNC-G-C',['G','C'],('C','MAJOR')),('FUNC-C-Am',['C','Am'],('C','MAJOR')),('BASS-G-Em',['G','D/F♯','Em','C'],('G','MAJOR')),('FAMILY-D',['D','A','Bm','G'],('D','MAJOR'))]:
         b.phrase(id,' → '.join(names),[name for name in names for _ in range(4)],'APPLICATION',key,goal='听和弦色彩与低音走向；属到主、大小调色彩和级进低音有不同作用。',metadata=dict(warmupIds=['FB-1'],chainStarts=[id+'-m-'+str(i) for i in range(len(names))]))
@@ -175,6 +149,10 @@ def main():
     family['lesson']['actions']=[dict(eventId='FAMILY-D-e-8',kind='barre',voicingId=b.voicing('Bm'),text='提前准备 Bm：食指在二品横按五弦至一弦')]
     b.phrase('ADD9','C → Cadd9 → C',['C','C','Cadd9','C'],'APPLICATION',('C','MAJOR'),goal='第 3 拍小指按二弦三品 D（9 音），第 4 拍回 C；其余手型保留。')
     b.phrase('CAPO-2','Capo 2 · 按法与实音',['C']*4+['G']*4+['Am']*4+['Fmaj7']*4,'APPLICATION',('D','MAJOR'),capo=2,goal='按法 C–G–Am–Fmaj7；实音 D–A–Bm–Gmaj7。')
+    b.phrase('SONG-1','C 调伴奏 · 原配与新手替代',['C']*4+['F']*4+['G']*4+['C']*4,'APPLICATION',('C','MAJOR'),
+        goal='原配 C–F–G–C；一键选择简化替代 Fmaj7 与 Gsus2，比较真实的构成音变化。',
+        metadata=dict(warmupIds=['CH-C-Fmaj7'],chainStarts=['SONG-1-m-'+str(i) for i in range(4)],
+            actions=[dict(eventId='SONG-1-e-3',kind='strum',text='本练习第 4 拍后半拍（4&）可轻扫空弦过渡，下一小节第 1 拍落稳 F；这是本曲静态换形提示。')]))
     for chord in ('E5','A5','G5','C5','D5'):
         p=b.phrase('POWER-'+chord,chord+' · 双音与八度',[chord,None,chord,None],'APPLICATION',goal='只弹标出的弦，其他弦闷住；1 与 5 不决定大小调。')
         b.phrase('POWER-'+chord+'-dual',chord+' · 双音',[chord,None,chord,None],'APPLICATION',variant=p['id'],dual=True)
@@ -188,6 +166,15 @@ def main():
     for i in range(4):
         backing.append(dict(id='backing-e-'+str(i),measureId='LEAD-1-m-'+str(i),onset=rat(0),duration=rat(4),written=dict(baseDenominator=1),notes=[dict(id='backing-n-'+str(i)+'-'+str(s),string=s,fret=f,midi=OPEN[s-1]+f) for s,f in [(5,0),(4,2),(3,2)]]))
     b.score['voices'].append(dict(id='backing-voice',trackId='backing',events=backing)); p['mixTrackIds'].append('backing')
+    jr=b.phrase('JR-2','J-Rock · 双轨领奏与强力伴奏',riff+riff,'APPLICATION',('E','NATURAL_MINOR'),step=F(1,2),
+        fingerings={(6,2):1,(6,3):2,(6,5):1,(6,7):3},goal='独立领奏与 E5–G5–A5–E5 伴奏；开启渐隐领奏听出 100%、30%、0% 的变化。',
+        metadata=dict(leadTrackIds=['guitar'],warmupIds=['FB-1'],chainStarts=['JR-2-m-'+str(i) for i in range(4)]))
+    jr['mixTrackIds'].append('backing');jr['teaching']['use']='领奏渐隐与倒序接龙'
+    p['teaching']['use']='领奏渐隐与倒序接龙'
+    for i,chord in enumerate(('E5','G5','A5','E5')):
+        frets=list(reversed(CHORDS[chord][2]))
+        backing.append(dict(id='jr2-backing-e-'+str(i),measureId='JR-2-m-'+str(i),onset=rat(0),duration=rat(4),written=dict(baseDenominator=1),
+            notes=[dict(id='jr2-backing-n-'+str(i)+'-'+str(s+1),string=s+1,fret=f,midi=OPEN[s]+f) for s,f in enumerate(frets) if f>=0],articulation=dict(pick='down',strumDelayMs=12)))
     # Explicit contiguous section pair and a precompiled last-bar + first-bar practice.
     a=b.phrase('FLOW-C','衔接示范 · C 段',['C']*8,'APPLICATION',('C','MAJOR'))
     c=b.phrase('FLOW-Am','衔接示范 · Am 段',['Am']*8,'APPLICATION',('C','MAJOR'))
@@ -207,16 +194,19 @@ def main():
             if m['id'] not in covered:
                 voice['events'].append(dict(id='pad-'+voice['id']+'-'+m['id'],measureId=m['id'],onset=rat(0),duration=rat(4),written=dict(baseDenominator=1),notes=[],measureRest=True))
         voice['events'].sort(key=lambda e:(measure_index[e['measureId']],q(e['onset'])))
+    from song_package.enrich_teaching import hard_cut_joins
+    b.practices=[p for p in b.practices if p['id']!='JOIN-C-Am']
+    b.practices+=hard_cut_joins(b.score,b.practices)
     source=Path(__file__); sh=digest(source.read_bytes())
     provenance=dict(sources=[dict(id='original',name='V3.1 原创教学配方',sha256=sh,format='Python authored score recipes',license='项目原创教学内容',origin='scripts/build-teaching-v31.py')],tool=source.name,exclusions=[],
         mappings=[dict(noteId=n['id'],sourceId='original',location=e['id']) for v in b.score['voices'] for e in v['events'] for n in e['notes']])
     review=dict(status='approved',reviewer='Codex musical semantics audit',method='独立校验器重算每弦发声音高、精确时值、和弦集合、横按和事件引用；Kotlin 解析及 MIDI 回归；不声明真人试听/实弹已通过',tool='build-teaching-v31.py + independent validators',coverage=coverage(b.score,b.practices),diagnostics=[],assumptions=[])
-    files=package_files('local.teaching-v31',1,'新手教学', '项目原创', b.score,b.practices,provenance,review)
-    manifest=json.loads(files['manifest.json']); manifest['scoreSchemaVersion']['minor']=1; files['manifest.json']=dumps(manifest)
-    validate_payloads(files)
+    from song_package.publishing import publish
     out=ROOT/'work/teaching-v3-1/teaching-v31.gpractice'
-    write_zip(files,out,overwrite=True); kotlin_chords()
-    (ROOT/'work/teaching-v3-1/new-content-inventory.json').write_bytes(dumps(dict(practices=b.proofs,coverage=review['coverage'],sha256=digest(out.read_bytes()))))
-    print(json.dumps(dict(package=str(out),practices=len(b.practices),notes=review['coverage']['notes']),ensure_ascii=False))
+    result=publish('local.teaching-v31',2,'新手教学',b.score,b.practices,provenance,out,
+        review['method'],review,overwrite=True)
+    kotlin_chords()
+    (ROOT/'work/teaching-v3-1/new-content-inventory.json').write_bytes(dumps(dict(practices=b.proofs,**result)))
+    print(json.dumps(dict(package=str(out),practices=len(b.practices),notes=result['coverage']['notes']),ensure_ascii=False))
 
 if __name__=='__main__': main()

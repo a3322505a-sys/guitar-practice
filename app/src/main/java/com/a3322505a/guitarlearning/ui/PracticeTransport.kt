@@ -292,7 +292,7 @@ internal fun PracticeTransport(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 10.dp, vertical = 6.dp)
                 }
                 Column(containerModifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    if(!singleRow) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
                     }
                     if (verticalDeck) {
@@ -305,6 +305,7 @@ internal fun PracticeTransport(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             tempoBay(false)
+                            TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
                             Box(Modifier.weight(1f)) { actionsFlow(false) }
                         }
                     } else {

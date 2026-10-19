@@ -55,10 +55,10 @@ object SongCodec {
         LessonMetadata(TeachingModule.valueOf(t.s("module")), t["key"]?.objectValue()?.let {
             KeyContext(SpelledPitch.parse(it.s("tonic")), ScaleDefinition.valueOf(it.s("scale"))) },
             t.strings("warmupIds"), t.strings("transitionIds"), t.strings("leadTrackIds"), t.strings("chainStarts"),
-            t.objects("actions").map { TeachingAction(it.s("eventId"),it.s("kind"),it.s("text"),it["voicingId"] as? String,it["fromVoicingId"] as? String) })
+            t.objects("actions").map { TeachingAction(it.s("eventId"),it.s("kind"),it.s("text"),it["voicingId"] as? String,it["fromVoicingId"] as? String) },t.s("referenceChordName","C"))
     }
     fun lessonMap(value: LessonMetadata?): Map<String,Any?>? = value?.let { t -> mapOf(
-        "module" to t.module.name, "key" to t.key?.let { mapOf("tonic" to it.tonic.name,"scale" to it.scale.name) },
+        "module" to t.module.name,"referenceChordName" to t.referenceChordName, "key" to t.key?.let { mapOf("tonic" to it.tonic.name,"scale" to it.scale.name) },
         "warmupIds" to t.warmupIds,"transitionIds" to t.transitionIds,"leadTrackIds" to t.leadTrackIds,
         "chainStarts" to t.chainStarts,"actions" to t.actions.map { mapOf("eventId" to it.eventId,"kind" to it.kind,"text" to it.text,"voicingId" to it.voicingId,"fromVoicingId" to it.fromVoicingId) }) }
     private fun labels(value: Any?) = value?.objectValue()?.map { (k,v) -> k.toInt() to v.textValue() }?.toMap().orEmpty()

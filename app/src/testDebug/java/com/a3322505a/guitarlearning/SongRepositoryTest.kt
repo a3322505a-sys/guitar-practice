@@ -25,6 +25,26 @@ class SongRepositoryTest {
     private val contract=File("../contracts/song-package/v1")
     private fun reader()=SongReader(SongSchema { File(contract,it).readBytes() })
     private fun fixture(name: String)=File(contract,"fixtures/"+name+".gpractice").readBytes()
+    @Test fun twoActivityRepositoriesSeedOneStorageRootWithoutRacingPublication() {
+        val root=Files.createTempDirectory("song-concurrent-seed").toFile()
+        val bytes=fixture("complex")
+        val seed=mapOf("complex" to { ByteArrayInputStream(bytes) })
+        val repositories=listOf(SongRepository(root,reader(),seed),SongRepository(root,reader(),seed))
+        val start=java.util.concurrent.CountDownLatch(1)
+        val pool=java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            val jobs=repositories.map { repo -> pool.submit<LibrarySnapshot> { start.await();repo.reload() } }
+            start.countDown()
+            jobs.forEach { future ->
+                val state=future.get(45,java.util.concurrent.TimeUnit.SECONDS)
+                assertTrue(state.diagnostics.toString(),state.diagnostics.isEmpty())
+                assertEquals(1,state.packages.size)
+            }
+            repositories[0].disable("example.complex")
+            assertTrue(repositories[1].reload().packages.isEmpty())
+            assertEquals(1,repositories[1].revisions("example.complex").size)
+        } finally { pool.shutdownNow() }
+    }
     private fun revise(bytes: ByteArray,revision: Int,title: String): ByteArray {
         val out=ByteArrayOutputStream()
         ZipOutputStream(out).use { zip ->

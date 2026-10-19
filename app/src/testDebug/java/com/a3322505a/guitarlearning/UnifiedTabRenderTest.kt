@@ -85,14 +85,11 @@ class UnifiedTabRenderTest {
     @Test fun phonePracticePageShowsUsotsukiWithItsTransportAndAllSixStrings() {
         val player=Player(compose.activity)
         try {
-            // LegacyWorkbenchTestActivity already starts the real App. Finish its initial import before
-            // replacing content, so two test-created repositories never publish concurrently.
-            compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty()
-            }
+            // Replace content before the first semantics traversal. Storage is shared safely
+            // with the initial activity repository; no nested Looper drain during Compose layout.
             compose.activity.setContent { PracticeApp(player) }
         compose.waitForIdle()
-        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(45000) { compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("config-summary").performClick()
             compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
             compose.onNodeWithText("完成").performClick()
@@ -102,9 +99,12 @@ class UnifiedTabRenderTest {
             compose.onNodeWithText("低音与高音分解").performScrollTo().performClick()
             compose.onNodeWithText("六线谱").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("let ring",substring=true).fetchSemanticsNodes().isNotEmpty() }
+            image("phone-full-practice-beforeassert").recycle()
             compose.onNodeWithTag("tablature").assertIsDisplayed()
             compose.onNodeWithText("听示范").assertIsDisplayed()
             image("phone-full-practice-usotsuki").recycle()
+            compose.onNodeWithTag("compact-lesson-actions").performClick()
+            compose.onNodeWithText("倒序接龙").assertIsEnabled()
         } finally { player.release() }
     }
     @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun largeTextDenseAndHarmonicNotesKeepTheirMeasuredWidth() {

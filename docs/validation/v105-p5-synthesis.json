@@ -1,0 +1,35 @@
+{
+  "engine": "alphaTab 1.8.4",
+  "source": "actual authored LEAD-1 and JR-2 plans; bundled SoundFont; first 750 ms",
+  "physicalListening": false,
+  "results": [
+    {
+      "practice": "LEAD-1",
+      "fullPeak": 0.10907727479934692,
+      "lowPeak": 0.08503693342208862,
+      "backingPeak": 0.07537589967250824,
+      "gainError": 7.4505806e-09,
+      "relativeError": 2.0592894e-07,
+      "requestedLeadGains": [
+        1,
+        0.3,
+        0
+      ],
+      "backingGain": 1
+    },
+    {
+      "practice": "JR-2",
+      "fullPeak": 0.08158082515001297,
+      "lowPeak": 0.06435680389404297,
+      "backingPeak": 0.06373914331197739,
+      "gainError": 0.00017547572,
+      "relativeError": 0.0052063535,
+      "requestedLeadGains": [
+        1,
+        0.3,
+        0
+      ],
+      "backingGain": 1
+    }
+  ]
+}

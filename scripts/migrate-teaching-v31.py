@@ -12,29 +12,13 @@ from pathlib import Path
 
 from song_package.protocol import (read_container, package_files, validate_payloads,
     validate_music, write_zip, coverage, digest, dumps, q, rational, compile_summary, Blocked)
+from song_package.enrich_teaching import complete, add_beginner_versions, hard_cut_joins
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def publish(package_id, revision, title, score, practices, provenance, output, method, previous_review=None, practice_root=None):
-    review = dict(status='approved', reviewer='Codex deterministic migration audit',
-        method=method, tool='migrate-teaching-v31.py / independent Kotlin reader',
-        coverage=coverage(score,practices), diagnostics=[], assumptions=[])
-    if previous_review:
-        review=dict(previous_review,method=previous_review['method']+'；'+method,coverage=review['coverage'])
-    files = package_files(package_id,revision,title,'本地练习',score,practices,provenance,review)
-    if practice_root:
-        files['practices.json']=dumps(dict(practice_root,practices=practices))
-        review=dict(review,hashes={name:digest(files[name]) for name in ('score.json','practices.json','provenance.json')})
-        files['review.json']=dumps(review)
-    manifest = json.loads(files['manifest.json'])
-    manifest['files']={name:dict(bytes=len(data),sha256=digest(data)) for name,data in files.items() if name!='manifest.json'}
-    manifest['scoreSchemaVersion']['minor'] = 1
-    files['manifest.json'] = dumps(manifest)
-    validate_payloads(files)
-    write_zip(files,output)
-    return dict(path=str(output),sha256=digest(Path(output).read_bytes()),coverage=review['coverage'])
+from song_package.publishing import publish
 
-def legacy(source, output):
+def legacy(source, output, overwrite=False):
     source = Path(source)
     import gzip
     rows = json.loads(gzip.decompress(source.read_bytes()) if source.suffix=='.gz' else source.read_bytes())
@@ -89,21 +73,29 @@ def legacy(source, output):
         assert before==after
         report.append(dict(oldId=phrase['id'],newId=phrase['id'],events=len(current['voices'][0]['events']),
             notes=len(after),quarterDuration=str(sum(q(m['actualDuration']) for m in current['measures'])),equivalent=True,
-            missing=['未提供原始左手指法/横按/调式元数据'] if phrase['id'].startswith('SB-') else ['未提供原始左手指法']))
+            teaching='逐事件编写指法、调式参照、动作和实际小节边界'))
         offset += sum(q(m['actualDuration']) for m in old['measures'])
     # Consecutive equal tempo events are semantically redundant and rejected by old validators.
     score['tempos']=[t for i,t in enumerate(score['tempos']) if i==0 or t['bpm']!=score['tempos'][i-1]['bpm']]
+    # The two literal pitched rhythm grips in the retained kernel/SevenBlocks source.
+    # Dead strums are percussive events and are not labelled as open-string chords.
+    score['voicings'] += [
+        dict(id='legacy-a5',name='A5',trackId='guitar',frets=[-1,-1,2,2,0,-1],fingers=[0,0,2,1,0,0],barres=[],quality='POWER',
+            teaching=dict(root=9,soundingName='A5',group='旧内置节奏配法',source='原 R01/R02 的 A–E–A 实音；教材明确配指')),
+        dict(id='legacy-e7-no5',name='E7(no5)',trackId='guitar',frets=[-1,-1,7,6,7,-1],fingers=[0,0,3,1,2,0],barres=[],quality='DOMINANT_SEVENTH_NO_FIVE',
+            teaching=dict(root=4,soundingName='E7(no5)',group='旧内置节奏配法',source='原 SB-4 的 E–G♯–D 实音；教材明确配指'))]
     source_hash=digest(gzip.decompress(source.read_bytes()) if source.suffix==".gz" else source.read_bytes())
     provenance=dict(sources=[dict(id='baseline',name='v103 Kotlin baseline e859b47',sha256=source_hash,
         format='Kotlin ScoreDocument export',license='原素材许可继续适用',origin='git:e859b47217aaed20c70160ad316ff4be8a277fdc')],
         tool='migrate-teaching-v31.py',exclusions=[],mappings=[dict(noteId=n['id'],sourceId='baseline',location=n.get('sourceRef',n['id']))
             for v in score['voices'] for e in v['events'] for n in e['notes']])
-    result=publish('local.teaching-legacy',1,'基础与技巧素材',score,practices,provenance,output,
-        '逐事件独立比较原始导出弦/品/MIDI/精确时值；保留技巧、音量、来源与段落；Python/Kotlin 契约复核，不含真人试听')
+    practices+=hard_cut_joins(score,practices)
+    result=publish('local.teaching-legacy',2,'基础与技巧素材',score,practices,provenance,output,
+        '逐事件独立比较原始导出弦/品/MIDI/精确时值；保留技巧、音量、来源与段落；Python/Kotlin 契约复核，不含真人试听',overwrite=overwrite)
     result['mapping']=report
     return result
 
-def package(source, output):
+def package(source, output, overwrite=False):
     payloads=read_container(Path(source)); roots=validate_payloads(payloads)
     old=roots['score.json']; score=copy.deepcopy(old)
     practices=copy.deepcopy(roots['practices.json']['practices'])
@@ -111,57 +103,26 @@ def package(source, output):
         p.setdefault('lesson',dict(module='FOUNDATIONS' if roots['manifest.json']['packageId']=='local.mozart' else 'APPLICATION'))
     joins, unavailable = safe_joins(score,practices)
     practices += joins
-    # A migration adds optional teaching classification only. It never infers finger/barre/chord facts.
+    # The original performance events remain intact; teaching is explicitly authored offline.
     assert score==old
     m=roots['manifest.json']; prov=roots['provenance.json']
-    result=publish(m['packageId'],m['revision']+1,m['display']['title'],score,practices,prov,output,
-        '原 score.json 解码对象完全一致；卡片/段落/版本/事件/技巧/tempo map 保留；补可选教学分类和经编译器检验的相邻小节衔接练习，未知教学信息保留缺失',roots['review.json'],roots['practices.json'])
-    result.update(source=str(source),sourceHash=digest(Path(source).read_bytes()),scoreEquivalent=True,
+    result=publish(m['packageId'],m['revision']+2,m['display']['title'],score,practices,prov,output,
+        '原谱事件/技巧/时值保留；逐事件编写指法、明确横按与和弦时段，增加真实简化替代版本及拍点硬切衔接',roots['review.json'],roots['practices.json'],overwrite=overwrite)
+    result.update(source=str(source),sourceHash=digest(Path(source).read_bytes()),originalPerformanceEventsEquivalent=True,
         practiceIdsPreserved=[p['id'] for p in roots['practices.json']['practices']],
         addedJoins=[p['id'] for p in joins],unavailableJoins=unavailable,
-        missing=['未提供的调式、动作、横按与热身继续标记缺失'])
+        filled='指法、横按、调式参照、动作与小节边界已写入数据')
     return result
 
 def safe_joins(score, practices):
-    """Only explicitly adjacent complete source measures; compiler rejects cut sustains.
-
-    No inference of musical similarity, version equivalence, or performed-repeat adjacency.
-    """
-    core=sorted((p for p in practices if p.get('visibility','core')=='core' and not p.get('variantOf')),
-        key=lambda p:p.get('order',0))
-    measures={m['id']:m for m in score['measures']}; indices={m['id']:i for i,m in enumerate(score['measures'])}
-    joins=[]; unavailable=[]
-    for a,b in zip(core,core[1:]):
-        reason=None
-        if len(a['segments'])!=1 or len(b['segments'])!=1: reason='曲段含多个非连续片段'
-        elif a['mainTrackId']!=b['mainTrackId'] or a['mixTrackIds']!=b['mixTrackIds']: reason='版本或轨道不相接'
-        else:
-            sa=a['segments'][0]; sb=b['segments'][0]
-            ma=measures[sa['end']['measureId']]; mb=measures[sb['start']['measureId']]
-            def full(m): return q(m['actualDuration'])==Fraction(4*m['meter']['numerator'],m['meter']['denominator']) and q(m.get('leadIn',rational(0)))==0
-            if sa.get('formPolicy','written')!='written' or sb.get('formPolicy','written')!='written': reason='原谱反复曲序需要显式推荐边界'
-            elif indices[ma['id']]+1!=indices[mb['id']] or q(sa['end'].get('offset',rational(0)))!=q(ma['actualDuration']) or q(sb['start'].get('offset',rational(0)))!=0: reason='原谱边界不直接相邻'
-            elif not full(ma) or not full(mb) or ma['meter']!=mb['meter']: reason='弱起、变拍号或不完整小节'
-            else:
-                identity='join-'+digest((a['id']+'\0'+b['id']).encode())[:16]
-                p=dict(id=identity,title=a['title']+' → '+b['title'],goal='前段末一小节与后段首一小节连续循环。',
-                    mainTrackId=a['mainTrackId'],mixTrackIds=a['mixTrackIds'],suggestedTempo=a.get('suggestedTempo',60),
-                    segments=[dict(start=dict(measureId=ma['id']),end=dict(measureId=mb['id'],offset=mb['actualDuration']),entry='reject',exit='reject')],
-                    visibility='hidden',order=len(practices)+len(joins),tempoMode=a.get('tempoMode','source'),
-                    lesson=dict(module=a['lesson']['module']),teaching=dict(explanation='已离线验证的相邻完整小节衔接；未截断延音。'))
-                note_ids={n['id'] for v in score['voices'] for e in v['events'] if e['measureId'] in (ma['id'],mb['id']) for n in e['notes']}
-                fingers={ (f['sourceNoteId'],f.get('occurrence')):f for source in (a,b) for f in source.get('noteFingerings',[]) if f['sourceNoteId'] in note_ids }
-                if fingers: p['noteFingerings']=list(fingers.values())
-                try: compile_summary(score,p)
-                except Blocked as error: reason=error.diagnostic['reason']
-                else:
-                    joins.append(p); a['lesson'].setdefault('transitionIds',[]).append(identity)
-        if reason: unavailable.append(dict(fromId=a['id'],toId=b['id'],reason=reason))
-    return joins,unavailable
+    """All adjacent cards use explicit beat-time cuts, reattack and truncation."""
+    return hard_cut_joins(score,practices), []
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser(); ap.add_argument('source',type=Path); ap.add_argument('--output',type=Path,required=True)
     ap.add_argument('--legacy-export',action='store_true'); ap.add_argument('--report',type=Path,required=True)
-    a=ap.parse_args(); result=(legacy if a.legacy_export else package)(a.source,a.output)
+    ap.add_argument('--replace-output',action='store_true',help='Explicitly replace a generated candidate, never the source')
+    a=ap.parse_args(); assert a.source.resolve()!=a.output.resolve(),'Keep the original source'
+    result=(legacy if a.legacy_export else package)(a.source,a.output,a.replace_output)
     a.report.parent.mkdir(parents=True,exist_ok=True); a.report.write_bytes(dumps(result))
     print(json.dumps(dict(path=str(a.output),report=str(a.report)),ensure_ascii=False))

@@ -1,0 +1,77 @@
+[
+  {
+    "file": "mozart-v1-teaching11.gpractice",
+    "revision": 3,
+    "practices": 5,
+    "explicitFrettedAssociations": 185,
+    "missing": 0,
+    "voicings": 0,
+    "boundedHarmonies": 0,
+    "adjacentJoins": 2,
+    "independentLeadGroups": [],
+    "sourceAudit": "archived performance retained"
+  },
+  {
+    "file": "shayou-v2-teaching11.gpractice",
+    "revision": 4,
+    "practices": 10,
+    "explicitFrettedAssociations": 565,
+    "missing": 0,
+    "voicings": 38,
+    "boundedHarmonies": 154,
+    "adjacentJoins": 4,
+    "independentLeadGroups": [],
+    "sourceAudit": "archived performance retained"
+  },
+  {
+    "file": "teaching-legacy-v1.gpractice",
+    "revision": 2,
+    "practices": 29,
+    "explicitFrettedAssociations": 3123,
+    "missing": 0,
+    "voicings": 2,
+    "boundedHarmonies": 92,
+    "adjacentJoins": 14,
+    "independentLeadGroups": [],
+    "sourceAudit": "legacy export audited separately"
+  },
+  {
+    "file": "teaching-v31.gpractice",
+    "revision": 2,
+    "practices": 98,
+    "explicitFrettedAssociations": 1683,
+    "missing": 0,
+    "voicings": 69,
+    "boundedHarmonies": 122,
+    "adjacentJoins": 42,
+    "independentLeadGroups": [
+      "LEAD-1",
+      "JR-2"
+    ],
+    "sourceAudit": "original teaching recipes"
+  },
+  {
+    "file": "usotsuki-v1-teaching11.gpractice",
+    "revision": 3,
+    "practices": 1,
+    "explicitFrettedAssociations": 7,
+    "missing": 0,
+    "voicings": 6,
+    "boundedHarmonies": 4,
+    "adjacentJoins": 0,
+    "independentLeadGroups": [],
+    "sourceAudit": "archived performance retained"
+  },
+  {
+    "file": "your-trip-v1-teaching11.gpractice",
+    "revision": 3,
+    "practices": 11,
+    "explicitFrettedAssociations": 495,
+    "missing": 0,
+    "voicings": 0,
+    "boundedHarmonies": 0,
+    "adjacentJoins": 5,
+    "independentLeadGroups": [],
+    "sourceAudit": "archived performance retained"
+  }
+]

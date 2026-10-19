@@ -135,12 +135,14 @@ internal fun PracticeWorkbench(
     var firstBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.first) }
     var lastBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.last) }
     var hintIndex by rememberSaveable { mutableIntStateOf(preferences.getInt("hint", 0).coerceIn(0, Hint.entries.lastIndex)) }
+    var referenceChordName by rememberSaveable { mutableStateOf(preferences.getString("reference-chord","auto") ?: "auto") }
     var guitar by rememberSaveable { mutableStateOf(preferences.getBoolean("guitar", true)) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var stageLayout by rememberSaveable { mutableStateOf(StageLayout.FRETBOARD_ONLY) }
     val activity = checkNotNull(LocalActivity.current)
     var overlay by rememberSaveable { mutableStateOf(PracticeOverlay.NONE) }
     var returnPhraseId by rememberSaveable { mutableStateOf<String?>(null) }
+    var transitionTargetId by rememberSaveable { mutableStateOf<String?>(null) }
     var returnModule by rememberSaveable { mutableStateOf(TeachingModule.APPLICATION) }
     var leadFade by rememberSaveable { mutableStateOf(false) }
     var chainFirst by rememberSaveable { mutableIntStateOf(-1) }
@@ -212,7 +214,11 @@ internal fun PracticeWorkbench(
     val harmony = displayedSequence?.sections.orEmpty()
     val shownChord = if (page == 1) harmony.getOrNull(if(showingSession) section else displayedSequence?.sectionAt((activeRange.first.let { displayedSequence?.barStart(it) } ?: 0).toDouble()) ?: -1)?.let { displayedSequence?.chordAt(it) } else first
     val melody = page == 1 && chordPhrases && (harmony.isEmpty() || shownChord == null)
-    val boardTeaching = BoardTeachingContext(if(page==0) scale.key.context else if(chordPhrases) phrase.lesson?.key else null, if(page==0) first else shownChord)
+    val automaticChord=if(page==0 || !chordPhrases) first else shownChord
+    val referenceChord=Chords.named(if(referenceChordName=="auto") phrase.lesson?.referenceChordName ?: "C" else referenceChordName)
+    val boardTeaching = BoardTeachingContext(if(page==0) scale.key.context else if(chordPhrases) phrase.lesson?.key else null,
+        if(referenceChordName=="auto") automaticChord ?: referenceChord else referenceChord,
+        referenceChordName!="auto" || automaticChord==null || page==0)
     val renderHint = hint.takeIf { it in boardTeaching.available } ?: Hint.FULL
     val nextChord = if (page == 1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0, section) + 1) % harmony.size].chord else ""
     fun changed() { player.invalidate(); note = "" }
@@ -222,6 +228,9 @@ internal fun PracticeWorkbench(
         if (value.unprepared) { note = "正在准备曲目…"; return }
         val saved = phraseStore.load(value, bpm, repeats)
         bpm = saved.bpm; repeats = saved.repeats; firstBar = saved.range.first; lastBar = saved.range.last
+        if(transitionTargetId==value.id) {
+            repeats=0; firstBar=0; lastBar=value.sequence.barCount-1; transitionTargetId=null
+        }
         val tempo = phraseStore.tempo(value)
         sourceTempo = tempo.first; tempoMultiplier = tempo.second
         val prefix = value.assetKey?.let { "asset." + it.encoded + "." }
@@ -257,6 +266,7 @@ internal fun PracticeWorkbench(
         }
     }
     fun phraseChange(value: Phrase) {
+        if(transitionTargetId!=value.id) transitionTargetId=null
         chainFirst=-1; chainLast=-1; chainStep=0; leadFade=false
         phraseStore.select(value)
         if (phraseId != value.id) { changed(); phraseId = value.id; loadPhrase(value) }
@@ -411,7 +421,10 @@ internal fun PracticeWorkbench(
                         showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
                         if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
                     )
-                    CompositionLocalProvider(LocalStageViewSwitch provides false, LocalBoardTeaching provides boardTeaching, LocalSelectHint provides { value -> setHint(value.ordinal) }) {
+                    CompositionLocalProvider(LocalStageViewSwitch provides false, LocalBoardTeaching provides boardTeaching,
+                        LocalSelectHint provides { value -> setHint(value.ordinal) },LocalSelectReferenceChord provides { name ->
+                            referenceChordName=name;preferences.edit().putString("reference-chord",name).apply();setHint(Hint.CHORD_TONES.ordinal)
+                        }) {
                         if (showNativeScore) {
                             val fontScale = density.fontScale.coerceAtLeast(1f)
                             val targetHeight = if (stageLayout == StageLayout.LINKED && contentHeight >= 320.dp * fontScale) {
@@ -473,6 +486,55 @@ internal fun PracticeWorkbench(
                 }
             }
 
+            var lessonActionsOpen by remember { mutableStateOf(false) }
+            val lessonActions: @Composable () -> Unit = {
+                if(page==1 && chordPhrases && !phrase.unprepared) {
+                    fun destination(id: String): Phrase? {
+                        val global=librarySnapshot.aliases[id]?.let(repository::named)
+                        val encoded=phrase.assetKey?.let { com.a3322505a.guitarlearning.music.score.PracticeKey(it.packageId,id).encoded }
+                        return global ?: encoded?.let { key -> librarySnapshot.phrases.firstOrNull { it.id==key } }
+                    }
+                    val versions=repository.versions(phrase)
+                    val warmups=phrase.lesson?.warmupIds.orEmpty().mapNotNull(::destination)
+                    val transitions=phrase.lesson?.transitionIds.orEmpty().mapNotNull(::destination)
+                    val chain=remember(sequence,range,chainOriginal) { sequence?.let { PracticeExtensions.backwardRanges(it,chainOriginal ?: range) }.orEmpty() }
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
+                        if(versions.size>1) versions.forEach { version ->
+                            FilterChip(selected=version.id==phrase.id,onClick={ changed(); phraseChange(version) },label={ Text(version.version ?: version.title) })
+                        }
+                        if(returnPhraseId!=null) TextButton(onClick={
+                            val target=returnPhraseId!!; changed(); module=returnModule; phraseChange(repository.named(target)); returnPhraseId=null
+                        }) { Text("返回原曲段") }
+                        fun jump(target: Phrase) {
+                            phraseStore.save(phrase,bpm,repeats,range); phraseStore.saveTempo(phrase,sourceTempo,tempoMultiplier)
+                            if(returnPhraseId==null) { returnPhraseId=phrase.id; returnModule=module }
+                            changed(); phraseChange(target); module=contentPresentation.moduleOf(target)
+                        }
+                        if(warmups.isNotEmpty()) TextButton(onClick={ jump(warmups.first()) }) { Text("练前热身") }
+                        transitions.forEach { target -> TextButton(onClick={ transitionTargetId=target.id; jump(target) }) { Text("衔接练习") } }
+                        if(sequence?.let(PracticeExtensions::canFade)==true) FilterChip(selected=leadFade,onClick={ leadFade=!leadFade },label={ Text("渐隐领奏") })
+                        if(chain.isNotEmpty()) {
+                            TextButton(onClick={
+                                changed()
+                                if(chainOriginal==null) {
+                                    chainFirst=range.first; chainLast=range.last; chainStep=0; chainRepeats=repeats; repeats=0
+                                    firstBar=chain.first().first; lastBar=chain.first().last
+                                } else {
+                                    firstBar=chainOriginal!!.first; lastBar=chainOriginal!!.last; repeats=chainRepeats; chainFirst=-1; chainLast=-1
+                                }
+                            }) { Text(if(chainOriginal==null) "倒序接龙" else "退出接龙") }
+                            if(chainOriginal!=null && chainStep<chain.lastIndex) TextButton(onClick={
+                                changed(); chainStep++; firstBar=chain[chainStep].first; lastBar=chain[chainStep].last
+                            }) { Text("接上前一段") }
+                        }
+                    }
+                    if(leadFade) Text("领奏随循环 100% → 30% → 0% · 伴奏保持",style=MaterialTheme.typography.labelSmall)
+                    PracticeExtensions.action(phrase.sequence,if(showingSession) (cursor?.localTick ?: 0.0)/phrase.sequence.ticksPerQuarter else 0.0)?.let { Text(it,style=MaterialTheme.typography.labelSmall) }
+                }
+            }
+            if(lessonActionsOpen) AlertDialog(onDismissRequest={ lessonActionsOpen=false },title={ Text("练习方式") },
+                text={ Column { lessonActions() } },confirmButton={ TextButton(onClick={ lessonActionsOpen=false }) { Text("完成") } })
+
             // Root coordinate anchor: NativeScore stays at a single fixed sibling index in this root Box
             // across all orientation, deck/column, view, and overlay changes so AlphaTabView never detaches.
             Box(Modifier.fillMaxSize().onGloballyPositioned { hostOrigin = it.positionInRoot() }) {
@@ -498,50 +560,13 @@ internal fun PracticeWorkbench(
                             onOpenSettings = { overlay = PracticeOverlay.PRACTICE },
                             onManagement = { overlay = PracticeOverlay.MANAGEMENT },
                             linkedAvailable = nativePlayer != null,
+                            extraActions = {
+                                if(windowHeight < 420.dp && page==1 && chordPhrases && !phrase.unprepared) {
+                                    TextButton(onClick={ lessonActionsOpen=true },modifier=Modifier.heightIn(min=48.dp).testTag("compact-lesson-actions")) { Text("练法") }
+                                }
+                            },
                         )
-                        if(page==1 && chordPhrases && !phrase.unprepared) {
-                            fun destination(id: String): Phrase? {
-                                val global=librarySnapshot.aliases[id]?.let(repository::named)
-                                val encoded=phrase.assetKey?.let { com.a3322505a.guitarlearning.music.score.PracticeKey(it.packageId,id).encoded }
-                                return global ?: encoded?.let { key -> librarySnapshot.phrases.firstOrNull { it.id==key } }
-                            }
-                            val versions=repository.versions(phrase)
-                            val warmups=phrase.lesson?.warmupIds.orEmpty().mapNotNull(::destination)
-                            val transitions=phrase.lesson?.transitionIds.orEmpty().mapNotNull(::destination)
-                            val chain=remember(sequence,range,chainOriginal) { sequence?.let { PracticeExtensions.backwardRanges(it,chainOriginal ?: range) }.orEmpty() }
-                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
-                                if(versions.size>1) versions.forEach { version ->
-                                    FilterChip(selected=version.id==phrase.id,onClick={ changed(); phraseChange(version) },label={ Text(version.version ?: version.title) })
-                                }
-                                if(returnPhraseId!=null) TextButton(onClick={
-                                    val target=returnPhraseId!!; changed(); module=returnModule; phraseChange(repository.named(target)); returnPhraseId=null
-                                }) { Text("返回原曲段") }
-                                fun jump(target: Phrase) {
-                                    phraseStore.save(phrase,bpm,repeats,range); phraseStore.saveTempo(phrase,sourceTempo,tempoMultiplier)
-                                    if(returnPhraseId==null) { returnPhraseId=phrase.id; returnModule=module }
-                                    changed(); phraseChange(target); module=contentPresentation.moduleOf(target)
-                                }
-                                if(warmups.isNotEmpty()) TextButton(onClick={ jump(warmups.first()) }) { Text("练前热身") }
-                                transitions.forEach { target -> TextButton(onClick={ jump(target); repeats=0 }) { Text("衔接练习") } }
-                                if(sequence?.let(PracticeExtensions::canFade)==true) FilterChip(selected=leadFade,onClick={ leadFade=!leadFade },label={ Text("渐隐领奏") })
-                                if(chain.isNotEmpty()) {
-                                    TextButton(onClick={
-                                        changed()
-                                        if(chainOriginal==null) {
-                                            chainFirst=range.first; chainLast=range.last; chainStep=0; chainRepeats=repeats; repeats=0
-                                            firstBar=chain.first().first; lastBar=chain.first().last
-                                        } else {
-                                            firstBar=chainOriginal!!.first; lastBar=chainOriginal!!.last; repeats=chainRepeats; chainFirst=-1; chainLast=-1
-                                        }
-                                    }) { Text(if(chainOriginal==null) "倒序接龙" else "退出接龙") }
-                                    if(chainOriginal!=null && chainStep<chain.lastIndex) TextButton(onClick={
-                                        changed(); chainStep++; firstBar=chain[chainStep].first; lastBar=chain[chainStep].last
-                                    }) { Text("接上前一段") }
-                                }
-                            }
-                            if(leadFade) Text("领奏随循环 100% → 30% → 0% · 伴奏保持",style=MaterialTheme.typography.labelSmall)
-                            PracticeExtensions.action(phrase.sequence,if(showingSession) (cursor?.localTick ?: 0.0)/phrase.sequence.ticksPerQuarter else 0.0)?.let { Text(it,style=MaterialTheme.typography.labelSmall) }
-                        }
+                        if(windowHeight >= 420.dp) lessonActions()
                         stageSlot(Modifier.weight(1f).fillMaxWidth())
                     }
                 }

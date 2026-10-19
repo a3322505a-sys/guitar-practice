@@ -127,5 +127,29 @@ class PackageTests(unittest.TestCase):
         spec=importlib.util.spec_from_file_location("bundled_audit",CONTRACT.parents[2]/"scripts/verify-bundled-songs.py")
         audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
         self.assertEqual(5,len(audit.audit()))
+    def test_filled_teaching_data_has_no_missing_fingers_or_inert_adjacent_entries(self):
+        import importlib.util
+        spec=importlib.util.spec_from_file_location('teaching_complete',CONTRACT.parents[2]/'scripts/audit-teaching-completeness.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        report=module.audit()
+        self.assertEqual(6,len(report))
+        self.assertEqual(0,sum(r['missing'] for r in report))
+        self.assertEqual(67,sum(r['adjacentJoins'] for r in report))
+    def test_adjacent_hard_cuts_accept_pickup_meter_changes_and_cross_bar_sustain(self):
+        from song_package.enrich_teaching import hard_cut_joins
+        for name in ('complex','ties','cross-tuplet'):
+            score,practices=deepcopy(fixtures()[name])
+            all_notes=[n['id'] for v in score['voices'] for e in v['events'] for n in e['notes']]
+            selected=[]
+            for i,m in enumerate(score['measures'][:2]):
+                p=deepcopy(practices[0]);p.update(id='part-'+str(i),visibility='core',order=i,lesson=dict(module='APPLICATION'))
+                p['segments']=[dict(start=dict(measureId=m['id']),end=dict(measureId=m['id'],offset=m['actualDuration']),entry='reattack',exit='truncate',affectedNoteIds=all_notes)]
+                selected.append(p)
+            joins=hard_cut_joins(score,selected)
+            self.assertEqual(1,len(joins),name)
+            plan=compile_summary(score,joins[0])
+            self.assertEqual([0,1],[v['measureIndex'] for v in plan['visits']],name)
+            self.assertEqual(sum(q(m['actualDuration']) for m in score['measures'][:2]),plan['length'],name)
+            if name=='ties':self.assertEqual(2,plan['onsets'])
 
 if __name__=="__main__": unittest.main(verbosity=2)

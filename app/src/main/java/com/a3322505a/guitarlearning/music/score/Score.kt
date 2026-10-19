@@ -10,12 +10,15 @@ class Q(n: Long, d: Long = 1) : Comparable<Q> {
     val d: Long
     init {
         musicCheck(d>0,"Q","/score/time","Rational denominator must be positive")
-        val a = BigInteger.valueOf(n)
-        val b = BigInteger.valueOf(d)
-        val gcd = a.gcd(b)
-        this.n = a.divide(gcd).toLong()
-        this.d = b.divide(gcd).toLong()
-        musicCheck(BigInteger.valueOf(this.n).abs()<=BigInteger.valueOf(LIMIT) && this.d<=LIMIT,
+        if(n==Long.MIN_VALUE) {
+            val a=BigInteger.valueOf(n); val b=BigInteger.valueOf(d); val gcd=a.gcd(b)
+            this.n=a.divide(gcd).toLong(); this.d=b.divide(gcd).toLong()
+        } else {
+            var a=abs(n); var b=d
+            while(b!=0L) { val remainder=a%b; a=b; b=remainder }
+            this.n=n/a; this.d=d/a
+        }
+        musicCheck(this.n in -LIMIT..LIMIT && this.d<=LIMIT,
             "Q","/score/time","Rational arithmetic exceeds 10^12")
     }
     private fun calc(a: BigInteger, b: BigInteger): Q {
@@ -24,15 +27,30 @@ class Q(n: Long, d: Long = 1) : Comparable<Q> {
         musicCheck(n.abs()<=limit && d<=limit,"Q","/score/time","Rational arithmetic exceeds 10^12")
         return Q(n.toLong(),d.toLong())
     }
-    operator fun plus(other: Q) = calc(bn()*other.bd()+other.bn()*bd(), bd()*other.bd())
-    operator fun minus(other: Q) = calc(bn()*other.bd()-other.bn()*bd(), bd()*other.bd())
-    operator fun times(other: Q) = calc(bn()*other.bn(), bd()*other.bd())
+    // Exact Long operations avoid Android's JNI BigInteger path for ordinary score times.
+    // Overflow falls back before reduction; large cancellable intermediates remain valid.
+    private inline fun smallOrBig(small: ()->Q, big: ()->Q): Q = try { small() } catch(_: ArithmeticException) { big() }
+    operator fun plus(other: Q) = smallOrBig({
+        if(d==other.d) Q(Math.addExact(n,other.n),d) else Q(
+            Math.addExact(Math.multiplyExact(n,other.d),Math.multiplyExact(other.n,d)),Math.multiplyExact(d,other.d))
+    },{ calc(bn()*other.bd()+other.bn()*bd(), bd()*other.bd()) })
+    operator fun minus(other: Q) = smallOrBig({
+        if(d==other.d) Q(Math.subtractExact(n,other.n),d) else Q(
+            Math.subtractExact(Math.multiplyExact(n,other.d),Math.multiplyExact(other.n,d)),Math.multiplyExact(d,other.d))
+    },{ calc(bn()*other.bd()-other.bn()*bd(), bd()*other.bd()) })
+    operator fun times(other: Q) = smallOrBig({ Q(Math.multiplyExact(n,other.n),Math.multiplyExact(d,other.d)) },
+        { calc(bn()*other.bn(), bd()*other.bd()) })
     operator fun div(other: Q): Q {
         musicCheck(other.n!=0L,"Q","/score/time","Division by zero")
-        val sign = BigInteger.valueOf(if(other.n < 0) -1 else 1)
-        return calc(bn()*other.bd()*sign, bd()*other.bn()*sign)
+        val sign = if(other.n < 0) -1L else 1L
+        return smallOrBig({ Q(Math.multiplyExact(Math.multiplyExact(n,other.d),sign),Math.multiplyExact(d,abs(other.n))) },
+            { calc(bn()*other.bd()*BigInteger.valueOf(sign), bd()*other.bn()*BigInteger.valueOf(sign)) })
     }
-    override fun compareTo(other: Q) = (bn()*other.bd()).compareTo(other.bn()*bd())
+    override fun compareTo(other: Q): Int {
+        if(d==other.d) return n.compareTo(other.n)
+        return try { Math.multiplyExact(n,other.d).compareTo(Math.multiplyExact(other.n,d)) }
+            catch(_: ArithmeticException) { (bn()*other.bd()).compareTo(other.bn()*bd()) }
+    }
     fun value() = n.toDouble()/d
     private fun bn() = BigInteger.valueOf(n)
     private fun bd() = BigInteger.valueOf(d)

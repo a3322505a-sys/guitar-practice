@@ -81,7 +81,8 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
     val arpeggio get() = positions.take(1) + positions.filter { it.string <= 3 }
     val definition get() = quality?.takeIf { root in 0..11 }?.let { q ->
         ChordDefinition.parse(soundingName)?.takeIf { it.root.pitchClass == root } ?: ChordDefinition(SpelledPitch.parse(Music.name(root)),q) }
-    val toneSummary get() = definition?.let { d -> d.quality.intervals.joinToString(" ") { d.noteName(root+it) } + " / " + d.quality.degreeLabels.joinToString(" ") } ?: "构成音未提供"
+    val toneSummary get() = definition?.let { d -> d.quality.intervals.joinToString(" ") { d.noteName(root+it) } + " / " + d.quality.degreeLabels.joinToString(" ") }
+        ?: positions.distinctBy { midi(it)%12 }.joinToString(" ") { noteName(it) }
     fun role(p: Position) = if(root<0) "按法音" else when (midi(p) % 12) {
         root -> "根音"
         third -> "三音"
