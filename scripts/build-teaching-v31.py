@@ -12,9 +12,9 @@ ROUTES={'C':[(5,3),(4,0),(4,2),(4,3),(3,0),(3,2),(2,0),(2,1)],
  'Em':[(6,0),(6,2),(6,3),(5,0),(5,2),(5,3),(4,0),(4,2)],
  'D':[(4,0),(4,2),(4,4),(3,0),(3,2),(2,0),(2,2),(2,3)],
  'Bm':[(5,2),(5,4),(4,0),(4,2),(4,4),(3,0),(3,2),(2,0)]}
-BOX_ROWS={'C':{5:[[5,7,8],[5,6,8],[5,7],[5,7],[5,7,8],[5,7,8]],7:[[7,8,10],[8,10],[7,9,10],[7,9,10],[7,8,10],[7,8,10]]},
- 'G':{5:[[5,7,8],[5,7,8],[5,7],[5,7],[5,7],[5,7,8]],7:[[7,8,10],[7,8,10],[7,9],[7,9,10],[7,9,10],[7,8,10]]},
- 'D':{5:[[5,7],[5,7,8],[6,7],[5,7],[5,7],[5,7]],7:[[7,9,10],[7,8,10],[7,9],[7,9],[7,9,10],[7,9,10]]}}
+BOX_ROWS={'C':{5:[[5,7,8],[5,6,8],[4,5,7],[5,7],[5,7,8],[5,7,8]],7:[[7,8,10],[8,10],[7,9,10],[7,9,10],[7,8,10],[7,8,10]]},
+ 'G':{5:[[5,7,8],[5,7,8],[4,5,7],[4,5,7],[5,7],[5,7,8]],7:[[7,8,10],[7,8,10],[7,9],[7,9,10],[7,9,10],[7,8,10]]},
+ 'D':{5:[[5,7],[5,7,8],[4,6,7],[4,5,7],[4,5,7],[5,7]],7:[[7,9,10],[7,8,10],[6,7,9],[7,9],[7,9,10],[7,9,10]]}}
 FAMILY={'Am':'C','Em':'G','Bm':'D'}
 CONTEXTS={n:key(n[:-1] if n.endswith('m') else n,n.endswith('m')) for n in ROUTES}
 def line(ps,base=1):return [note(s,f,0 if f==0 else f-base+1) for s,f in ps]
@@ -39,7 +39,7 @@ def kotlin_data():
         lines.append('        Tonality.'+enum+' to listOf(')
         for base,rr in [(1,rows)]+list(BOX_ROWS[FAMILY.get(n,n)].items()):
             title='开放把位' if base==1 else str(base)+'品封闭 Box'
-            fingers='mapOf('+','.join(f'Position({s+1},{f}) to {0 if f==0 else f-base+1}' for s,row in enumerate(rr) for f in row)+')'
+            fingers='mapOf('+','.join(f'Position({s+1},{f}) to {0 if f==0 else f-(1 if base==1 else min(base,min(row)))+1}' for s,row in enumerate(rr) for f in row)+')'
             lines.append(f'            Pattern("{title}","",listOf('+','.join(li(row) for row in rr)+f'),{fingers}),')
         lines.append('        ),')
     (folder/'NativeScalePatterns.kt').write_text('\n'.join(lines+['    )','}'])+'\n',encoding='utf8')
@@ -69,8 +69,8 @@ def library():
             ps=[(s,f) for s in range(6,0,-1) for f in rows[s-1]]
             for pent_only in (False,True):
                 selected=[p for p in ps if not pent_only or (OPEN[p[0]-1]+p[1]-root)%12 in pent]
-                b.phrase('S-'+n+'-box'+str(base)+('-pent' if pent_only else ''),n+' · '+str(base)+'品封闭 Box'+(' 五声' if pent_only else ' 七声'),loop(line(selected,base)),'SCALES',context,
-                    '食指基准 '+str(base)+' 品，1–4 指对应连续四品；主音突出，换弦保持交替拨弦。',F(1,2),warmups=['FB-1'])
+                b.phrase('S-'+n+'-box'+str(base)+('-pent' if pent_only else ''),n+' · '+str(base)+'品封闭 Box'+(' 五声' if pent_only else ' 七声'),loop([note(st,f,f-min(base,min(rows[st-1]))+1) for st,f in selected]),'SCALES',context,
+                    '以 '+str(base)+' 品为中心；'+ '；'.join(str(st+1)+'弦'+str(min(row))+'品用1指局部调整' for st,row in enumerate(rows) if min(row)<base)+'；按各弦标号落指，交替拨弦。',F(1,2),warmups=['FB-1'])
     for id,title,route,k,goal in [('ADD9','C→Cadd9→C',['C','Cadd9','C','C'],key('C'),'1指从二弦一品抬起，4指落二弦三品；3指五弦三品与2指四弦二品保留，再还原。'),
         ('BASS','G→D/F♯→Em',['G']*4+['D/F♯']*4+['Em']*4,key('G'),'低音 G→F♯→E；D/F♯只弹6、4、3弦。'),
         ('JR-POWER','J-Rock · 强力和弦',['E5',None,'E5',None,'G5',None,'A5',None],key('E',True),'只弹图示低音弦；休止放松左手，闷住全部弦。')]:

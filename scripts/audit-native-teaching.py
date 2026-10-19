@@ -57,7 +57,10 @@ def audit(directory=ASSETS):
                 pitches={n['note']['midi']%12 for n in plan['notes']};assert pitches<={(tonic+i)%12 for i in SCALES[l['key']['scale']]}
                 pent={(tonic+i)%12 for i in ([0,3,5,7,10] if minor else [0,2,4,7,9])}
                 assert tonic in pitches and pitches&pent and pitches&{tonic,(tonic+(3 if minor else 4))%12,(tonic+7)%12}
-                if 'box' in p['id']:assert all(n['note']['fret']>=int(p['id'].split('box')[1].split('-')[0]) for n in plan['notes'])
+                midi={n['note']['midi'] for n in plan['notes']}
+                collection=pent if 'pent' in p['id'] else {(tonic+i)%12 for i in SCALES[l['key']['scale']]}
+                assert midi=={n for n in range(min(midi),max(midi)+1) if n%12 in collection},(p['id'],'missing scale degree inside register')
+                if 'box' in p['id']:assert all(n['note']['fret']>0 for n in plan['notes'])
             if l['leadTrackIds']:
                 used={voice_tracks[n['event']['voice']] for n in plan['notes']};assert set(l['leadTrackIds'])<used
                 assert len(l['chainStarts'])>=2;lead_groups+=1
