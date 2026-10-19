@@ -12,8 +12,8 @@ android {
         manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 103
-        versionName = "1.0.1"
+        versionCode = 105
+        versionName = "1.1.0"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }
@@ -28,7 +28,13 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     sourceSets.getByName("debug").assets.srcDir(rootProject.file("assets/soundfont-source"))
     sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            it.maxHeapSize = "2g"
+            it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 dependencies {

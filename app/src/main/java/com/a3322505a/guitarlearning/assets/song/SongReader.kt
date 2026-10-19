@@ -23,7 +23,7 @@ object SongCapabilities {
         "technique.harmonic.v1","technique.tie.v1","technique.legato.v1","technique.bend.v1",
         "technique.vibrato.v1","technique.tremolo-bar.v1","technique.tapping.v1","technique.mute.v1",
         "technique.sustain.v1","technique.strum.v1","technique.grace.v1","technique.repluck.v1","technique.dynamics.v1",
-        "catalogue.teaching.v1","teaching.note-fingering.v1")
+        "catalogue.teaching.v1","teaching.note-fingering.v1","teaching.lesson.v1")
 }
 fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 

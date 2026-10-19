@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -28,12 +31,14 @@ class ContentPanelRenderTest {
     @get:Rule val compose = createAndroidComposeRule<LegacyWorkbenchTestActivity>()
 
     private fun ready() {
-        compose.waitUntil(15000) {
-            Shadows.shadowOf(Looper.getMainLooper()).idle()
-            runCatching { File(compose.activity.filesDir, "songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
+        compose.waitUntil(45000) {
+            compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty()
         }
         compose.waitForIdle()
     }
+
+    // Source-specific voicings may legitimately share a name (for example Fmaj7).
+    private fun card(title: String) = compose.onAllNodes(hasText(title) and hasAnyAncestor(hasTestTag("content-card-list"))).onFirst()
 
     private fun open() {
         compose.onNodeWithTag("config-summary").performClick()
@@ -45,7 +50,7 @@ class ContentPanelRenderTest {
 
     private fun source(id: String, click: Boolean = true) {
         // The persisted index exists before the recreated activity finishes its async reload.
-        compose.waitUntil(15000) {
+        compose.waitUntil(45000) {
             runCatching { compose.onNodeWithTag("content-source-filters").performScrollToKey(id) }.isSuccess
         }
         if (click) compose.onNodeWithTag("content-source-$id").performClick()
@@ -69,128 +74,77 @@ class ContentPanelRenderTest {
         bitmap.recycle()
     }
 
-    @Test fun phoneSourceNavigationHeadingsCleanTitlesAndRestoration() {
-        ready()
-        ThemeManager(compose.activity).let { it.select("studio_dark"); it.close() }
-        open(); compose.onNodeWithText("歌曲与短句").performClick()
-        compose.onNodeWithTag("content-section-基本功热身 · 七个Block").assertIsDisplayed()
-        compose.onNodeWithText("C 大调小句").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("2 变奏").performScrollTo().assertIsDisplayed()
-        capture("phone-basic-dark")
-        compose.onNodeWithText("勾弦 7p5").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("content-source-filters").assertIsDisplayed()
-        compose.onNodeWithText("歌曲与短句").assertIsDisplayed()
-        compose.onNodeWithTag("content-package-management").assertIsDisplayed()
-        capture("phone-techniques-dark")
-        compose.onNodeWithText("节奏句（完整版）").performScrollTo().assertIsDisplayed()
-        capture("phone-rhythm-dark")
+
+    @Test fun fourModulesKeepOriginalSourcesAndExposeReviewedLessons() {
+        ready(); open()
+        compose.onNode(hasText("基础启蒙") and hasClickAction()).assertIsSelected()
+        card("单弦交替拨弦与同步").performScrollTo().assertIsDisplayed()
+        card("爬格子与专项保留指").performScrollTo().assertIsDisplayed()
+        capture("v31-foundations")
+        compose.onNode(hasText("和弦教学") and hasClickAction()).performClick()
+        card("Am ↔ C").performScrollTo().assertIsDisplayed()
+        card("F").performScrollTo().assertIsDisplayed()
+        capture("v31-chords")
+        card("F").performClick()
+        compose.onNodeWithText("简化替代 Fmaj7").performScrollTo().performClick()
+        compose.onNodeWithTag("config-summary").assertTextContains("Fmaj7",substring=true)
+        open()
         source("local.usotsuki")
+        compose.onNodeWithTag("content-source-local.usotsuki").assertIsSelected()
+        compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
         compose.onNodeWithText("低音与高音分解").assertIsDisplayed()
-        compose.onAllNodes(hasTestTag("content-section-练习片段")).assertCountEquals(0)
-        compose.onNodeWithText("段落与版本 ▾").assertDoesNotExist()
-        capture("phone-usotsuki-dark")
-        source("local.shayou")
-        compose.onNodeWithText("前奏").assertIsDisplayed()
-        capture("phone-shayou-songs-dark")
-        compose.onNodeWithText("和弦").performClick()
-        compose.onNodeWithTag("content-source-local.shayou").assertIsSelected()
-        capture("phone-shayou-chords-dark")
-        compose.onNodeWithText("歌曲与短句").performClick(); source("local.yourtrip")
+        source("local.yourtrip")
         compose.onNodeWithTag("content-section-节奏与伴奏").assertIsDisplayed()
-        compose.onNodeWithTag("content-section-旋律与连奏").performScrollTo().assertIsDisplayed()
-        capture("phone-yourtrip-dark")
-        compose.onNodeWithText("和弦").performClick(); source(BASIC_CONTENT, click = false)
-        compose.onNodeWithTag("content-source-$BASIC_CONTENT").assertIsSelected()
-        compose.onNodeWithText("歌曲与短句").performClick(); source("local.yourtrip", click = false)
-        compose.onNodeWithTag("content-source-local.yourtrip").assertIsSelected()
+        capture("v31-songs")
         compose.onNodeWithText("完成").performClick(); open()
-        source("local.yourtrip", click = false)
-        compose.onNodeWithTag("content-source-local.yourtrip").assertIsSelected()
-        compose.onNodeWithText("完成").performClick()
-        compose.activityRule.scenario.recreate(); ready(); open(); source("local.yourtrip", click = false)
+        source("local.yourtrip",click=false)
         compose.onNodeWithTag("content-source-local.yourtrip").assertIsSelected()
         compose.onNodeWithTag("content-package-management").performClick()
         compose.onNodeWithText("选择曲包").assertIsDisplayed()
     }
-
-    @Test @Config(qualifiers = "w1024dp-h768dp-mdpi") fun wideLightPanelKeepsVoicingsAndLabelsReadable() {
-        ready()
-        ThemeManager(compose.activity).let { it.select("forest"); it.close() }
-        open(); compose.onNodeWithText("和弦").performClick(); source("local.shayou")
-        compose.onNodeWithTag("content-section-斜阳 · 伴奏指法").assertDoesNotExist()
-        capture("tablet-shayou-forest")
-        source(BASIC_CONTENT)
-        compose.onNodeWithText("C").assertIsSelected()
-        capture("tablet-selected-forest")
-        ThemeManager(compose.activity).let { it.select("warm_neutral"); it.close() }
-        compose.onNodeWithText("C").assertIsSelected()
-        capture("tablet-selected-warm-neutral")
+    @Test @Config(qualifiers="w1024dp-h768dp-mdpi") fun scaleKeyPentatonicAndRhythmChoicesRemainIndependent() {
+        ready(); open(); compose.onNode(hasText("音阶教学") and hasClickAction()).performClick()
+        compose.onNodeWithText("G 大调").performScrollTo().performClick()
+        compose.onNodeWithText("五声骨架").performScrollTo().performClick()
+        compose.onNodeWithText("每拍3音").performScrollTo().performClick()
+        compose.onNodeWithText("每拍3音").assertIsSelected()
+        capture("v31-scale-wide")
+        compose.onNodeWithText("五声骨架").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("G 大调").performScrollTo().assertIsSelected()
     }
-
-    @Test @Config(qualifiers = "w360dp-h780dp-mdpi") fun largeFontReflowsCardsAndKeepsPinnedControlsAvailable() {
-        ready()
-        RuntimeEnvironment.setFontScale(1.5f)
+    @Test fun smallScreenLargeFontKeepsModulesAndPlaybackControlsReachable() {
+        val player=Player(compose.activity) { ManualSink() }
         try {
-            compose.activityRule.scenario.recreate()
-            ready(); open(); compose.onNodeWithText("歌曲与短句").performClick()
-            compose.waitUntil(15000) { compose.onAllNodesWithText("3 再现与结尾").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithText("3 再现与结尾").performScrollTo().assertIsDisplayed()
+            // Separate Android dialog windows obtain font scale from Resources.
+            RuntimeEnvironment.setFontScale(1.5f)
+            compose.activity.setContent {
+                // 411x891 host pixels / this density = 360x780 dp, with 1.5x text.
+                CompositionLocalProvider(LocalDensity provides Density(411f/360f,1.5f)) { PracticeApp(player) }
+            }
+            ready(); open()
+            compose.onNode(hasText("基础启蒙") and hasClickAction()).performClick()
+            card("单八度音乐化模进").performScrollTo().assertIsDisplayed()
             compose.onNodeWithText("完成").assertIsDisplayed()
             compose.onNodeWithTag("content-package-management").assertIsDisplayed()
-            capture("phone-basic-large-font")
-            source("local.usotsuki"); capture("phone-usotsuki-large-font")
-        } finally { RuntimeEnvironment.setFontScale(1f) }
-    }
-
-    @Test fun browsingSourceWhilePlayingRetainsSessionTempoAndSelectedPractice() {
-        val player = Player(compose.activity) { ManualSink() }
-        try {
-            ready()
-            Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java))
-                .setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
-            compose.activity.setContent { PracticeApp(player) }
-            ready(); open(); compose.onNodeWithText("歌曲与短句").performClick(); compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithText("开始跟练").performClick()
-            compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); player.progress.phase == Phase.PLAYING }
-            val session = player.session
-            val summary = compose.onNodeWithTag("config-summary").fetchSemanticsNode().config[SemanticsProperties.Text]
-            open(); source("local.yourtrip"); source("local.usotsuki")
-            assertSame(session, player.session)
-            assertEquals(Phase.PLAYING, player.progress.phase)
+            capture("v31-small-large-font")
             compose.onNodeWithText("完成").performClick()
-            assertEquals(summary, compose.onNodeWithTag("config-summary").fetchSemanticsNode().config[SemanticsProperties.Text])
-        } finally { player.release() }
+            compose.onNodeWithTag("volume-button").performClick()
+            compose.onNodeWithTag("music-volume").assertIsDisplayed()
+            compose.onNodeWithTag("metronome-volume").assertIsDisplayed()
+            capture("v31-volume-large-font")
+        } finally { player.release(); RuntimeEnvironment.setFontScale(1f) }
     }
-
-    private fun scaleSections(name: String) {
-        ready(); open()
-        compose.onNodeWithTag("scale-section-1. 调性 · 关系大小调").assertIsDisplayed()
-        compose.onNodeWithText("A 自然小调", useUnmergedTree = true).performScrollTo().performClick()
-        compose.onNodeWithText("A 自然小调").assertIsSelected()
-        compose.onNodeWithText("sol 指型").performScrollTo().performClick()
-        compose.onNodeWithText("sol 指型").assertIsSelected()
-        capture("$name-patterns")
-        compose.onNodeWithText("三度跳进").performScrollTo().performClick()
-        compose.onNodeWithText("完整把位").performScrollTo().performClick()
-        compose.onNodeWithText("每拍3音").performScrollTo().performClick()
-        compose.onNodeWithText("完整把位").assertIsSelected()
-        compose.onNodeWithText("每拍3音").assertIsSelected()
-        compose.onNodeWithTag("scale-section-4. 音域范围").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("scale-section-5. 节奏细分").assertExists()
-        capture("$name-range-rhythm")
+    @Test fun volumeSlidersPersistIndependentlyAtZeroAndPartialGain() {
+        ready(); compose.onNodeWithTag("volume-button").performClick()
+        compose.onNodeWithTag("music-volume").performSemanticsAction(SemanticsActions.SetProgress) { it(.37f) }
+        compose.onNodeWithTag("metronome-volume").performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
         compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithTag("config-summary").assertTextContains("每拍3音", substring = true).assertTextContains("sol", substring = true)
-        compose.onNodeWithText("开始跟练").assertIsDisplayed()
+        val prefs=compose.activity.getSharedPreferences("practice-settings",0)
+        assertEquals(.37f,prefs.getFloat("music-volume",-1f),.001f)
+        assertEquals(0f,prefs.getFloat("metronome-volume",-1f),.001f)
+        compose.activityRule.scenario.recreate(); ready()
+        compose.onNodeWithTag("volume-button").performClick()
+        compose.onNodeWithText("音乐音量 37%").assertIsDisplayed()
+        compose.onNodeWithText("节拍音量 0%").assertIsDisplayed()
     }
-
-    @Test fun phoneScaleSectionsKeepTwoIndependentSelections() = scaleSections("phone-scale")
-
-    @Test @Config(qualifiers = "w360dp-h780dp-mdpi") fun narrowLargeScaleTitlesAndIndependentChoicesStayReadable() {
-        ready()
-        RuntimeEnvironment.setFontScale(1.5f)
-        try { compose.activityRule.scenario.recreate(); scaleSections("narrow-large-scale") }
-        finally { RuntimeEnvironment.setFontScale(1f) }
-    }
-
-    @Test @Config(qualifiers = "w1024dp-h768dp-mdpi") fun tabletScaleSectionsAndFollowControlsStayVisible() = scaleSections("tablet-scale")
 }

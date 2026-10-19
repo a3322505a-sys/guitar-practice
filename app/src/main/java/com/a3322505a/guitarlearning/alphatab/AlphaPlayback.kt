@@ -139,11 +139,18 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         set(value) {
             if(field==value) return
             field = value
-            view?.api?.metronomeVolume = if (value) AlphaTone.CLICK else 0.0
-            if(sequence!=null) view?.api?.countInVolume = if(value && session?.follow==true) AlphaTone.CLICK else 0.0
+            view?.api?.metronomeVolume = clickGain
+            if(sequence!=null) view?.api?.countInVolume = if(value && countIn) clickGain else 0.0
         }
     var solo = false
         set(value) { field = value; applyMix() }
+    var leadFade = false
+        set(value) { if(field!=value) { field=value; applyMix() } }
+    private var mix = PlaybackMix()
+    override fun setMix(mix: PlaybackMix) {
+        if (this.mix != mix) { this.mix = mix; applyMix() }
+    }
+    private val clickGain get() = if (click) AlphaTone.CLICK * mix.metronome else 0.0
 
     fun attach(nativeView: AlphaTabView, acceptTap: () -> Boolean = { false }) {
         check(view == null || view === nativeView)
@@ -209,8 +216,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         api.playerFinished.on { ui {
             if (progress.phase != Phase.PLAYING) return@ui
             round++
+            applyMix()
             Log.i("AlphaPractice","finished round=$round requested=$rounds")
             if (rounds > 0 && round >= rounds) {
+                round = 0; applyMix()
                 positions = emptyList(); cursor = null
                 scoreCursor.stop()
                 progress = Progress(Phase.ENDED, progress.tick, "本次练习结束")
@@ -276,11 +285,15 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
             api.changeTrackMute(alphaTab.collections.List(track), !guitar || solo && track !== selectedTrack)
-            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume))
+            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music,
+                if(leadFade && sequence?.let(PracticeExtensions::canFade)==true &&
+                    sequence!!.performance.score.tracks.filter { it.id in sequence!!.performance.practice.mixTrackIds }.getOrNull(track.index.toInt())?.id in
+                        sequence!!.performance.practice.lesson!!.leadTrackIds) PracticeExtensions.leadGain(round) else 1.0))
         }
         if (!guitar) positions = emptyList()
         api.masterVolume = AlphaTone.MASTER
-        api.metronomeVolume = if (click) AlphaTone.CLICK else 0.0
+        api.metronomeVolume = clickGain
+        api.countInVolume = if (countIn) clickGain else 0.0
     }
     private fun onReady() {
         val api = view?.api ?: return
@@ -326,7 +339,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             val visits = checkNotNull(projection).visits
             api.playbackRange = PlaybackRange().apply { startTick = visits[first].start; endTick = visits[last].end }
             api.playbackSpeed = speed
-            api.countInVolume = if (pre && (forceCountIn || sequence==null || click)) AlphaTone.CLICK else 0.0
+            api.countInVolume = if (pre) clickGain else 0.0
             api.isLooping = repeats == 0 || repeats > 1
             applyMix(); currentTick = visits[entryVisit].start; currentVisit = entryVisit
             val trackLookup = alphaTab.core.ecmaScript.Set<Double>(
@@ -401,6 +414,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     }
     override fun invalidate() { stop(); progress = Progress(message = "设置已改变，下一次播放从头开始") }
     override fun stop() {
+        round=0; applyMix()
         callbackEpoch++
         pendingStart = null; beginning = false; auditioning = false
         countIn = false; pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()

@@ -25,7 +25,7 @@ data class PlanNote(val id: String, val note: ScoreNote, val event: PlanEvent, v
     val soundPitch get() = note.harmonic?.let { track.midi(note.string,note.fret)+12*log2(it.partial.toDouble()) } ?: note.midi.toDouble()
 }
 data class PlanRelation(val from: String, val to: String, val kind: String)
-data class PlanHarmony(val start: Q,val symbol: HarmonySymbol,val voicing: GuitarVoicing?)
+data class PlanHarmony(val start: Q,val symbol: HarmonySymbol,val voicing: GuitarVoicing?,val end: Q? = null)
 data class PerformancePlan(val score: ScoreDocument, val practice: PracticeSpec, val visits: List<MeasureVisit>,
     val events: List<PlanEvent>, val notes: List<PlanNote>, val relations: List<PlanRelation>,
     val tempos: List<Tempo>, val dynamics: List<Dynamic>, val swing: List<SwingSpec>, val length: Q,
@@ -48,10 +48,18 @@ data class PerformancePlan(val score: ScoreDocument, val practice: PracticeSpec,
         visits.forEach { v ->
             val a=v.sourceStart;val b=a+v.duration
             val applicable=source.filter { it.second.condition?.matches(v.occurrence,v.repeatContext) ?: true }
-            applicable.lastOrNull { it.first<=a }?.let { (_,h) ->
-                if(result.lastOrNull()?.symbol?.id!=h.id) result+=PlanHarmony(v.start,h,voicings[h.voicingId])
+            applicable.filterIndexed { index, item ->
+                val limit = minOf(item.second.validUntil ?: score.length, applicable.getOrNull(index+1)?.first ?: score.length)
+                item.first < b && limit > a
+            }.forEach { (q,h) ->
+                val next = applicable.firstOrNull { it.first > q }?.first ?: score.length
+                val sourceEnd = minOf(h.validUntil ?: score.length,next,b)
+                val start = v.start + maxOf(Q.ZERO,q-a)
+                val end = v.start + sourceEnd-a
+                val previous = result.lastOrNull()
+                if(previous?.symbol?.id==h.id && previous.end==start) result[result.lastIndex]=previous.copy(end=end)
+                else result+=PlanHarmony(start,h,voicings[h.voicingId],end)
             }
-            applicable.filter { it.first>a && it.first<b }.forEach { (q,h) -> result+=PlanHarmony(v.start+q-a,h,voicings[h.voicingId]) }
         }
         result
     }
@@ -135,7 +143,7 @@ object PracticeCompiler {
                 }
                 score.swing.filter { it.start<b && a<it.end }.forEach { s ->
                     val begin=maxOf(s.start,a); val end=minOf(s.end,b)
-                    musicCheck(((begin-s.start)/(s.unit*Q(2))).d==1L && ((end-s.start)/(s.unit*Q(2))).d==1L,
+                    musicCheck(segment.entry=="reattack" && segment.exit=="truncate" || ((begin-s.start)/(s.unit*Q(2))).d==1L && ((end-s.start)/(s.unit*Q(2))).d==1L,
                         "SWING_BOUNDARY","/practices/"+practice.id,"Selection/form cuts a swing pair")
                     routeSwing+=s.copy(start=at+begin-a,end=at+end-a)
                 }
@@ -242,7 +250,9 @@ object PracticeCompiler {
             var result: GuitarVoicing?=null
             while(i>=0) {
                 val candidate=entries[i--]
-                if(candidate.second.condition?.matches(visits[e.visit].occurrence,visits[e.visit].repeatContext)!=false) {
+                val until=candidate.second.validUntil
+                if((until == null || e.sourceStart < until) &&
+                    candidate.second.condition?.matches(visits[e.visit].occurrence,visits[e.visit].repeatContext)!=false) {
                     result=candidate.third; break
                 }
             }

@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import com.a3322505a.guitarlearning.assets.song.*
 import com.a3322505a.guitarlearning.audio.Phase
 import com.a3322505a.guitarlearning.music.*
@@ -16,7 +18,7 @@ class TabLayoutTest {
     private fun song(path: String)=SongReader(SongSchema { File(contract,it).readBytes() }).read(File(path).readBytes())
     private fun fixture(name: String)=song("../contracts/song-package/v1/fixtures/$name.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
     private fun rows(plan: PerformancePlan,width: Float=800f)=tabLayoutSystems(plan,plan.tabProjection(),width) { s,size -> s.length*size*.6f }
-    private fun usotsuki()=song("src/main/assets/song-packages/usotsuki-v1.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
+    private fun usotsuki()=song("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
 
     @Test fun truncatedTieMustAgreeWithPlaybackWithoutInventingNoteMarks() {
         val song=song("../contracts/song-package/v1/fixtures/ties.gpractice")

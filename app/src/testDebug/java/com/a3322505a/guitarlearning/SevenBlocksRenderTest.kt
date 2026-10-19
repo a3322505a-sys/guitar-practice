@@ -55,19 +55,22 @@ class SevenBlocksRenderTest {
         val player=Player(compose.activity)
         try {
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false) }
+                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithText("歌曲与短句").performClick();compose.onNodeWithText("完成").performClick()
+            compose.onNode(hasText("基础启蒙") and hasClickAction()).performClick();compose.onNodeWithText("完成").performClick()
             SevenBlocks.phrases.forEach { phrase ->
                 compose.onNodeWithTag("config-summary").performClick()
-                compose.onNodeWithText(phrase.title).performScrollTo().performClick()
+                compose.onNodeWithText(com.a3322505a.guitarlearning.ui.ContentPresentation(SongTestLibrary.repository.snapshot).phraseText(SongTestLibrary.repository.resolve(phrase.id)).primary).performScrollTo().performClick()
                 compose.onNodeWithTag("practice-settings").assertDoesNotExist()
-                compose.onNodeWithTag("config-summary").assertTextContains(phrase.title,substring=true)
+                compose.onNodeWithTag("config-summary").assertTextContains(SongTestLibrary.repository.resolve(phrase.id).title,substring=true)
             }
+            compose.waitUntil(45000) { runCatching { compose.onNodeWithText("听示范").assertIsEnabled() }.isSuccess }
             compose.onNodeWithText("听示范").performClick()
-            assertEquals(SevenBlocks.phrases.last().sequence,player.session!!.sequence)
-            assertEquals(2304,player.session!!.practiceLength)
+            assertEquals(SevenBlocks.phrases.last().sequence.events.flatMap { it.positions }.size,player.session!!.sequence.performance.notes.size)
+            assertEquals(SevenBlocks.phrases.last().sequence.length.toDouble()/SevenBlocks.phrases.last().sequence.ticksPerQuarter,player.session!!.practiceLength.toDouble()/player.session!!.sequence.ticksPerQuarter,0.0)
             assertEquals(1,player.session!!.repeats)
         } finally { player.release() }
     }

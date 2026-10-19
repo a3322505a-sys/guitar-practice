@@ -18,9 +18,48 @@ import com.a3322505a.guitarlearning.ui.PracticeSkin
 import com.a3322505a.guitarlearning.ui.ThemeTokens
 
 /** Observe gestures without intercepting the native scroll container. */
-internal class PracticeScoreHost(context: Context) : FrameLayout(context) {
+internal class PracticeScoreHost(context: Context, private val refreshViewport: Boolean = true) : FrameLayout(context) {
     val native = AlphaTabView(context,null)
     init { addView(native,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)) }
+    // SDK 1.8.4 refreshes its chunk visibility rectangle during measurement.
+    // Keep that measurement aligned with scroll, visibility and viewport size changes.
+    // Refresh only the render surface, using public View APIs.
+    // This only updates the viewport: no score/MIDI reload and no player recreation.
+    private var viewport: List<Int>? = null
+    private var viewportInitialized = false
+    private fun refreshViewportIfChanged() {
+        if(!refreshViewport || !isAttachedToWindow) return
+        if(!isShown) { viewport=null; return }
+        val horizontal=native.findViewById<android.widget.HorizontalScrollView>(net.alphatab.R.id.outerScroll)
+        val vertical=native.findViewById<android.widget.ScrollView>(net.alphatab.R.id.innerScroll)
+        val value=listOf(horizontal?.scrollX ?: 0,vertical?.scrollY ?: 0,vertical?.width ?: 0,vertical?.height ?: 0)
+        if(value[2]<=0 || value[3]<=0) return
+        if(!viewportInitialized) { viewportInitialized=true; viewport=value; return }
+        if(value==viewport) return
+        viewport=value
+        native.findViewById<View>(net.alphatab.R.id.renderSurface)?.let { surface ->
+            surface.forceLayout(); surface.requestLayout(); surface.postInvalidateOnAnimation()
+        }
+    }
+    private val viewportObserver = android.view.ViewTreeObserver.OnScrollChangedListener { refreshViewportIfChanged() }
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if(refreshViewport) viewTreeObserver.addOnScrollChangedListener(viewportObserver)
+        post { refreshViewportIfChanged() }
+    }
+    override fun onSizeChanged(w: Int,h: Int,oldw: Int,oldh: Int) {
+        super.onSizeChanged(w,h,oldw,oldh)
+        post { refreshViewportIfChanged() }
+    }
+    override fun onVisibilityChanged(changedView: View,visibility: Int) {
+        super.onVisibilityChanged(changedView,visibility)
+        post { refreshViewportIfChanged() }
+    }
+    override fun onDetachedFromWindow() {
+        if(refreshViewport) viewTreeObserver.removeOnScrollChangedListener(viewportObserver)
+        viewport=null
+        super.onDetachedFromWindow()
+    }
     private var x=0f; private var y=0f; private var down=0L
     private var moved=false; private var tapped=false
     private val slop=ViewConfiguration.get(context).scaledTouchSlop

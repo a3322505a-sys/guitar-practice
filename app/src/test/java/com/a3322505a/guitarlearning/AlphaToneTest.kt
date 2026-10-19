@@ -8,6 +8,8 @@ import alphaTab.synth.AlphaSynthAudioExporter
 import alphaTab.synth.AudioExportOptions
 import com.a3322505a.guitarlearning.alphatab.*
 import com.a3322505a.guitarlearning.music.Position
+import com.a3322505a.guitarlearning.music.score.PracticeKey
+import com.a3322505a.guitarlearning.practice.PracticeExtensions
 import com.a3322505a.guitarlearning.practice.Event
 import com.a3322505a.guitarlearning.practice.Sequence
 import org.junit.Assert.*
@@ -31,7 +33,8 @@ class AlphaToneTest {
     private val output = File("build/reports/alpha-tone").apply { mkdirs() }
     private fun render(positions: List<Position>, click: Boolean, guitar: Boolean = true,
                        strum: Boolean = false, program: Int = 24,
-                       tuning: List<Int> = listOf(64,59,55,50,45,40)): FloatArray {
+                       tuning: List<Int> = listOf(64,59,55,50,45,40),
+                       music: Double = 1.0, clickMix: Double = 1.0): FloatArray {
         val sequence = Sequence(listOf(Event(0, 12, positions, strum = strum)), 12, "音色验证", openStringMidi = tuning)
         val score = AlphaScoreAdapter.fromSequence(sequence)
         score.tracks.first().apply {
@@ -43,12 +46,12 @@ class AlphaToneTest {
         val (midi, _) = EngineProjection.generate(score)
         val exporter = AlphaSynthAudioExporter(AudioExportOptions().apply {
             sampleRate = 44100.0; masterVolume = AlphaTone.MASTER
-            metronomeVolume = if (click) AlphaTone.CLICK else 0.0
+            metronomeVolume = if (click) AlphaTone.CLICK * clickMix else 0.0
         })
         exporter.loadMidiFile(midi)
         exporter.loadSoundFont(Uint8Array(font.asUByteArray()))
         for (channel in 0..1) exporter.channelSetMixVolume(channel.toDouble(),
-            if (guitar) AlphaTone.trackVolume(score.tracks.first().playbackInfo.volume) else 0.0)
+            if (guitar) AlphaTone.trackVolume(score.tracks.first().playbackInfo.volume,music) else 0.0)
         exporter.setup()
         val samples = mutableListOf<Float>()
         repeat(3) { exporter.render(250.0)?.samples?.data?.let { samples.addAll(it.toList()) } }
@@ -97,5 +100,46 @@ class AlphaToneTest {
         assertTrue(report, differenceDb >= 6.0)
         assertTrue(report, peak(mixed) < .85 && peak(strum) < .85)
         assertTrue("Click must finish within 60 ms", click.drop(44100 * 2 * 60 / 1000).take(44100 / 5).all { abs(it) < .0001 })
+    }
+    @Test fun twoGainRoutesMuteIndependentlyInActualSynthesis() {
+        val notes=listOf(Position(6,0),Position(3,0))
+        assertArrayEquals(render(notes,true,guitar=false),render(notes,true,music=0.0),1e-7f)
+        val full=render(notes,false)
+        val half=render(notes,true,music=.5,clickMix=0.0)
+        assertEquals(.5,peak(half)/peak(full),.001)
+        assertTrue(render(notes,true,music=0.0,clickMix=0.0).all { abs(it)<1e-7f })
+    }
+    @Test fun bothAuthoredLeadDemosFadeOnlyLeadAndKeepAnAudibleBackingTrack() {
+        val reports=mutableListOf<String>()
+        for(id in listOf("LEAD-1","JR-2")) {
+            val plan=SongTestLibrary.repository.resolve(PracticeKey("local.teaching-v31",id).encoded).sequence.performance
+            val score=AlphaScoreAdapter.fromPlan(plan)
+            val (midi,_)=EngineProjection.generate(score)
+            val sourceTracks=plan.score.tracks.filter { it.id in plan.practice.mixTrackIds }
+            fun sample(round: Int): FloatArray {
+                val exporter=AlphaSynthAudioExporter(AudioExportOptions().apply { sampleRate=44100.0;masterVolume=AlphaTone.MASTER;metronomeVolume=0.0 })
+                exporter.loadMidiFile(midi);exporter.loadSoundFont(Uint8Array(font.asUByteArray()))
+                score.tracks.forEach { track ->
+                    val lead=sourceTracks[track.index.toInt()].id in plan.practice.lesson!!.leadTrackIds
+                    val gain=AlphaTone.trackVolume(track.playbackInfo.volume,1.0,if(lead) PracticeExtensions.leadGain(round) else 1.0)
+                    exporter.channelSetMixVolume(track.playbackInfo.primaryChannel,gain)
+                    exporter.channelSetMixVolume(track.playbackInfo.secondaryChannel,gain)
+                }
+                exporter.setup()
+                return exporter.render(750.0)!!.samples!!.data.toList().toFloatArray()
+            }
+            val full=sample(0);val low=sample(1);val backing=sample(2)
+            val delta=full.indices.map { full[it]-backing[it] }
+            assertTrue("$id backing was muted",peak(backing)>.0001)
+            assertTrue("$id lead had no sound",delta.maxOf { abs(it) }>.0001)
+            val error=full.indices.maxOf { abs((low[it]-backing[it])-.3f*delta[it]) }
+            val deltaPeak=delta.maxOf { abs(it) }
+            reports+="$id fullPeak=${peak(full)} lowPeak=${peak(low)} backingPeak=${peak(backing)} gainError=$error relativeError=${error/deltaPeak}"
+            File(output,"lead-fade.txt").writeText(reports.joinToString("\n"))
+            // The SDK's palm-mute voice processing is not exactly linear at every sample.
+            assertTrue(reports.last(),error/deltaPeak<.01)
+            wav("$id-lead-100",full);wav("$id-lead-30",low);wav("$id-lead-0-backing",backing)
+        }
+        File(output,"lead-fade.txt").writeText(reports.joinToString("\n"))
     }
 }

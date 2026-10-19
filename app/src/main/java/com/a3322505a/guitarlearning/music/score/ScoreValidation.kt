@@ -244,8 +244,8 @@ object ScoreValidation {
                 check(f.finger==null || f.finger in 1..4,"/practices/noteFingerings","Left hand finger must be 1..4 or null")
                 check(!f.source.isBlank() && (f.occurrence==null || f.occurrence>0),"/practices/noteFingerings","Review source/occurrence required")
                 check(assignments.add(f.sourceNoteId to f.occurrence),"/practices/noteFingerings","Duplicate fingering assignment")
-                check(f.finger==null || n?.third?.let { !it.dead && it.fret>0 && it.harmonic==null }==true,
-                    "/practices/noteFingerings","Finger number requires a fretted, sounding source note")
+                check(f.finger==null || n?.third?.fret?.let { it>0 }==true,
+                    "/practices/noteFingerings","Finger number requires a fretted or touched source position")
             }
             p.segments.forEachIndexed { si,s ->
                 listOf(s.start,s.end).forEach { c ->
@@ -266,6 +266,7 @@ object ScoreValidation {
         if(score.form.repeats.isNotEmpty()) capabilities+="form.repeat.v1"
         if(score.form.endings.isNotEmpty()) capabilities+="form.volta.v1"
         if(score.form.jumps.isNotEmpty()) capabilities+="form.jump.v1"
+        if(LessonValidation.validate(score,practices)) capabilities += "teaching.lesson.v1"
         return capabilities
     }
     private fun gcd(a: Int,b: Int): Int = if(b==0) a else gcd(b,a%b)

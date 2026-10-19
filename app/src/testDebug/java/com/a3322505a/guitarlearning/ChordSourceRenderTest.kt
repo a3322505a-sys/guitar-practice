@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -58,14 +60,16 @@ class ChordSourceRenderTest {
     @Test fun everyLoadedCardSelectsSwipesAndSendsItsOwnAuditionAndPracticeFacts() {
         val player=RecordingChordPlayback()
         compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
         compose.waitUntil(12000) {
-            runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
+            compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithTag("config-summary").performClick()
         val expand=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if(compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
             compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
-        compose.onNodeWithText("和弦").performScrollTo().performClick()
+        compose.onNode(hasText("和弦教学") and hasClickAction()).performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
         val chords=SongTestLibrary.repository().reload().chords
         chords.forEachIndexed { index,chord ->
@@ -102,7 +106,7 @@ class ChordSourceRenderTest {
         // A new external identity, using reviewed musical bytes unchanged, enters the actual import path.
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
-            ZipInputStream(File("src/main/assets/song-packages/usotsuki-v1.gpractice").inputStream()).use { input ->
+            ZipInputStream(File("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").inputStream()).use { input ->
                 while (true) {
                     val entry = input.nextEntry ?: break
                     val bytes = input.readBytes()
@@ -124,11 +128,13 @@ class ChordSourceRenderTest {
         assertTrue(imported.all { encodedPackageId(it.id) == "example.teaching" })
         val player = RecordingChordPlayback()
         compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("config-summary").performClick()
         val expand = SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
         if (compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
             compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
-        compose.onNodeWithText("和弦").performClick()
+        compose.onNode(hasText("和弦教学") and hasClickAction()).performClick()
         compose.waitUntil(15000) { runCatching {
             compose.onNodeWithTag("content-source-filters").performScrollToKey("example.teaching")
         }.isSuccess }
@@ -144,7 +150,7 @@ class ChordSourceRenderTest {
         compose.onNodeWithTag("config-summary").performClick()
         if (compose.onAllNodes(expand).fetchSemanticsNodes().isNotEmpty())
             compose.onNode(expand).performSemanticsAction(SemanticsActions.Expand) { it() }
-        compose.onNodeWithText("歌曲与短句").performClick()
+        compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
         compose.onNodeWithTag("content-source-example.teaching").assertIsSelected()
         val phrase = content.phraseSections("example.teaching").flatMap { it.items }.first()
         compose.onNodeWithText(content.phraseText(phrase).primary).performScrollTo().performClick()

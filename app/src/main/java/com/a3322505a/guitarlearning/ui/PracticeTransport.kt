@@ -43,14 +43,11 @@ internal fun transportMode(phase: Phase, hasSession: Boolean, preview: Boolean):
 @OptIn(ExperimentalLayoutApi::class)
 internal fun PracticeTransport(
     bpm: Int,
-    sourceTempo: Boolean,
-    multiplier: Int,
     meter: String,
     hint: Hint,
     mode: TransportMode,
     hasSequence: Boolean,
     onBpm: (Int) -> Unit,
-    onMultiplier: (Int) -> Unit,
     onHint: () -> Unit,
     onPauseResume: () -> Unit,
     onRestart: () -> Unit,
@@ -61,13 +58,16 @@ internal fun PracticeTransport(
     showHintAction: Boolean = true,
     verticalDeck: Boolean = false,
     pausedTitle: String = "继续",
+    tempoDetail: String = "",
+    minBpm: Int = 30,
+    maxBpm: Int = 240,
+    onVolume: () -> Unit = {},
 ) {
     PracticeTheme(theme = PracticeSkin.theme) {
         val colors = PracticeSkin.colors
         val metrics = PracticeSkin.metrics
         var expanded by rememberSaveable { mutableStateOf(false) }
         var draft by remember(bpm) { mutableFloatStateOf(bpm.toFloat()) }
-        val multipliers = listOf(50, 75, 100, 125, 150)
         BoxWithConstraints(Modifier.fillMaxWidth().testTag("transport-bar")) {
             val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
             val popupWidth = maxWidth.coerceAtMost(360.dp).coerceAtLeast(240.dp)
@@ -76,15 +76,14 @@ internal fun PracticeTransport(
             val slowerAction: @Composable () -> Unit = {
                 TextButton(
                     onClick = {
-                        if (sourceTempo) onMultiplier(multipliers.lastOrNull { it < multiplier } ?: 50)
-                        else onBpm((bpm - 5).coerceAtLeast(30))
+                        onBpm((bpm - 5).coerceAtLeast(minBpm))
                     },
-                    enabled = if (sourceTempo) multiplier > 50 else bpm > 30,
+                    enabled = bpm > minBpm,
                     modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("tempo-slower"),
                     shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(4.dp),
                     colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
-                ) { Text(if (sourceTempo) "−" else "−5", fontWeight = FontWeight.Bold, maxLines = 1) }
+                ) { Text("−5", fontWeight = FontWeight.Bold, maxLines = 1) }
             }
 
             val tempoValue: @Composable () -> Unit = {
@@ -97,7 +96,7 @@ internal fun PracticeTransport(
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            (if (sourceTempo) "原谱 $multiplier%" else "$bpm BPM") + " ⌃",
+                            "$bpm BPM ⌃",
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                         )
@@ -118,37 +117,18 @@ internal fun PracticeTransport(
                                 Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            if (sourceTempo) "原谱速度" else "${draft.toInt()} BPM · 松手应用",
+                                            "${draft.toInt()} BPM · 松手应用",
                                             modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.labelLarge,
                                             color = colors.textPrimary,
                                         )
                                         TextButton(onClick = { expanded = false }, shape = MaterialTheme.shapes.small) { Text("收起") }
                                     }
-                                    if (sourceTempo) {
-                                        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            multipliers.forEach { value ->
-                                                OutlinedButton(
-                                                    onClick = { onMultiplier(value) },
-                                                    shape = MaterialTheme.shapes.small,
-                                                    border = BorderStroke(metrics.borderWidth, if (value == multiplier) colors.primary else colors.border),
-                                                    contentPadding = PaddingValues(8.dp),
-                                                    colors = ButtonDefaults.outlinedButtonColors(
-                                                        containerColor = if (value == multiplier) colors.primaryContainer else colors.surface,
-                                                        contentColor = if (value == multiplier) colors.primaryText else colors.textSecondary,
-                                                    ),
-                                                ) { Text("$value%") }
-                                            }
-                                        }
-                                    } else {
-                                        Slider(
-                                            value = draft,
-                                            onValueChange = { draft = it },
-                                            onValueChangeFinished = { onBpm(draft.toInt()) },
-                                            valueRange = 30f..180f,
-                                            modifier = Modifier.testTag("tempo-slider"),
-                                        )
-                                    }
+                                    if (tempoDetail.isNotBlank()) Text(tempoDetail, style = MaterialTheme.typography.bodySmall)
+                                    Slider(value = draft, onValueChange = { draft = it },
+                                        onValueChangeFinished = { onBpm(draft.toInt()) },
+                                        valueRange = minBpm.toFloat()..maxBpm.toFloat(),
+                                        modifier = Modifier.testTag("tempo-slider"))
                                 }
                             }
                         }
@@ -159,15 +139,14 @@ internal fun PracticeTransport(
             val fasterAction: @Composable () -> Unit = {
                 TextButton(
                     onClick = {
-                        if (sourceTempo) onMultiplier(multipliers.firstOrNull { it > multiplier } ?: 150)
-                        else onBpm((bpm + 5).coerceAtMost(180))
+                        onBpm((bpm + 5).coerceAtMost(maxBpm))
                     },
-                    enabled = if (sourceTempo) multiplier < 150 else bpm < 180,
+                    enabled = bpm < maxBpm,
                     modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("tempo-faster"),
                     shape = MaterialTheme.shapes.small,
                     contentPadding = PaddingValues(4.dp),
                     colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
-                ) { Text(if (sourceTempo) "+" else "+5", fontWeight = FontWeight.Bold, maxLines = 1) }
+                ) { Text("+5", fontWeight = FontWeight.Bold, maxLines = 1) }
             }
 
             val meterBadge: @Composable () -> Unit = {
@@ -313,6 +292,9 @@ internal fun PracticeTransport(
                     Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 10.dp, vertical = 6.dp)
                 }
                 Column(containerModifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if(!singleRow) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
+                    }
                     if (verticalDeck) {
                         tempoBay(true)
                         actionsFlow(true)
@@ -323,6 +305,7 @@ internal fun PracticeTransport(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             tempoBay(false)
+                            TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
                             Box(Modifier.weight(1f)) { actionsFlow(false) }
                         }
                     } else {
