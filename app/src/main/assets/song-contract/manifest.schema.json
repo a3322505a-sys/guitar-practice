@@ -199,7 +199,8 @@
         },
         "minor": {
           "enum": [
-            0
+            0,
+            1
           ]
         }
       },
@@ -1166,6 +1167,161 @@
       ],
       "additionalProperties": false
     },
+    "barre": {
+      "type": "object",
+      "properties": {
+        "finger": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "fret": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36
+        },
+        "fromString": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "toString": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        }
+      },
+      "required": [
+        "finger",
+        "fret",
+        "fromString",
+        "toString"
+      ],
+      "additionalProperties": false
+    },
+    "keyContext": {
+      "type": "object",
+      "properties": {
+        "tonic": {
+          "type": "string",
+          "pattern": "^[A-G][#♯b♭]{0,2}$"
+        },
+        "scale": {
+          "enum": [
+            "MAJOR",
+            "NATURAL_MINOR",
+            "MAJOR_PENTATONIC",
+            "MINOR_PENTATONIC"
+          ]
+        }
+      },
+      "required": [
+        "tonic",
+        "scale"
+      ],
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "enum": [
+            "barre",
+            "position",
+            "retained",
+            "pick",
+            "strum",
+            "release"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "voicingId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        },
+        "fromVoicingId": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+        }
+      },
+      "required": [
+        "eventId",
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "lesson": {
+      "type": "object",
+      "properties": {
+        "module": {
+          "enum": [
+            "FOUNDATIONS",
+            "CHORDS",
+            "SCALES",
+            "APPLICATION"
+          ]
+        },
+        "key": {
+          "$ref": "#/$defs/keyContext"
+        },
+        "warmupIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "transitionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "leadTrackIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 8
+        },
+        "chainStarts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 256
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "module"
+      ],
+      "additionalProperties": false
+    },
     "voicing": {
       "type": "object",
       "properties": {
@@ -1203,6 +1359,26 @@
         },
         "teaching": {
           "$ref": "#/$defs/voicingTeaching"
+        },
+        "barres": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/barre"
+          },
+          "minItems": 0,
+          "maxItems": 4
+        },
+        "quality": {
+          "enum": [
+            "MAJOR",
+            "MINOR",
+            "MAJOR_SEVENTH",
+            "ADD_NINE",
+            "SUS_TWO",
+            "SUS_FOUR_NO_FIVE",
+            "MINOR_SEVENTH_NO_FIVE",
+            "POWER"
+          ]
         }
       },
       "required": [
@@ -1238,6 +1414,9 @@
         },
         "condition": {
           "$ref": "#/$defs/condition"
+        },
+        "validUntil": {
+          "$ref": "#/$defs/q"
         }
       },
       "required": [
@@ -1488,6 +1667,9 @@
         },
         "teaching": {
           "$ref": "#/$defs/practiceTeaching"
+        },
+        "lesson": {
+          "$ref": "#/$defs/lesson"
         },
         "legacyIds": {
           "type": "array",

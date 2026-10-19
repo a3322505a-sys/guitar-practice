@@ -1,5 +1,6 @@
 package com.a3322505a.guitarlearning
 
+
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.a3322505a.guitarlearning.assets.song.*
@@ -149,7 +150,7 @@ class SongRepositoryTest {
         val store=PhraseSettingsStore(prefs,repo::named)
         assertEquals("M01",store.selected().id)
         store.save(Phrases.singleNote,60,4,BarRange(0,0))
-        val input=File("src/main/assets/song-packages/usotsuki-v1.gpractice").inputStream()
+        val input=File("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").inputStream()
         repo.commit(repo.prepare(input))
         val phrase=repo.resolve(store.selected().id)
         assertEquals("S01",phrase.legacyId)

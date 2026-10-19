@@ -426,6 +426,8 @@ def validate_music(score,practices):
     if teaching: caps.add("catalogue.teaching.v1")
     legacy_ids=[id for p in practices for id in p.get("legacyIds",[])]
     check(len(set(legacy_ids))==len(legacy_ids),"MUSIC","/practices/legacyIds","Duplicate legacy ID")
+    from .teaching import validate_teaching
+    if validate_teaching(score, practices): caps.add("teaching.lesson.v1")
     return caps
 
 def compile_summary(score,practice,routes=None):

@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
@@ -29,6 +31,13 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WorkbenchRenderTest {
     @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    @org.junit.Before fun selectScaleFixture() {
+        compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
+            compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("config-summary").performClick(); expand()
+        compose.onNode(hasText("音阶教学") and hasClickAction()).performClick()
+        compose.onNodeWithText("完成").performClick()
+    }
     private fun preferences() {
         if (compose.onAllNodesWithTag("preferences-button").fetchSemanticsNodes().isEmpty()) {
             compose.onNodeWithTag("management-button").performClick()
@@ -70,9 +79,9 @@ class WorkbenchRenderTest {
         capture("phone-partial-content")
         expand()
         capture("phone-expanded-content")
-        compose.onNodeWithText("和弦").performClick()
+        compose.onNode(hasText("和弦教学") and hasClickAction()).performClick()
         capture("phone-chord-content")
-        compose.onNodeWithText("音阶").performClick()
+        compose.onNode(hasText("音阶教学") and hasClickAction()).performClick()
         compose.onNodeWithText("三度跳进").performScrollTo().performClick()
         compose.onNodeWithText("la 指型").performScrollTo().performClick()
         compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
@@ -81,7 +90,7 @@ class WorkbenchRenderTest {
         compose.onNodeWithText("跟练").performClick()
         compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
         compose.onNodeWithText("声音").performClick()
-        compose.onNodeWithTag("guitar-switch").performScrollTo().performClick()
+        compose.onNodeWithTag("music-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
         compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
         compose.onNodeWithTag("management-button").performClick();compose.onNodeWithText("曲包与帮助").performClick()
@@ -142,7 +151,7 @@ class WorkbenchRenderTest {
                 val height=maxHeight
                 Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
                     Box(Modifier.width(224.dp)) {
-                        PracticeTransport(80,false,100,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},{},availableHeight=height,verticalDeck=true)
+                        PracticeTransport(80,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},availableHeight=height,verticalDeck=true)
                     }
                 }
             }
@@ -201,17 +210,20 @@ class WorkbenchRenderTest {
         val player=Player(compose.activity) { ManualSink() }
         try {
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false) }
+                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess }
             compose.onNodeWithText("开始跟练").performClick()
             compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
             val session=player.session
             preferences();expand()
             compose.onNodeWithText("跟练").performClick();assertSame(session,player.session)
             compose.onNodeWithText("声音").performClick()
-            compose.onNodeWithTag("guitar-switch").performScrollTo().performClick();assertSame(session,player.session)
-            compose.onNodeWithTag("click-switch").performScrollTo().performClick();assertSame(session,player.session)
+            compose.onNodeWithTag("music-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) };assertSame(session,player.session)
+            compose.onNodeWithTag("metronome-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) };assertSame(session,player.session)
             compose.onNodeWithText("完成").performClick();assertSame(session,player.session)
             compose.onNodeWithTag("tempo-button").performClick()
             compose.onNodeWithTag("tempo-slider").performTouchInput { down(center);moveTo(centerRight) }

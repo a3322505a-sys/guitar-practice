@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
@@ -86,15 +88,18 @@ class UnifiedTabRenderTest {
             // LegacyWorkbenchTestActivity already starts the real App. Finish its initial import before
             // replacing content, so two test-created repositories never publish concurrently.
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false)
+                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty()
             }
             compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("config-summary").performClick()
-            compose.onNodeWithText("歌曲与短句").performClick()
+            compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
             compose.onNodeWithText("完成").performClick()
             compose.onNodeWithTag("config-summary").performClick()
-            compose.waitUntil(15000) { compose.onAllNodesWithText("嘘月 · 低音与高音分解").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithText("嘘月 · 低音与高音分解").performScrollTo().performClick()
+            compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("content-source-filters").performScrollToKey("local.usotsuki") }.isSuccess }
+            compose.onNodeWithTag("content-source-local.usotsuki").performClick()
+            compose.onNodeWithText("低音与高音分解").performScrollTo().performClick()
             compose.onNodeWithText("六线谱").performClick()
             compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("let ring",substring=true).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithTag("tablature").assertIsDisplayed()

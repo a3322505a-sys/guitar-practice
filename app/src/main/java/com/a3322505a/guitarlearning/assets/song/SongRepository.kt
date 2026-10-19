@@ -123,7 +123,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
                 }.toMap() else emptyMap()
                 musicCheck(legacyBindings.all { (old,target) -> Phrases.all.none { it.id==old } && (aliases[old]==null || aliases[old]==target) },
                     "ALIAS","/practices/legacyIds","Legacy ID conflicts with an existing practice")
-                external+=phrases;chords+=songChords
+                external+=phrases;chords+=if(e.packageId=="local.teaching-v31") songChords.filter { c -> Chords.all.none { it.name==c.name && it.frets==c.frets && it.fingers==c.fingers && it.capoFret==c.capoFret && it.openStringMidi==c.openStringMidi } } else songChords
                 metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
                 aliases+=legacyBindings
                 metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
@@ -277,7 +277,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
             goal=p.goal,suggestedBpm=p.suggestedTempo,use=t?.use?.ifBlank { null } ?: ("本地曲库 · "+song.title),relatedId=p.variantOf?.let { PracticeKey(song.identity.packageId,it).encoded },
             version=t?.version ?: if(p.variantOf!=null) p.title else null,assetKey=key,familyKey=p.familyId?.let { PracticeKey(song.identity.packageId,it).encoded },
             defaultSourceTempo=p.tempoMode=="source",tempoLabel=t?.tempoLabel?.ifBlank { null } ?: "原谱 · 四分音符等值",
-            legacyId=MigratedPracticeIds.legacy(key.encoded),legacyIds=if(trusted(song.identity.packageId)) p.legacyIds else emptyList())
+            legacyId=MigratedPracticeIds.legacy(key.encoded),legacyIds=if(trusted(song.identity.packageId)) p.legacyIds else emptyList(),lesson=p.lesson)
     }
     private fun metadata(song: SongPackage): Map<String,Any?> = mapOf(
         "packageId" to song.identity.packageId,"revision" to song.identity.revision,"digest" to song.identity.digest,
@@ -286,13 +286,14 @@ class SongRepository(private val root: File,private val reader: SongReader,
         "summary" to song.summary,
         "tracks" to song.score.tracks.map { mapOf("id" to it.id,"name" to it.name,"openStringMidi" to it.openStringMidi,"capo" to it.capo) },
         "voicings" to song.score.voicings.map { v -> mapOf("id" to v.id,"name" to v.name,"trackId" to v.trackId,"frets" to v.frets,"fingers" to v.fingers,
+            "quality" to v.quality?.name,"barres" to v.barres.map { mapOf("finger" to it.finger,"fret" to it.fret,"fromString" to it.fromString,"toString" to it.toString) },
             "teaching" to v.teaching?.let { t -> mapOf("root" to t.root,"third" to t.third,"soundingName" to t.soundingName,"group" to t.group,"source" to t.source,
                 "intervalRoles" to t.intervalRoles.mapKeys { it.key.toString() },"toneNames" to t.toneNames.mapKeys { it.key.toString() }) }) },
         "aliases" to song.aliases.map { (from,to) -> mapOf("from" to from,"to" to to) },
         "practices" to song.practices.sortedBy { it.order }.map { p -> mapOf(
             "id" to p.id,"title" to p.title,"goal" to p.goal,"suggestedTempo" to p.suggestedTempo,
             "difficulty" to p.difficulty,"tags" to p.tags.joinToString(" · "),"visibility" to p.visibility,
-            "variantOf" to p.variantOf,"familyId" to p.familyId,"tempoMode" to p.tempoMode,"legacyIds" to p.legacyIds,
+            "variantOf" to p.variantOf,"familyId" to p.familyId,"tempoMode" to p.tempoMode,"legacyIds" to p.legacyIds,"lesson" to SongCodec.lessonMap(p.lesson),
             "teaching" to p.teaching?.let { t -> mapOf("category" to t.category,"passage" to t.passage,"source" to t.source,"technique" to t.technique,
                 "use" to t.use,"version" to t.version,"tempoLabel" to t.tempoLabel,"explanation" to t.explanation) }) })
     private fun writeMetadata(e: Entry,value: Map<String,Any?>) {
@@ -317,6 +318,6 @@ class SongRepository(private val root: File,private val reader: SongReader,
             version=t?.version ?: if(p["variantOf"]!=null) p.s("title") else null,assetKey=key,
             familyKey=(p["familyId"] as? String)?.let { PracticeKey(e.packageId,it).encoded },
             unprepared=true,defaultSourceTempo=p.s("tempoMode","source")=="source",legacyId=MigratedPracticeIds.legacy(key.encoded),
-            legacyIds=if(trusted(e.packageId)) p.strings("legacyIds") else emptyList())
+            legacyIds=if(trusted(e.packageId)) p.strings("legacyIds") else emptyList(),lesson=SongCodec.lesson(p["lesson"]))
     }
 }

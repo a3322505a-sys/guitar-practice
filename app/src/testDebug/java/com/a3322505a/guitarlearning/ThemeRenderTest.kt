@@ -61,7 +61,7 @@ class ThemeRenderTest {
     @Test fun appearanceCanSwitchEveryPresetAndRestoreAfterRecreation() {
         capture("forest-phone")
         compose.onNodeWithTag("config-summary").performClick();expand()
-        compose.onNodeWithText("和弦").performClick();compose.onNodeWithText("完成").performClick()
+        compose.onNode(hasText("和弦教学") and hasClickAction()).performClick();compose.onNodeWithText("完成").performClick()
         compose.onNodeWithTag("chord-diagram").assertIsDisplayed()
         preferences();expand()
         compose.onNodeWithText("外观").performClick()
@@ -89,10 +89,13 @@ class ThemeRenderTest {
         val player=Player(compose.activity) { ManualSink() }
         try {
             compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                runCatching { File(compose.activity.filesDir,"songs/active-index.json").readText().contains("local.yourtrip") }.getOrDefault(false) }
+                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
             Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java))
                 .setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
             compose.activity.setContent { PracticeApp(player) }
+        compose.waitForIdle()
+        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess }
             compose.onNodeWithText("开始跟练").performClick()
             compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
             val session=player.session
@@ -108,6 +111,7 @@ class ThemeRenderTest {
         } finally {player.release()}
     }
     @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeUsesSameCardAndIntegratedPod() {
+        compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess }
         compose.onNodeWithText("六线谱").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("forest-landscape-tab")

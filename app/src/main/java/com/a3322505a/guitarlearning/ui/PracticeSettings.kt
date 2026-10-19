@@ -33,7 +33,7 @@ internal data class PracticeSettingsState(
     val displayedSequence: Sequence?,
     val scaleResult: RouteResult,
     val sourceTempo: Boolean = false,
-    val multiplier: Int = 100,
+    val multiplier: Double = 100.0,
     val mainTrackId: String? = null,
     val soloTrack: Boolean = false,
     val unavailableReason: String = "",
@@ -41,6 +41,7 @@ internal data class PracticeSettingsState(
         emptyList(), catalogueGroups.values.flatten(), emptyList(), chords = chordGroups.values.flatten(),
     )),
     val activeSourceFilter: String = BASIC_CONTENT,
+    val module: TeachingModule = if(page==0) TeachingModule.SCALES else if(!chordPhrases) TeachingModule.CHORDS else TeachingModule.APPLICATION,
 )
 
 @Composable

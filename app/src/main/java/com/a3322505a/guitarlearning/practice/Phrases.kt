@@ -15,6 +15,7 @@ data class Phrase(
     val unprepared: Boolean = false,val defaultSourceTempo: Boolean = true,
     val legacyId: String? = null,
     val legacyIds: List<String> = emptyList(),
+    val lesson: com.a3322505a.guitarlearning.music.LessonMetadata? = null,
 )
 
 /** v76's accepted S01 package predates legacyIds; retain its identity bridge, without music data. */
@@ -32,12 +33,13 @@ object Phrases {
             Event(i*12,12,listOf(p))
         },BAR,"原创单音小句 C3–D3–E3–C3；每音一拍，句尾回到 C3 后循环。"),
     )
-    val all=(listOf(singleNote)+KernelPhrases.all+SevenBlocks.phrases).also(::validatePhrases)
+    // SongRepository loads the migrated, reviewed assets. This fallback is only startup/error content.
+    val all: List<Phrase> = emptyList()
     val catalogue=all
     fun practiceNamed(id: String)=named(id)
     fun family(phrase: Phrase)=phrase
     fun versions(phrase: Phrase): List<Phrase> = emptyList()
-    fun named(id: String)=all.firstOrNull { it.id==id } ?: all.first()
+    fun named(id: String)=all.firstOrNull { it.id==id } ?: singleNote
 }
 
 /** Content registration is the boundary: no new player or notation path per phrase. */

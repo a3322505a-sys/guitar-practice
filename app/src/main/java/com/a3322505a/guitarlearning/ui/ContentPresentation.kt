@@ -1,6 +1,7 @@
 package com.a3322505a.guitarlearning.ui
 
 import com.a3322505a.guitarlearning.assets.song.LibrarySnapshot
+import com.a3322505a.guitarlearning.music.TeachingModule
 import com.a3322505a.guitarlearning.music.Chord
 import com.a3322505a.guitarlearning.music.Pattern
 import com.a3322505a.guitarlearning.music.Tonality
@@ -24,10 +25,10 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
             .sorted().map { ContentSource(it, packageNames[it] ?: it) }
 
     fun sourceOf(phrase: Phrase): String = phrase.assetKey?.packageId
-        ?.takeUnless { it == MOZART_PACKAGE } ?: BASIC_CONTENT
+        ?.takeUnless { it == MOZART_PACKAGE || it.startsWith("local.teaching-") } ?: BASIC_CONTENT
 
     fun sourceOf(chord: Chord): String = encodedPackageId(chord.id)
-        ?.takeUnless { it == MOZART_PACKAGE } ?: BASIC_CONTENT
+        ?.takeUnless { it == MOZART_PACKAGE || it.startsWith("local.teaching-") } ?: BASIC_CONTENT
 
     fun restoredSource(requested: String, ready: Boolean): String =
         if (!ready || sources.any { it.id == requested }) requested else BASIC_CONTENT
@@ -36,12 +37,13 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
         if (songs) phrases.any { sourceOf(it) == id } else chords.any { sourceOf(it) == id }
     } ?: BASIC_CONTENT
 
-    fun phraseSections(source: String): List<ContentSection<Phrase>> {
-        val filtered = phrases.filter { sourceOf(it) == source }
+    fun phraseSections(source: String, module: TeachingModule? = null): List<ContentSection<Phrase>> {
+        val filtered = phrases.filter { sourceOf(it) == source && (module == null || moduleOf(it) == module) }
         if (source == BASIC_CONTENT) return teachingSections(filtered, ::phraseTeaching, Phrase::use)
         return filtered.groupBy { sectionTitle(it.use, source) }.map { ContentSection(it.key, it.value) }
     }
 
+    fun moduleOf(phrase: Phrase) = phrase.lesson?.module ?: if(phrase.assetKey?.packageId == MOZART_PACKAGE) TeachingModule.FOUNDATIONS else TeachingModule.APPLICATION
     fun chordSections(source: String): List<ContentSection<Chord>> {
         val filtered = chords.filter { sourceOf(it) == source }
         if (source == BASIC_CONTENT) return teachingSections(filtered, { basicChords[it.id] }, Chord::group)
@@ -141,7 +143,7 @@ private val mozartCards = listOf(
 
 private fun phraseTeaching(phrase: Phrase): TeachingCard? = when {
     phrase.assetKey?.packageId == MOZART_PACKAGE -> mozartCards[phrase.assetKey.practiceId]
-    phrase.assetKey == null -> basicPhrases[phrase.id]
+    phrase.assetKey == null || phrase.assetKey.packageId == "local.teaching-legacy" -> basicPhrases[phrase.legacyIds.firstOrNull() ?: phrase.id]
     else -> null
 }
 
@@ -155,14 +157,15 @@ private fun <T> teachingSections(items: List<T>, teaching: (T) -> TeachingCard?,
 
 internal fun tonalityText(key: Tonality) = ContentCardText(key.title, when (key) {
     Tonality.C_MAJOR -> "自然大调 · 明亮开阔"
-    Tonality.A_MINOR -> "C大调关系小调 · 共享音位"
+    Tonality.A_MINOR -> "自然小调 · 1 2 ♭3 4 5 ♭6 ♭7"
+    else -> key.context.spelling.joinToString(" ") { it.name }
 })
 
 internal fun patternText(pattern: Pattern): ContentCardText {
     val low = pattern.positions.minOf { it.fret }
     val high = pattern.positions.maxOf { it.fret }
     val region = when (pattern.solfege) { "mi" -> "开放把位"; "sol" -> "低把位"; "la" -> "中把位"; "si" -> "中高把位"; "re" -> "高把位"; else -> "把位范围" }
-    return ContentCardText("${pattern.solfege} 指型", "$region · $low–${high}品 (${pattern.caged}手型)")
+    return if(pattern.caged.isBlank()) ContentCardText(pattern.solfege,"固定音位范围 · $low–${high}品") else ContentCardText("${pattern.solfege} 指型", "$region · $low–${high}品 (${pattern.caged}手型)")
 }
 
 internal fun scaleExerciseText(exercise: ScaleExercise) = ContentCardText(exercise.title, when (exercise) {

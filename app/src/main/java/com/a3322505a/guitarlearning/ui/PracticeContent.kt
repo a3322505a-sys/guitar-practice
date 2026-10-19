@@ -123,7 +123,7 @@ internal fun PracticeContent(
                 page == 1 -> "${cardChord.name} · 逐弦检查"
                 melody -> phrase.title
                 hint == Hint.FULL && event != null -> if (event.rest) "现在：留拍" else "现在：${eventLabel(event)}"
-                else -> "${Patterns.all[scale.pattern].solfege} 指型 (${Patterns.all[scale.pattern].caged}) · 每拍${scale.notesPerBeat}音"
+                else -> "${Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].title} · 每拍${scale.notesPerBeat}音"
             }
 
             PracticeContentCard(
@@ -234,8 +234,12 @@ internal fun PracticeContent(
                                     )
                                 }
                                 if (hint != Hint.HIDDEN && !configuring) {
+                                    Text("按法 ${cardChord.name} · 实音 ${cardChord.soundingName}",style=MaterialTheme.typography.bodySmall)
+                                    Text(cardChord.toneSummary + " · 从${cardChord.positions.maxOf { it.string }}弦拨起",style=MaterialTheme.typography.bodySmall)
+                                    Text(cardChord.definition?.quality?.description ?: "性质未提供",style=MaterialTheme.typography.bodySmall)
+                                    Text(if(cardChord.positions.any { it.fret>0 && cardChord.fingers[6-it.string] !in 1..4 }) "未提供指法" else "逐弦自查：指尖靠品丝，避开邻弦；哑音先检查触弦与按压。",style=MaterialTheme.typography.bodySmall)
                                     Text(
-                                        chordTones.filter { hint == Hint.FULL || cardChord.isRoot(it) }
+                                        chordTones.filter { hint != Hint.ROOTS || cardChord.isRoot(it) }
                                             .joinToString(" · ") { "${cardChord.role(it)} ${cardChord.noteName(it)}" },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = colors.textSecondary,
@@ -287,14 +291,14 @@ internal fun PracticeContent(
                                 val h = maxOf(if (configuring) 80.dp else 176.dp * fontScale, viewportHeight).coerceAtMost(310.dp * fontScale)
                                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
                                     val positions = if (scale.exercise == ScaleExercise.CONNECTION && scale.pattern < 4) {
-                                        (Patterns.all[scale.pattern].positions + Patterns.all[scale.pattern + 1].positions).distinct()
+                                        (Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].positions + Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern + 1].positions).distinct()
                                     } else {
-                                        Patterns.all[scale.pattern].positions
+                                        Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].positions
                                     }
                                     Fretboard(
                                         positions,
                                         scale.key,
-                                        hint,
+                                        renderHint,
                                         false,
                                         current,
                                         !active && phase != Phase.PAUSED,

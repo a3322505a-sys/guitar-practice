@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -152,7 +153,7 @@ internal fun Choices(options: List<String>, selected: Int, onSelect: (Int) -> Un
                         val checked = selected == i
                         Surface(
                             onClick = { onSelect(i) },
-                            modifier = Modifier.weight(1f).heightIn(min = if (large) 52.dp else 48.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = if (large) 52.dp else 48.dp).semantics { this.selected = checked },
                             shape = MaterialTheme.shapes.small,
                             color = if (checked) colors.primaryContainer else colors.surface,
                             border = BorderStroke(if (checked) 1.5.dp else metrics.borderWidth, if (checked) colors.primary else colors.border),
@@ -418,6 +419,8 @@ internal fun WorkbenchPanel(
     onGuitar: (Boolean) -> Unit,
     onClick: (Boolean) -> Unit,
     themeManager: ThemeManager,
+    mix: com.a3322505a.guitarlearning.audio.PlaybackMix = com.a3322505a.guitarlearning.audio.PlaybackMix(),
+    onMix: (com.a3322505a.guitarlearning.audio.PlaybackMix) -> Unit = {},
     onSourceFilter: (String) -> Unit = {},
     onManagePackages: () -> Unit = {},
 ) {
@@ -439,8 +442,8 @@ internal fun WorkbenchPanel(
                                 val values = listOf(1, 4, 8, 0)
                                 Choices(listOf("1 次", "4 次", "8 次", "持续循环"), values.indexOf(state.repeats)) { onRepeats(values[it]) }
                             }
-                            if (state.sequence?.runtimePlan != null) Label("速度模式") {
-                                Choices(listOf("原谱速度 × 倍率", "固定 BPM"), if (state.sourceTempo) 0 else 1) { onSourceTempo(it == 0) }
+                            if (state.sequence?.runtimePlan?.tempos?.size == 1) Label("速度模式") {
+                                Choices(listOf("保留原谱变速", "固定 BPM"), if (state.sourceTempo) 0 else 1) { onSourceTempo(it == 0) }
                             }
                             if(state.page==1 && state.chordPhrases) Label("小节范围") {
                                 Text("${state.phrase.sequence.barLabel(state.range.first)}–${state.phrase.sequence.barLabel(state.range.last)} 小节")
@@ -455,12 +458,7 @@ internal fun WorkbenchPanel(
                             Text("速度在底部调整；跟练预备一小节，示范播放一遍。", style = MaterialTheme.typography.bodySmall)
                         }
                         1 -> {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("吉他声", Modifier.weight(1f)); Switch(state.guitar, onGuitar, Modifier.testTag("guitar-switch"))
-                            }
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text("节拍声", Modifier.weight(1f)); Switch(state.click, onClick, Modifier.testTag("click-switch"))
-                            }
+                            PlaybackVolumeControls(mix, onMix)
                         }
                         else -> ThemePicker(themeManager)
                     }
@@ -492,7 +490,7 @@ internal fun WorkbenchContentChoices(
 ) = with(state) {
     val effectiveSource = content.effectiveSource(activeSourceFilter, chordPhrases)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        PracticeSegments(listOf("音阶", "和弦", "歌曲与短句"), if (page == 0) 0 else if (chordPhrases) 2 else 1, onCategory, Modifier.fillMaxWidth())
+        PracticeSegments(TeachingModule.entries.map { it.title }, module.ordinal, onCategory, Modifier.fillMaxWidth())
         if (page != 0) {
             val sourceScroll = rememberLazyListState()
             LaunchedEffect(effectiveSource, content.sources) {
@@ -523,13 +521,23 @@ internal fun WorkbenchContentChoices(
         key(page, chordPhrases, effectiveSource) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).testTag("content-card-list"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (page == 0) {
+                    val lessons=content.phraseSections(BASIC_CONTENT,TeachingModule.SCALES).flatMap { it.items }
+                    if(lessons.isNotEmpty()) ScaleContentSection("标准短句 · 单八度、五声与封闭 Box") {
+                        ContentCards(lessons.map { it.title },-1,cardTexts=lessons.map(content::phraseText)) { onPhrase(lessons[it]) }
+                    }
                     ScaleContentSection("1. 调性 · 关系大小调") {
                         ContentCards(Tonality.entries.map { it.title }, scale.key.ordinal,
                             cardTexts = Tonality.entries.map(::tonalityText), singleLinePrimary = true) { onScale(scale.copy(key = Tonality.entries[it])) }
                     }
+                    Label("和弦音靶心 · 明确选择") {
+                        Choices(listOf("C","Am","G","D","Em","Bm","Fmaj7"),listOf("C","Am","G","D","Em","Bm","Fmaj7").indexOf(first.name)) {
+                            onChord(Chords.named(listOf("C","Am","G","D","Em","Bm","Fmaj7")[it]))
+                        }
+                    }
+                    Choices(listOf("完整七声", "五声骨架"), if(scale.pentatonic) 1 else 0) { onScale(scale.copy(pentatonic=it==1)) }
                     ScaleContentSection("2. 把位指型 · 五指型串联") {
-                        ContentCards(Patterns.all.map { it.title }, scale.pattern,
-                            cardTexts = Patterns.all.map(::patternText), singleLinePrimary = true) { onScale(scale.copy(pattern = it)) }
+                        ContentCards(Patterns.forKey(scale.key,scale.pentatonic).map { it.title }, scale.pattern,
+                            cardTexts = Patterns.forKey(scale.key,scale.pentatonic).map(::patternText), singleLinePrimary = true) { onScale(scale.copy(pattern = it)) }
                     }
                     ScaleContentSection("3. 练习模式 · 模进与走向") {
                         ContentCards(com.a3322505a.guitarlearning.practice.ScaleExercise.entries.map { it.title }, scale.exercise.ordinal,
@@ -537,7 +545,7 @@ internal fun WorkbenchContentChoices(
                             val exercise = com.a3322505a.guitarlearning.practice.ScaleExercise.entries[it]
                             onScale(scale.copy(exercise = exercise, octave = if (exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CONNECTION) false else scale.octave))
                         }
-                        if (scale.exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CHANGE_START) Choices((1..7).map(Int::toString), scale.startDegree - 1) { onScale(scale.copy(startDegree = it + 1)) }
+                        if (scale.exercise == com.a3322505a.guitarlearning.practice.ScaleExercise.CHANGE_START) Choices(scale.key.mode.degrees, scale.startDegree - 1) { onScale(scale.copy(startDegree = it + 1)) }
                     }
                     ScaleContentSection("4. 音域范围") {
                         ContentCards(listOf("整型音域", "一八度"), if (scale.octave) 1 else 0,
@@ -547,7 +555,12 @@ internal fun WorkbenchContentChoices(
                         ContentCards(rhythmCardTexts.map { it.primary }, scale.notesPerBeat - 1,
                             cardTexts = rhythmCardTexts, singleLinePrimary = true) { onScale(scale.copy(notesPerBeat = it + 1)) }
                     }
-                } else if (!chordPhrases) {
+                } else if (module == TeachingModule.CHORDS && !chordPhrases) {
+                    val pairSections = content.phraseSections(effectiveSource,TeachingModule.CHORDS)
+                    pairSections.forEach { section ->
+                        ContentSectionTitle("双和弦转换", section.items.size)
+                        ContentCards(section.items.map { it.title }, -1, cardTexts=section.items.map(content::phraseText)) { onPhrase(section.items[it]) }
+                    }
                     val sections = content.chordSections(effectiveSource)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
@@ -555,17 +568,17 @@ internal fun WorkbenchContentChoices(
                             cardTexts = items.map(content::chordText)) { onChord(items[it]) }
                     }
                 } else {
-                    val sections = content.phraseSections(effectiveSource)
+                    val sections = content.phraseSections(effectiveSource,module)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
                         ContentCards(items.map { it.title }, items.indexOfFirst { it.id == family.id },
                             cardTexts = items.map(content::phraseText)) { onPhrase(items[it]) }
                     }
                     if (content.sourceOf(family) == effectiveSource) {
+                        if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }
                         var details by rememberSaveable(phrase.id) { mutableStateOf(false) }
                         TextButton(onClick = { details = !details }, modifier = Modifier.heightIn(min = 48.dp)) { Text(if (details) "收起段落与版本" else "段落与版本 ▾") }
                         if (details && !phrase.unprepared) {
-                            if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }
                             Text(phrase.passage + " · " + phrase.conditions, style = MaterialTheme.typography.bodySmall)
                             Label("练习范围") {
                                 Text("${phrase.sequence.barLabel(range.first)}–${phrase.sequence.barLabel(range.last)} 小节")

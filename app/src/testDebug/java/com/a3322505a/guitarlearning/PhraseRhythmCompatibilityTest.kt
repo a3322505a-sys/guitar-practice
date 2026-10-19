@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import com.a3322505a.guitarlearning.music.Position
 import com.a3322505a.guitarlearning.practice.*
 import org.junit.Assert.*

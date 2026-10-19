@@ -126,6 +126,6 @@ class PackageTests(unittest.TestCase):
         import importlib.util
         spec=importlib.util.spec_from_file_location("bundled_audit",CONTRACT.parents[2]/"scripts/verify-bundled-songs.py")
         audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
-        self.assertEqual(4,len(audit.audit()))
+        self.assertEqual(5,len(audit.audit()))
 
 if __name__=="__main__": unittest.main(verbosity=2)

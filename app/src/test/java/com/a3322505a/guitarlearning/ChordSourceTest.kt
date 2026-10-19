@@ -33,7 +33,7 @@ class ChordSourceTest {
 
     @Test fun allLoadedCardsKeepGripIdentityTeachingAndSoundAcrossExercises() {
         val chords=SongTestLibrary.repository().reload().chords
-        assertEquals(32,chords.size)
+        assertEquals(50,chords.size)
         assertEquals(16,chords.count { it.group.startsWith("斜阳") })
         assertEquals(4,chords.count { it.group=="本地曲库 · 嘘月" })
         assertTrue(chords.any { c -> c.positions.size==2 && c.baseFret>=10 })
@@ -52,6 +52,7 @@ class ChordSourceTest {
                 val projected=plan.score.voicings.single().chord(plan.mainTrack)
                 assertEquals(chord.frets,projected.frets)
                 assertEquals(chord.fingers,projected.fingers)
+                assertEquals(chord.barres,projected.barres)
                 assertEquals(chord.root,projected.root)
                 assertEquals(chord.source,projected.source)
                 assertEquals(chord.intervalRoles,projected.intervalRoles)

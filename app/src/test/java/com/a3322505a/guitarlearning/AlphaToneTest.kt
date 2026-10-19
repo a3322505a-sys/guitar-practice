@@ -31,7 +31,8 @@ class AlphaToneTest {
     private val output = File("build/reports/alpha-tone").apply { mkdirs() }
     private fun render(positions: List<Position>, click: Boolean, guitar: Boolean = true,
                        strum: Boolean = false, program: Int = 24,
-                       tuning: List<Int> = listOf(64,59,55,50,45,40)): FloatArray {
+                       tuning: List<Int> = listOf(64,59,55,50,45,40),
+                       music: Double = 1.0, clickMix: Double = 1.0): FloatArray {
         val sequence = Sequence(listOf(Event(0, 12, positions, strum = strum)), 12, "音色验证", openStringMidi = tuning)
         val score = AlphaScoreAdapter.fromSequence(sequence)
         score.tracks.first().apply {
@@ -43,12 +44,12 @@ class AlphaToneTest {
         val (midi, _) = EngineProjection.generate(score)
         val exporter = AlphaSynthAudioExporter(AudioExportOptions().apply {
             sampleRate = 44100.0; masterVolume = AlphaTone.MASTER
-            metronomeVolume = if (click) AlphaTone.CLICK else 0.0
+            metronomeVolume = if (click) AlphaTone.CLICK * clickMix else 0.0
         })
         exporter.loadMidiFile(midi)
         exporter.loadSoundFont(Uint8Array(font.asUByteArray()))
         for (channel in 0..1) exporter.channelSetMixVolume(channel.toDouble(),
-            if (guitar) AlphaTone.trackVolume(score.tracks.first().playbackInfo.volume) else 0.0)
+            if (guitar) AlphaTone.trackVolume(score.tracks.first().playbackInfo.volume,music) else 0.0)
         exporter.setup()
         val samples = mutableListOf<Float>()
         repeat(3) { exporter.render(250.0)?.samples?.data?.let { samples.addAll(it.toList()) } }
@@ -97,5 +98,13 @@ class AlphaToneTest {
         assertTrue(report, differenceDb >= 6.0)
         assertTrue(report, peak(mixed) < .85 && peak(strum) < .85)
         assertTrue("Click must finish within 60 ms", click.drop(44100 * 2 * 60 / 1000).take(44100 / 5).all { abs(it) < .0001 })
+    }
+    @Test fun twoGainRoutesMuteIndependentlyInActualSynthesis() {
+        val notes=listOf(Position(6,0),Position(3,0))
+        assertArrayEquals(render(notes,true,guitar=false),render(notes,true,music=0.0),1e-7f)
+        val full=render(notes,false)
+        val half=render(notes,true,music=.5,clickMix=0.0)
+        assertEquals(.5,peak(half)/peak(full),.001)
+        assertTrue(render(notes,true,music=0.0,clickMix=0.0).all { abs(it)<1e-7f })
     }
 }

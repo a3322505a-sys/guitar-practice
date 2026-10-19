@@ -266,6 +266,7 @@ object ScoreValidation {
         if(score.form.repeats.isNotEmpty()) capabilities+="form.repeat.v1"
         if(score.form.endings.isNotEmpty()) capabilities+="form.volta.v1"
         if(score.form.jumps.isNotEmpty()) capabilities+="form.jump.v1"
+        if(LessonValidation.validate(score,practices)) capabilities += "teaching.lesson.v1"
         return capabilities
     }
     private fun gcd(a: Int,b: Int): Int = if(b==0) a else gcd(b,a%b)

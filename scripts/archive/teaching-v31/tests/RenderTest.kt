@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.activity.compose.setContent

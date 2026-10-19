@@ -6,5 +6,6 @@ internal object AlphaTone {
     const val TRACK = 0.15
     const val CLICK = 0.9
 
-    fun trackVolume(sourceVolume: Double) = TRACK * (sourceVolume / 16.0).coerceIn(0.0, 1.0)
+    fun trackVolume(sourceVolume: Double, music: Double = 1.0, lead: Double = 1.0) =
+        TRACK * (sourceVolume / 16.0).coerceIn(0.0, 1.0) * music * lead
 }

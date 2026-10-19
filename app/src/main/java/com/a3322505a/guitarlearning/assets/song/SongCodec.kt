@@ -1,6 +1,7 @@
 package com.a3322505a.guitarlearning.assets.song
 
 import com.a3322505a.guitarlearning.music.score.*
+import com.a3322505a.guitarlearning.music.*
 
 internal fun Map<String,Any?>.s(key: String, default: String = "") = this[key] as? String ?: default
 internal fun Map<String,Any?>.i(key: String, default: Int = 0) = this[key]?.intValue() ?: default
@@ -42,12 +43,24 @@ object SongCodec {
                 it.strings("trackIds"),it.strings("voiceIds")) },
             form(root["form"].objectValue()),
             root.objects("voicings").map(::voicing),
-            root.objects("harmonies").map { HarmonySymbol(it.s("id"),it.s("measureId"),it.q("onset"),it.s("name"),it["voicingId"] as? String,condition(it["condition"])) })
+            root.objects("harmonies").map { HarmonySymbol(it.s("id"),it.s("measureId"),it.q("onset"),it.s("name"),it["voicingId"] as? String,condition(it["condition"]),it["validUntil"]?.qValue()) })
     }
     fun voicing(v: Map<String,Any?>) = GuitarVoicing(v.s("id"),v.s("name"),v.s("trackId"),
         v.list("frets").map { it.intValue() },v.list("fingers").map { it.intValue() },
         v["teaching"]?.objectValue()?.let { t -> VoicingTeaching(t.i("root",-1),t["third"]?.intValue(),
-            t.s("soundingName"),t.s("group"),t.s("source"),labels(t["intervalRoles"]),labels(t["toneNames"])) })
+            t.s("soundingName"),t.s("group"),t.s("source"),labels(t["intervalRoles"]),labels(t["toneNames"])) },
+        v.objects("barres").map { Barre(it.i("finger"),it.i("fret"),it.i("fromString"),it.i("toString")) },
+        (v["quality"] as? String)?.let(ChordQuality::valueOf))
+    fun lesson(value: Any?): LessonMetadata? = value?.objectValue()?.let { t ->
+        LessonMetadata(TeachingModule.valueOf(t.s("module")), t["key"]?.objectValue()?.let {
+            KeyContext(SpelledPitch.parse(it.s("tonic")), ScaleDefinition.valueOf(it.s("scale"))) },
+            t.strings("warmupIds"), t.strings("transitionIds"), t.strings("leadTrackIds"), t.strings("chainStarts"),
+            t.objects("actions").map { TeachingAction(it.s("eventId"),it.s("kind"),it.s("text"),it["voicingId"] as? String,it["fromVoicingId"] as? String) })
+    }
+    fun lessonMap(value: LessonMetadata?): Map<String,Any?>? = value?.let { t -> mapOf(
+        "module" to t.module.name, "key" to t.key?.let { mapOf("tonic" to it.tonic.name,"scale" to it.scale.name) },
+        "warmupIds" to t.warmupIds,"transitionIds" to t.transitionIds,"leadTrackIds" to t.leadTrackIds,
+        "chainStarts" to t.chainStarts,"actions" to t.actions.map { mapOf("eventId" to it.eventId,"kind" to it.kind,"text" to it.text,"voicingId" to it.voicingId,"fromVoicingId" to it.fromVoicingId) }) }
     private fun labels(value: Any?) = value?.objectValue()?.map { (k,v) -> k.toInt() to v.textValue() }?.toMap().orEmpty()
     fun teaching(value: Any?) = value?.objectValue()?.let { t -> PracticeTeaching(t.s("category"),t.s("passage"),
         t.s("source"),t.s("technique"),t.s("use"),t["version"] as? String,t.s("tempoLabel"),t.s("explanation")) }
@@ -89,6 +102,6 @@ object SongCodec {
             p.s("visibility","core"),p.i("order"),p.strings("tags"),p.q("padding"),p["paddingReason"] as? String,
             p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),p.strings("legacyIds"),
             p.objects("noteFingerings").map { NoteFingering(it.s("sourceNoteId"),it["finger"]?.intValue(),
-                it.s("source"),it["occurrence"]?.intValue()) })
+                it.s("source"),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
     }
 }

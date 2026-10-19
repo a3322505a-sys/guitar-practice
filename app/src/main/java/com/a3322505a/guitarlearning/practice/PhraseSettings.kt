@@ -4,23 +4,23 @@ import android.content.SharedPreferences
 
 data class PhraseSettings(val bpm: Int,val repeats: Int,val range: BarRange,val rangeReset: Boolean = false)
 class PhraseSettingsStore(private val prefs: SharedPreferences,private val resolve: (String)->Phrase = Phrases::practiceNamed) {
-    fun tempo(phrase: Phrase): Pair<Boolean,Int> {
-        if(phrase.assetKey==null) return false to 100
+    fun tempo(phrase: Phrase): Pair<Boolean,Double> {
+        if(phrase.assetKey==null) return false to 100.0
         val prefix=assetPrefix(phrase)
         val default=if(phrase.unprepared) phrase.defaultSourceTempo else phrase.sequence.performance.practice.tempoMode!="fixed"
         val source=runCatching { prefs.getBoolean(prefix+"sourceTempo",default) }.getOrDefault(default)
-        val multiplier=runCatching { prefs.getInt(prefix+"multiplier",100) }.getOrDefault(100).coerceIn(25,200)
+        val multiplier=runCatching { if(prefs.contains(prefix+"speedPercent")) prefs.getFloat(prefix+"speedPercent",100f).toDouble() else prefs.getInt(prefix+"multiplier",100).toDouble() }.getOrDefault(100.0).coerceIn(25.0,200.0)
         return source to multiplier
     }
-    fun saveTempo(phrase: Phrase,source: Boolean,multiplier: Int) {
+    fun saveTempo(phrase: Phrase,source: Boolean,multiplier: Double) {
         if(phrase.assetKey==null) return
         val prefix="asset."+phrase.assetKey.encoded+"."
-        prefs.edit().putBoolean(prefix+"sourceTempo",source).putInt(prefix+"multiplier",multiplier.coerceIn(25,200)).apply()
+        prefs.edit().putBoolean(prefix+"sourceTempo",source).putFloat(prefix+"speedPercent",multiplier.coerceIn(25.0,200.0).toFloat()).apply()
     }
     fun selected(): Phrase {
         val pending=runCatching { prefs.getString("phrase-pending-import",null) }.getOrNull()
         if(pending!=null && resolve(pending).assetKey!=null) return resolve(pending)
-        val id=runCatching { prefs.getString("phrase-selected","M01") }.getOrNull() ?: "M01"
+        val id=runCatching { prefs.getString("phrase-selected",com.a3322505a.guitarlearning.music.score.PracticeKey("local.teaching-v31","FB-1").encoded) }.getOrNull() ?: "M01"
         val selected=resolve(id)
         if(id in MigratedPracticeIds.targets && selected.id!=MigratedPracticeIds.targets[id])
             prefs.edit().putString("phrase-pending-import",id).apply()

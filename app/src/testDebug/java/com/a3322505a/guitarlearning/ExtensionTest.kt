@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 import com.a3322505a.guitarlearning.audio.*
@@ -15,7 +17,7 @@ class ExtensionTest {
             val plan=connectionPlan(options)!!
             val sequence=Routes.scale(options).sequence!!
             val route=sequence.events.flatMap { it.positions }
-            val a=Patterns.all[i]; val b=Patterns.all[i+1]
+            val a=Patterns.forKey(key)[i]; val b=Patterns.forKey(key)[i+1]
             assertEquals(plan.route,route)
             assertEquals(route.first(),route.last())
             assertTrue(plan.outward.any { it in b.positions && it !in a.positions })

@@ -73,8 +73,8 @@ class ContentPresentationTest {
             "R01" to ContentCardText("节奏句（基础版）", "简单和弦节奏 · 伴奏入门"),
             "R02" to ContentCardText("节奏句（完整版）", "综合片段 · 律动进阶"),
         )
-        expected.forEach { (id, text) -> assertEquals(id, text, content.phraseText(Phrases.named(id).copy(title = "可变名称"))) }
-        val mozart = content.phraseSections(BASIC_CONTENT).single { it.title == "旋律与古典练习曲" }.items.filter { it.assetKey != null }
+        expected.forEach { (id, text) -> assertEquals(id, text, content.phraseText(SongTestLibrary.repository.resolve(id).copy(title = "可变名称"))) }
+        val mozart = content.phraseSections(BASIC_CONTENT).single { it.title == "旋律与古典练习曲" }.items.filter { it.assetKey?.packageId == "local.mozart" }
         assertEquals(listOf("1 主题", "2 变奏", "3 再现与结尾"), mozart.map { content.phraseText(it).primary })
         assertEquals("莫扎特 K265 · 2 发展", mozart[1].title)
         assertEquals(setOf("简单和弦节奏", "综合片段"), content.phraseSections(BASIC_CONTENT)
@@ -90,7 +90,7 @@ class ContentPresentationTest {
             }
         }
         assertEquals(ContentCardText("陌生限定 · 不能丢失"), content.phraseText(Phrases.singleNote.copy(id = "unknown", title = "陌生限定 · 不能丢失")))
-        assertEquals(ContentCardText("交替拨弦热身", "Block 01 · 右手稳定度"), content.phraseText(Phrases.named("SB-1")))
+        assertEquals(ContentCardText("交替拨弦热身", "Block 01 · 右手稳定度"), content.phraseText(SongTestLibrary.repository.resolve("SB-1")))
     }
 
     @Test fun chordVoicingsKeepTheirFretQualifierAndSourceParserUsesLengthPrefix() {
@@ -105,11 +105,11 @@ class ContentPresentationTest {
         val chordsBefore = snapshot.chords.toList()
         val phrasesBefore = snapshot.catalogue.toList()
         val groups = content.chordSections(BASIC_CONTENT)
-        assertEquals(listOf(5, 3, 4), groups.map { it.items.size })
-        assertEquals(listOf("C", "G", "D", "A", "E", "Am", "Em", "Dm", "Gsus2", "Asus4(no5)", "Bm7(no5)", "D/F♯"), groups.flatMap { it.items }.map { it.id })
+        assertEquals(listOf(5, 3, 4), groups.take(3).map { it.items.size })
+        assertEquals(listOf("C", "G", "D", "A", "E", "Am", "Em", "Dm", "Gsus2", "Asus4(no5)", "Bm7(no5)", "D/F♯"), groups.take(3).flatMap { it.items }.map { it.id })
         assertEquals(ContentCardText("D/F#", "第一转位 · G→Em 常用桥梁"), content.chordText(Chords.named("D/F♯")))
-        assertEquals(listOf(7, 5, 4, 2), content.phraseSections(BASIC_CONTENT).map { it.items.size })
-        assertEquals(listOf("T01", "PM01", "SL01", "H01", "P01"), content.phraseSections(BASIC_CONTENT)[1].items.map { it.id })
+        assertEquals(listOf(7, 5, 4, 2), content.phraseSections(BASIC_CONTENT).take(4).map { it.items.size })
+        assertEquals(listOf("T01", "PM01", "SL01", "H01", "P01"), content.phraseSections(BASIC_CONTENT)[1].items.map { it.legacyIds.single() })
         val packaged = Chords.named("C").copy(id = PracticeKey("other.song", "C").encoded)
         assertNull(content.chordText(packaged).tag)
         assertEquals(chordsBefore, snapshot.chords)
@@ -127,7 +127,9 @@ class ContentPresentationTest {
             assertTrue(sequence.tuplets.isNotEmpty())
         }
         assertEquals("三连音", rhythmCardTexts[2].tag)
-        assertEquals(listOf(4, 2), Phrases.named("T01").sequence.tuplets.map { it.unit })
+        val tripletPlan=SongTestLibrary.repository.resolve("T01").sequence.performance
+        val groupIds=tripletPlan.events.flatMap { it.event.written.tupletGroupIds }.toSet()
+        assertEquals(listOf(3, 3),tripletPlan.score.tuplets.filter { it.id in groupIds }.map { it.actual })
         assertEquals(6, ScaleExercise.entries.map(::scaleExerciseText).size)
     }
 

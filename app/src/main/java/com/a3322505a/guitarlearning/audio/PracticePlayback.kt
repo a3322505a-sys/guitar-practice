@@ -8,6 +8,7 @@ data class Progress(val phase: Phase = Phase.IDLE, val tick: Double = 0.0, val m
 
 /** The workbench consumes state, never an audio clock or output implementation. */
 interface PracticePlayback {
+    fun setMix(mix: PlaybackMix) {}
     var guitar: Boolean
     var click: Boolean
     val progress: Progress

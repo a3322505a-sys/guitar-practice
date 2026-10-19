@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning
 
+import com.a3322505a.guitarlearning.practice.LegacyPhraseFixtures as Phrases
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.activity.compose.setContent
@@ -28,7 +30,7 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class TeachingDiagramRenderTest {
     @get:Rule val compose = createAndroidComposeRule<LegacyWorkbenchTestActivity>()
-    private val f = Chord("F", 5, 9, listOf(1,3,3,2,1,1), listOf(1,3,4,2,1,1))
+    private val f = Chord("F", 5, 9, listOf(1,3,3,2,1,1), listOf(1,3,4,2,1,1),barres=listOf(Barre(1,1,6,1)))
 
     private fun capture(name: String) = compose.runOnIdle {
         val view = compose.activity.window.decorView
@@ -44,9 +46,9 @@ class TeachingDiagramRenderTest {
         var hint by mutableStateOf(Hint.FULL)
         var tapped: Position? = null
         val fixtures = listOf(f,
-            f.copy(name = "Bm", frets = listOf(null,2,4,4,3,2), fingers = listOf(0,1,3,4,2,1)),
-            f.copy(name = "mini F", frets = listOf(null,null,3,2,1,1), fingers = listOf(0,0,3,2,1,1)),
-            f.copy(name = "high F", frets = f.frets.map { it!! + 12 }))
+            f.copy(name = "Bm", frets = listOf(null,2,4,4,3,2), fingers = listOf(0,1,3,4,2,1),barres=listOf(Barre(1,2,5,1))),
+            f.copy(name = "mini F", frets = listOf(null,null,3,2,1,1), fingers = listOf(0,0,3,2,1,1),barres=listOf(Barre(1,1,2,1))),
+            f.copy(name = "high F", frets = f.frets.map { it!! + 12 },barres=listOf(Barre(1,13,6,1))))
         compose.activity.setContent { PracticeTheme {
             Row(Modifier.fillMaxWidth()) { fixtures.forEach { chord ->
                 Box(Modifier.weight(1f)) { ChordDiagram(chord, hint, emptyList(), true, 390.dp) { tapped = it } }

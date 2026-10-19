@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 internal val ScaleSaver = listSaver<ScaleOptions, Any>(
-    save = { listOf(it.pattern, it.key.ordinal, it.exercise.ordinal, it.firstString, it.lastString, it.octave, it.notesPerBeat, it.startDegree, it.reverse) },
+    save = { listOf(it.pattern, it.key.ordinal, it.exercise.ordinal, it.firstString, it.lastString, it.octave, it.notesPerBeat, it.startDegree, it.reverse, it.pentatonic) },
     // Removed controls use fixed defaults, so old hidden limits cannot restrict practice.
     restore = { values ->
         ScaleOptions(
@@ -54,6 +55,7 @@ internal val ScaleSaver = listSaver<ScaleOptions, Any>(
                 else -> 1
             },
             startDegree = (values.getOrNull(7) as? Int)?.takeIf { it in 1..7 } ?: 1,
+            pentatonic = values.getOrNull(9) as? Boolean ?: false,
         )
     },
 )
@@ -117,27 +119,40 @@ internal fun PracticeWorkbench(
     }
     var preparedEpoch by remember { mutableIntStateOf(0) }
     val phraseStore = remember { PhraseSettingsStore(preferences, repository::named) }
-    var page by rememberSaveable { mutableIntStateOf(0) }
+    var page by rememberSaveable { mutableIntStateOf(1) }
+    var module by rememberSaveable { mutableStateOf(TeachingModule.FOUNDATIONS) }
+    var userSelectedModule by rememberSaveable { mutableStateOf(false) }
     var scale by rememberSaveable(stateSaver = ScaleSaver) { mutableStateOf(ScaleOptions()) }
     var firstName by rememberSaveable { mutableStateOf("C") }
     var phraseId by rememberSaveable { mutableStateOf(phraseStore.selected().id) }
-    var chordPhrases by rememberSaveable { mutableStateOf(false) }
+    var chordPhrases by rememberSaveable { mutableStateOf(true) }
     var bpm by rememberSaveable { mutableIntStateOf(60) }
     var repeats by rememberSaveable { mutableIntStateOf(4) }
     var sourceTempo by rememberSaveable { mutableStateOf(true) }
-    var tempoMultiplier by rememberSaveable { mutableIntStateOf(100) }
+    var tempoMultiplier by rememberSaveable { mutableDoubleStateOf(100.0) }
     var selectedTrackId by rememberSaveable { mutableStateOf<String?>(null) }
     var soloTrack by rememberSaveable { mutableStateOf(false) }
     var firstBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.first) }
     var lastBar by rememberSaveable { mutableIntStateOf(phraseStore.load(phraseStore.selected()).range.last) }
-    var hintIndex by rememberSaveable { mutableIntStateOf(preferences.getInt("hint", 0).coerceIn(0, 2)) }
+    var hintIndex by rememberSaveable { mutableIntStateOf(preferences.getInt("hint", 0).coerceIn(0, Hint.entries.lastIndex)) }
     var guitar by rememberSaveable { mutableStateOf(preferences.getBoolean("guitar", true)) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var stageLayout by rememberSaveable { mutableStateOf(StageLayout.FRETBOARD_ONLY) }
     val activity = checkNotNull(LocalActivity.current)
     var overlay by rememberSaveable { mutableStateOf(PracticeOverlay.NONE) }
+    var returnPhraseId by rememberSaveable { mutableStateOf<String?>(null) }
+    var returnModule by rememberSaveable { mutableStateOf(TeachingModule.APPLICATION) }
+    var leadFade by rememberSaveable { mutableStateOf(false) }
+    var chainFirst by rememberSaveable { mutableIntStateOf(-1) }
+    var chainLast by rememberSaveable { mutableIntStateOf(-1) }
+    var chainStep by rememberSaveable { mutableIntStateOf(0) }
+    var chainRepeats by rememberSaveable { mutableIntStateOf(4) }
+    val chainOriginal = if(chainFirst>=0) BarRange(chainFirst,chainLast) else null
     var moreExercisesOpen by rememberSaveable { mutableStateOf(false) }
     var note by rememberSaveable { mutableStateOf("") }
+    var mix by remember { mutableStateOf(PlaybackMix.load(preferences)) }
+    var volumeOpen by remember { mutableStateOf(false) }
+    player.setMix(mix)
     val hint = Hint.entries[hintIndex]
     val chords = librarySnapshot.chords
     val first = chords.firstOrNull { it.id == firstName } ?: chords.first()
@@ -147,8 +162,8 @@ internal fun PracticeWorkbench(
     LaunchedEffect(libraryReady, page, chordPhrases, phrase.id, bpm, repeats, firstBar, lastBar) {
         if (libraryReady && !phrase.unprepared && page == 1 && chordPhrases) phraseStore.save(phrase, bpm, repeats, range)
     }
-    player.guitar = guitar
-    player.click = click
+    player.guitar = true
+    player.click = true
     val scaleResult = remember(scale) { Routes.scale(scale) }
     val chordUnavailable = first.unavailableReason
     val checkSequence = remember(first) { if (chordUnavailable == null) chordSequence(first, first, ChordExercise.CHECK, 4) else null }
@@ -167,9 +182,10 @@ internal fun PracticeWorkbench(
         }
     }
     val sequence = if (page == 0) scaleResult.sequence else if (chordPhrases) {
-        if (phrase.unprepared) player.session?.sequence else phraseSequence
+        if (!libraryReady || phrase.unprepared) player.session?.sequence else phraseSequence
     } else checkSequence
     LaunchedEffect(sequence) { nativePlayer?.prepareSequence(sequence) }
+    nativePlayer?.leadFade = leadFade && sequence?.let(PracticeExtensions::canFade)==true
     val activeRange=if(page==1 && chordPhrases) range else sequence?.let { BarRange(0,it.barCount-1) } ?: BarRange(0,0)
     LaunchedEffect(sequence,bpm,repeats,activeRange,sourceTempo,tempoMultiplier) {
         nativePlayer?.configurePractice(sequence,bpm,repeats,activeRange,sequence?.runtimePlan!=null && sourceTempo,
@@ -194,9 +210,10 @@ internal fun PracticeWorkbench(
     } else event?.positions ?: emptyList()
     val section = if (showingSession && cursor?.pre == false) displayedSequence!!.sectionAt(cursor.localTick) else -1
     val harmony = displayedSequence?.sections.orEmpty()
-    val shownChord = if (page == 1) harmony.getOrNull(maxOf(0, section))?.let { displayedSequence?.chordAt(it) } else first
+    val shownChord = if (page == 1) harmony.getOrNull(if(showingSession) section else displayedSequence?.sectionAt((activeRange.first.let { displayedSequence?.barStart(it) } ?: 0).toDouble()) ?: -1)?.let { displayedSequence?.chordAt(it) } else first
     val melody = page == 1 && chordPhrases && (harmony.isEmpty() || shownChord == null)
-    val renderHint = if (melody && hint == Hint.ROOTS) Hint.FULL else hint
+    val boardTeaching = BoardTeachingContext(if(page==0) scale.key.context else if(chordPhrases) phrase.lesson?.key else null, if(page==0) first else shownChord)
+    val renderHint = hint.takeIf { it in boardTeaching.available } ?: Hint.FULL
     val nextChord = if (page == 1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0, section) + 1) % harmony.size].chord else ""
     fun changed() { player.invalidate(); note = "" }
     fun scaleChange(value: ScaleOptions) { if (value != scale) { changed(); scale = value } }
@@ -210,13 +227,19 @@ internal fun PracticeWorkbench(
         val prefix = value.assetKey?.let { "asset." + it.encoded + "." }
         selectedTrackId = prefix?.let { preferences.getString(it + "mainTrack", null) }
         soloTrack = prefix?.let { preferences.getBoolean(it + "solo", false) } ?: false
+        if(value.sequence.runtimePlan?.tempos?.size?.let { it>1 }==true && !sourceTempo) {
+            tempoMultiplier = TempoControl.ratio(saved.bpm,TempoControl.sourceBpm(value.sequence,saved.range.first))*100
+            sourceTempo=true; phraseStore.saveTempo(value,true,tempoMultiplier)
+        }
         if (saved.rangeReset) note = "曲包修订改变了范围，已恢复整句；速度和次数保留。"
     }
     LaunchedEffect(repository) {
         librarySnapshot = withContext(Dispatchers.IO) { repository.reload() }
-        val restored = phraseStore.selected()
+        val saved = phraseStore.selected()
+        val restored = if(userSelectedModule && chordPhrases) librarySnapshot.catalogue.firstOrNull { contentPresentation.moduleOf(it)==module } ?: saved else saved
+        if(!userSelectedModule) module = contentPresentation.moduleOf(restored)
         phraseId = restored.id
-        loadPhrase(restored)
+        if(page==1 && chordPhrases) loadPhrase(restored)
         libraryReady = true
     }
     val selectedRevision = phrase.assetKey?.let { key -> librarySnapshot.packages.firstOrNull { it.identity.packageId == key.packageId }?.identity }
@@ -234,6 +257,7 @@ internal fun PracticeWorkbench(
         }
     }
     fun phraseChange(value: Phrase) {
+        chainFirst=-1; chainLast=-1; chainStep=0; leadFade=false
         phraseStore.select(value)
         if (phraseId != value.id) { changed(); phraseId = value.id; loadPhrase(value) }
     }
@@ -246,7 +270,7 @@ internal fun PracticeWorkbench(
         player.audition(listOf(p), capoFret = capo, openStringMidi = tuning)
         val name = if (page == 1 && !chordPhrases) first.noteName(p, true) else Music.name(displayedSequence?.midi(p) ?: (p.midi + capo), true)
         note = "${p.string} 弦 ${p.fret} 品 · $name" +
-            if (page == 0) " · ${scale.key.degree(p.midi)} 级"
+            if (page == 0) " · ${scale.key.degreeLabel(p.midi)} 级"
             else if (!chordPhrases || harmony.isNotEmpty()) shownChord?.let { " · ${it.role(p)}" }.orEmpty()
             else ""
     }
@@ -269,9 +293,10 @@ internal fun PracticeWorkbench(
     val windowConfiguration = LocalConfiguration.current
     val tabletControls = minOf(windowConfiguration.screenWidthDp, windowConfiguration.screenHeightDp) >= 600
     PracticeTheme(largeControls = tabletControls, theme = themeManager.current) {
+        if (volumeOpen) PlaybackVolumeDialog(mix, { value -> mix = value; value.save(preferences) }, { volumeOpen = false })
         // Paint the entire window before insets keep controls clear of cutouts and system UI.
         BoxWithConstraints(
-            Modifier.fillMaxSize()
+            Modifier.fillMaxSize().testTag(if(libraryReady) "practice-library-ready" else "practice-library-loading")
                 .practiceBackground()
                 .displayCutoutPadding()
                 .windowInsetsPadding(WindowInsets.captionBar)
@@ -287,21 +312,32 @@ internal fun PracticeWorkbench(
             val sidePanel = maxWidth >= 600.dp || maxWidth > maxHeight
             val panelWidth = if (configuring && sidePanel) { if(overlay==PracticeOverlay.CONTENT) minOf(960.dp,maxWidth*.82f) else minOf(400.dp,maxWidth*.44f) } else 0.dp
 
-            fun setBpm(value: Int) { if (value != bpm) { changed(); bpm = value } }
-            fun setMultiplier(value: Int) { if (value != tempoMultiplier) { changed(); tempoMultiplier = value; phraseStore.saveTempo(phrase, sourceTempo, value) } }
+            val tempoVisit = if (showingSession) nativePlayer?.currentVisit ?: cursor?.bar ?: activeRange.first else activeRange.first
+            val tempoReference = sequence?.let { if(showingSession) TempoControl.sourceBpmAt(it,(cursor?.localTick ?: (it.barStart(tempoVisit).toDouble()))/it.ticksPerQuarter) else TempoControl.sourceBpm(it, tempoVisit) } ?: 60.0
+            val mapTempo = sequence?.runtimePlan != null && sourceTempo
+            val visibleBpm = if (mapTempo) (tempoReference * tempoMultiplier / 100.0).roundToInt() else bpm
+            fun setBpm(value: Int) {
+                changed()
+                if (mapTempo) {
+                    tempoMultiplier = TempoControl.ratio(value, tempoReference) * 100.0
+                    phraseStore.saveTempo(phrase, true, tempoMultiplier)
+                } else bpm = value
+            }
+            fun setMultiplier(value: Double) { if (value != tempoMultiplier) { changed(); tempoMultiplier = value; phraseStore.saveTempo(phrase, sourceTempo, value) } }
             fun category(value: Int) {
-                val nextPage = if (value == 0) 0 else 1
-                val nextPhrases = value == 2
-                if (page != nextPage || (nextPage == 1 && chordPhrases != nextPhrases)) {
-                    changed(); page = nextPage
-                    stageLayout = if (nextPhrases && nativePlayer != null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY
-                    if (nextPage == 1) {
-                        chordPhrases = nextPhrases
-                        if (nextPhrases) loadPhrase(phrase)
+                userSelectedModule=true
+                val next = TeachingModule.entries[value]
+                if(module != next || next == TeachingModule.CHORDS && chordPhrases || next == TeachingModule.SCALES && page!=0) {
+                    changed(); module = next; page = if(next == TeachingModule.SCALES) 0 else 1
+                    chordPhrases = next != TeachingModule.SCALES && next != TeachingModule.CHORDS
+                    stageLayout = if(chordPhrases && nativePlayer != null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY
+                    if(chordPhrases) {
+                        val candidate = librarySnapshot.catalogue.firstOrNull { contentPresentation.moduleOf(it) == next }
+                        if(candidate != null && contentPresentation.moduleOf(phrase) != next) phraseChange(candidate)
                     }
                 }
             }
-            val summary = if (page == 0) "${scale.key.title} · ${Patterns.all[scale.pattern].solfege}型 · ${scale.exercise.title}"
+            val summary = if (page == 0) "${scale.key.title} · ${Patterns.forKey(scale.key,scale.pentatonic)[scale.pattern].solfege} · ${scale.exercise.title}"
             else if (chordPhrases) phrase.title else "${first.name} · 逐弦"
             val specBadge = when {
                 page == 0 -> "${if (scale.octave) "一八度" else "整型"} · 每拍${scale.notesPerBeat}音"
@@ -319,15 +355,12 @@ internal fun PracticeWorkbench(
 
             val transportBlock: @Composable (Boolean) -> Unit = { verticalDeck ->
                 PracticeTransport(
-                    bpm,
-                    sequence?.runtimePlan != null && sourceTempo,
-                    tempoMultiplier,
+                    visibleBpm,
                     meterLabel,
                     hint,
                     transportMode(progress.phase, session != null, session?.preview == true),
                     sequence != null && (nativePlayer == null || nativePlayer.ready),
                     ::setBpm,
-                    ::setMultiplier,
                     { setHint(if (hint == Hint.HIDDEN) 0 else 2) },
                     { if (player.active) player.pause() else player.resume() },
                     { player.restart() },
@@ -358,6 +391,10 @@ internal fun PracticeWorkbench(
                     showHintAction = false,
                     verticalDeck = verticalDeck,
                     pausedTitle = if(nativePlayer?.fromMeasure==true) "从本小节练" else "继续",
+                    tempoDetail = if(mapTempo) "当前段原谱 ${tempoReference.roundToInt()} BPM · ${(tempoMultiplier).roundToInt()}% · 变速事件同比缩放" else "四分音符 BPM",
+                    minBpm = if(mapTempo) (tempoReference * .25).roundToInt().coerceAtLeast(1) else 30,
+                    maxBpm = if(mapTempo) (tempoReference * 2).roundToInt() else 180,
+                    onVolume = { volumeOpen = true },
                 )
             }
 
@@ -374,7 +411,7 @@ internal fun PracticeWorkbench(
                         showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
                         if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
                     )
-                    CompositionLocalProvider(LocalStageViewSwitch provides false) {
+                    CompositionLocalProvider(LocalStageViewSwitch provides false, LocalBoardTeaching provides boardTeaching, LocalSelectHint provides { value -> setHint(value.ordinal) }) {
                         if (showNativeScore) {
                             val fontScale = density.fontScale.coerceAtLeast(1f)
                             val targetHeight = if (stageLayout == StageLayout.LINKED && contentHeight >= 320.dp * fontScale) {
@@ -405,7 +442,7 @@ internal fun PracticeWorkbench(
                                             onTap = ::tap,
                                             modifier = Modifier.fillMaxSize(),
                                             enabled = !player.active && progress.phase != Phase.PAUSED,
-                                            labelRoot = if(page==0) scale.key.root else shownChord?.root?.takeIf { it>=0 },
+                                            labelRoot = boardTeaching.root,
                                             loopContinues = practiceSession?.let { it.repeats == 0 || (cursor?.loop ?: 0) + 1 < it.repeats } == true,
                                             controls = breakdown,
                                         )
@@ -462,6 +499,49 @@ internal fun PracticeWorkbench(
                             onManagement = { overlay = PracticeOverlay.MANAGEMENT },
                             linkedAvailable = nativePlayer != null,
                         )
+                        if(page==1 && chordPhrases && !phrase.unprepared) {
+                            fun destination(id: String): Phrase? {
+                                val global=librarySnapshot.aliases[id]?.let(repository::named)
+                                val encoded=phrase.assetKey?.let { com.a3322505a.guitarlearning.music.score.PracticeKey(it.packageId,id).encoded }
+                                return global ?: encoded?.let { key -> librarySnapshot.phrases.firstOrNull { it.id==key } }
+                            }
+                            val versions=repository.versions(phrase)
+                            val warmups=phrase.lesson?.warmupIds.orEmpty().mapNotNull(::destination)
+                            val transitions=phrase.lesson?.transitionIds.orEmpty().mapNotNull(::destination)
+                            val chain=remember(sequence,range,chainOriginal) { sequence?.let { PracticeExtensions.backwardRanges(it,chainOriginal ?: range) }.orEmpty() }
+                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp),verticalAlignment=Alignment.CenterVertically) {
+                                if(versions.size>1) versions.forEach { version ->
+                                    FilterChip(selected=version.id==phrase.id,onClick={ changed(); phraseChange(version) },label={ Text(version.version ?: version.title) })
+                                }
+                                if(returnPhraseId!=null) TextButton(onClick={
+                                    val target=returnPhraseId!!; changed(); module=returnModule; phraseChange(repository.named(target)); returnPhraseId=null
+                                }) { Text("返回原曲段") }
+                                fun jump(target: Phrase) {
+                                    phraseStore.save(phrase,bpm,repeats,range); phraseStore.saveTempo(phrase,sourceTempo,tempoMultiplier)
+                                    if(returnPhraseId==null) { returnPhraseId=phrase.id; returnModule=module }
+                                    changed(); phraseChange(target); module=contentPresentation.moduleOf(target)
+                                }
+                                if(warmups.isNotEmpty()) TextButton(onClick={ jump(warmups.first()) }) { Text("练前热身") }
+                                transitions.forEach { target -> TextButton(onClick={ jump(target); repeats=0 }) { Text("衔接练习") } }
+                                if(sequence?.let(PracticeExtensions::canFade)==true) FilterChip(selected=leadFade,onClick={ leadFade=!leadFade },label={ Text("渐隐领奏") })
+                                if(chain.isNotEmpty()) {
+                                    TextButton(onClick={
+                                        changed()
+                                        if(chainOriginal==null) {
+                                            chainFirst=range.first; chainLast=range.last; chainStep=0; chainRepeats=repeats; repeats=0
+                                            firstBar=chain.first().first; lastBar=chain.first().last
+                                        } else {
+                                            firstBar=chainOriginal!!.first; lastBar=chainOriginal!!.last; repeats=chainRepeats; chainFirst=-1; chainLast=-1
+                                        }
+                                    }) { Text(if(chainOriginal==null) "倒序接龙" else "退出接龙") }
+                                    if(chainOriginal!=null && chainStep<chain.lastIndex) TextButton(onClick={
+                                        changed(); chainStep++; firstBar=chain[chainStep].first; lastBar=chain[chainStep].last
+                                    }) { Text("接上前一段") }
+                                }
+                            }
+                            if(leadFade) Text("领奏随循环 100% → 30% → 0% · 伴奏保持",style=MaterialTheme.typography.labelSmall)
+                            PracticeExtensions.action(phrase.sequence,if(showingSession) (cursor?.localTick ?: 0.0)/phrase.sequence.ticksPerQuarter else 0.0)?.let { Text(it,style=MaterialTheme.typography.labelSmall) }
+                        }
                         stageSlot(Modifier.weight(1f).fillMaxWidth())
                     }
                 }
@@ -499,20 +579,22 @@ internal fun PracticeWorkbench(
                                 phrase.relatedId?.let { repository.named(it).title }, bpm, repeats, firstBar, lastBar, range, wholeRange, guitar, click,
                                 moreExercisesOpen, beatsPerBar, sequence, displayedSequence, scaleResult, sourceTempo, tempoMultiplier, selectedTrackId, soloTrack,
                                 if (page == 0) scaleResult.reason else if (!libraryReady) "正在加载曲库…" else if (!chordPhrases) chordUnavailable ?: note else note,
-                                content = contentPresentation, activeSourceFilter = activeSourceFilter,
+                                content = contentPresentation, activeSourceFilter = activeSourceFilter, module = module,
                             ),
                             contentOnly = overlay == PracticeOverlay.CONTENT,
                             sidePanel = sidePanel,
                             onClose = { overlay = PracticeOverlay.NONE },
                             onCategory = ::category,
                             onScale = ::scaleChange,
-                            onChord = { firstChange(it); overlay = PracticeOverlay.NONE },
-                            onPhrase = { phraseChange(it); overlay = PracticeOverlay.NONE },
+                            onChord = { firstChange(it); if(module==TeachingModule.CHORDS) { chordPhrases=false; page=1 }; overlay = PracticeOverlay.NONE },
+                            onPhrase = { changed(); chordPhrases=true; page=1; stageLayout=if(nativePlayer!=null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY; phraseChange(it); overlay = PracticeOverlay.NONE },
                             onRange = { value -> if (value != range) { changed(); firstBar = value.first; lastBar = value.last } },
                             onRepeats = { value -> if (value != repeats) { changed(); repeats = value } },
                             onSourceTempo = { value -> if (value != sourceTempo) { changed(); sourceTempo = value; phraseStore.saveTempo(phrase, value, tempoMultiplier) } },
                             onGuitar = { guitar = it; player.guitar = it; preferences.edit().putBoolean("guitar", it).apply() },
                             onClick = { click = it; player.click = it; preferences.edit().putBoolean("click", it).apply() },
+                            mix = mix,
+                            onMix = { mix = it; it.save(preferences) },
                             themeManager = themeManager,
                             onSourceFilter = { activeSourceFilter = it },
                             onManagePackages = { overlay = PracticeOverlay.MANAGEMENT },

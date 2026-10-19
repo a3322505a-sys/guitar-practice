@@ -147,8 +147,8 @@ class CoreTest {
             val result=Routes.scale(ScaleOptions(pattern=pattern,key=key,exercise=ScaleExercise.CONNECTION,octave=false,firstString=start,lastString=end,reverse=reverse))
             val seq=result.sequence
             if(seq==null) { assertTrue(result.reason.isNotBlank()); continue }
-            val first=Patterns.all[pattern].positions
-            val next=Patterns.all[pattern+1].positions
+            val first=Patterns.forKey(key)[pattern].positions
+            val next=Patterns.forKey(key)[pattern+1].positions
             assertTrue(seq.route.any { it in first && it !in next })
             assertTrue(seq.route.any { it in next && it !in first })
             assertTrue(seq.route.all { it.string in start..end })
@@ -159,13 +159,13 @@ class CoreTest {
             if(kind==ScaleExercise.CONNECTION && pattern==4) continue
             val o=ScaleOptions(pattern=pattern,key=key,exercise=kind,octave=false)
             val s=Routes.scale(o).sequence!!
-            val valid=Patterns.all[pattern].positions + if(kind==ScaleExercise.CONNECTION) Patterns.all[pattern+1].positions else emptyList()
+            val valid=Patterns.forKey(key)[pattern].positions + if(kind==ScaleExercise.CONNECTION) Patterns.forKey(key)[pattern+1].positions else emptyList()
             assertTrue(s.route.all { it in valid })
             assertEquals(0,s.length%48)
             if(kind==ScaleExercise.ROOTS) assertTrue(s.route.all(key::isRoot))
             if(kind==ScaleExercise.CONNECTION) {
-                assertTrue(s.route.any { it in Patterns.all[pattern].positions && it !in Patterns.all[pattern+1].positions })
-                assertTrue("$key / $pattern : ${s.route}",s.route.any { it in Patterns.all[pattern+1].positions && it !in Patterns.all[pattern].positions })
+                assertTrue(s.route.any { it in Patterns.forKey(key)[pattern].positions && it !in Patterns.forKey(key)[pattern+1].positions })
+                assertTrue("$key / $pattern : ${s.route}",s.route.any { it in Patterns.forKey(key)[pattern+1].positions && it !in Patterns.forKey(key)[pattern].positions })
             }
         }
         for(start in 1..6) for(end in start..6) {

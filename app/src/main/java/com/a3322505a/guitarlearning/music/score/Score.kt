@@ -1,5 +1,6 @@
 package com.a3322505a.guitarlearning.music.score
 
+import com.a3322505a.guitarlearning.music.*
 import java.math.BigInteger
 import kotlin.math.abs
 
@@ -115,9 +116,9 @@ data class Form(val repeats: List<Repeat> = emptyList(), val endings: List<Endin
 data class VoicingTeaching(val root: Int,val third: Int?,val soundingName: String,val group: String,val source: String,
     val intervalRoles: Map<Int,String> = emptyMap(),val toneNames: Map<Int,String> = emptyMap())
 data class GuitarVoicing(val id: String, val name: String, val trackId: String, val frets: List<Int>, val fingers: List<Int>,
-    val teaching: VoicingTeaching? = null)
+    val teaching: VoicingTeaching? = null, val barres: List<Barre> = emptyList(), val quality: ChordQuality? = null)
 data class HarmonySymbol(val id: String, val measureId: String, val onset: Q, val name: String, val voicingId: String? = null,
-    val condition: VisitCondition? = null)
+    val condition: VisitCondition? = null, val validUntil: Q? = null)
 data class ScoreDocument(val documentId: String, val measures: List<Measure>, val tracks: List<Track>,
     val voices: List<Voice>, val tuplets: List<TupletGroup>, val relations: List<Relation>,
     val tempos: List<Tempo>, val dynamics: List<Dynamic>, val swing: List<SwingSpec>,
@@ -143,7 +144,7 @@ data class PracticeSpec(val id: String, val title: String, val goal: String, val
     val tags: List<String> = emptyList(), val padding: Q = Q.ZERO, val paddingReason: String? = null,
     val tempoMode: String = "source", val difficulty: String = "自行调整",
     val teaching: PracticeTeaching? = null,val legacyIds: List<String> = emptyList(),
-    val noteFingerings: List<NoteFingering> = emptyList())
+    val noteFingerings: List<NoteFingering> = emptyList(), val lesson: LessonMetadata? = null)
 data class PracticeKey(val packageId: String, val practiceId: String) {
     val encoded get() = packageId.length.toString()+":"+packageId+practiceId
 }
