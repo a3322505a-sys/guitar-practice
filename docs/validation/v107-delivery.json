@@ -55,5 +55,10 @@
   "realDeviceListeningVerified": false,
   "longTermSyncVerified": false,
   "githubCiRun": false,
-  "qqSent": false
+  "qqSent": true,
+  "qqMessageId": 1801768575,
+  "qqVerifiedAt": "2026-10-19T23:45:04.597Z",
+  "qqReadbackBytes": 41113332,
+  "qqReadbackSha256": "c60920a763f6ad5c6c080b709ace25f4a99dd963b7ffccf11d6af71ed3be4493",
+  "qqReadbackMatched": true
 }
