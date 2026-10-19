@@ -21,7 +21,7 @@ class ContentPresentationTest {
         val shown=content.sources.flatMap { content.phraseSections(it.id) }.flatMap { it.items }
         assertEquals(snapshot.catalogue.map { it.id }.sorted(),shown.map { it.id }.sorted())
         assertEquals(shown.size,shown.map { it.id }.distinct().size)
-        assertEquals(4,content.sources.size)
+        assertEquals(5,content.sources.size)
         TeachingModule.entries.forEach { module ->
             val lessons=content.phraseSections(BASIC_CONTENT,module).flatMap { it.items }
             assertTrue(module.title,lessons.isNotEmpty())
@@ -31,7 +31,7 @@ class ContentPresentationTest {
     }
 
     @Test fun demonstrationSourcesExposeTwoSectionsAndEachVersionRemainsInItsFamily() {
-        content.sources.filter { it.id!=BASIC_CONTENT }.forEach { source ->
+        content.sources.filter { it.id.startsWith("local.demo-") }.forEach { source ->
             val cards=content.phraseSections(source.id).flatMap { it.items }
             assertEquals(2,cards.size)
             cards.forEach { base ->
@@ -53,7 +53,7 @@ class ContentPresentationTest {
     @Test fun nativePatternsHaveExplicitFingerMapsAndPitchCorrectFiveHintInputs() {
         Tonality.entries.forEach { key ->
             val patterns=Patterns.forKey(key)
-            assertEquals(listOf("开放把位","5品封闭 Box","7品封闭 Box"),patterns.map { it.solfege })
+            assertEquals(5,patterns.count { it.solfege!="开放把位" })
             patterns.forEach { pattern ->
                 assertEquals(pattern.positions.toSet(),pattern.fingers.keys)
                 assertTrue(pattern.positions.all { it.midi%12 in key.pitchClasses })
@@ -61,7 +61,7 @@ class ContentPresentationTest {
                 assertTrue(pattern.positions.any { it.midi%12 in key.context.pentatonic })
                 assertTrue(pattern.positions.all { p -> if(p.fret==0) pattern.fingers[p]==0 else pattern.fingers[p] in 1..4 })
             }
-            assertEquals(5,BoardTeachingContext(key.context,Chords.named(key.tonic+if(key.mode==ScaleDefinition.NATURAL_MINOR) "m" else "")).available.size)
+            assertEquals(5,BoardTeachingContext(key.context,Chords.named(key.tonic+if(key.mode in listOf(ScaleDefinition.NATURAL_MINOR,ScaleDefinition.MINOR_PENTATONIC,ScaleDefinition.BLUES)) "m" else "")).available.size)
             assertTrue(Routes.scale(ScaleOptions(key=key,notesPerBeat=3)).sequence!!.tuplets.isNotEmpty())
         }
     }

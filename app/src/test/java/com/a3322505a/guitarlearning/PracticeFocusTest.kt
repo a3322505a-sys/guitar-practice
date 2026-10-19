@@ -57,7 +57,9 @@ class PracticeFocusTest {
         val native=AlphaScoreAdapter.fromPlan(plan)
         val fingers=native.tracks.first().staves.first().bars.first().voices.first().beats.toList().flatMap { it.notes.toList() }.map { it.leftHandFinger.value }
         assertEquals(listOf(-2,1,2,3),fingers)
-        val bad=practice.copy(noteFingerings=listOf(NoteFingering("simple-n1",5,"audit")))
+        val thumb=practice.copy(noteFingerings=listOf(NoteFingering("simple-n1",5,"audit")))
+        assertTrue("teaching.thumb.v1" in ScoreValidation.validate(song.score,listOf(thumb)))
+        val bad=practice.copy(noteFingerings=listOf(NoteFingering("simple-n1",6,"audit")))
         assertTrue(runCatching { ScoreValidation.validate(song.score,listOf(bad)) }.exceptionOrNull() is MusicError)
         val missing=practice.copy(noteFingerings=listOf(NoteFingering("missing",1,"audit")))
         assertTrue(runCatching { ScoreValidation.validate(song.score,listOf(missing)) }.isFailure)

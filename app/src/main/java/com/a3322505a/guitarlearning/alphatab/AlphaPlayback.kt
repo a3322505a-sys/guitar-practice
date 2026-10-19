@@ -146,6 +146,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         set(value) { field = value; applyMix() }
     var leadFade = false
         set(value) { if(field!=value) { field=value; applyMix() } }
+    var leadLevel = 1.0
+        set(value) { require(value in 0.0..1.0); if(field!=value) { field=value; applyMix() } }
+    var backingLevel = 1.0
+        set(value) { require(value in 0.0..1.0); if(field!=value) { field=value; applyMix() } }
     private var mix = PlaybackMix()
     override fun setMix(mix: PlaybackMix) {
         if (this.mix != mix) { this.mix = mix; applyMix() }
@@ -285,10 +289,12 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
             api.changeTrackMute(alphaTab.collections.List(track), !guitar || solo && track !== selectedTrack)
-            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music,
-                if(leadFade && sequence?.let(PracticeExtensions::canFade)==true &&
-                    sequence!!.performance.score.tracks.filter { it.id in sequence!!.performance.practice.mixTrackIds }.getOrNull(track.index.toInt())?.id in
-                        sequence!!.performance.practice.lesson!!.leadTrackIds) PracticeExtensions.leadGain(round) else 1.0))
+            val seq=sequence
+            val independent=seq?.let(PracticeExtensions::canFade)==true
+            val sourceId=seq?.performance?.let { plan -> plan.score.tracks.filter { it.id in plan.practice.mixTrackIds }.getOrNull(track.index.toInt())?.id }
+            val gain=if(!independent) 1.0 else if(sourceId in seq!!.performance.practice.lesson!!.leadTrackIds)
+                if(leadFade) PracticeExtensions.leadGain(round) else leadLevel else backingLevel
+            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music,gain))
         }
         if (!guitar) positions = emptyList()
         api.masterVolume = AlphaTone.MASTER

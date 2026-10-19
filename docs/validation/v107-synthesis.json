@@ -1,0 +1,41 @@
+{
+  "engine": "alphaTab 1.8.4",
+  "sampleRate": 44100,
+  "sampleDurationMs": 750,
+  "source": "AlphaToneTest actual SDK audio export",
+  "cases": [
+    {
+      "packageId": "local.demo-c",
+      "fullPeak": 0.09943988174200058,
+      "lowPeak": 0.10715251415967941,
+      "backingPeak": 0.11077473312616348,
+      "gainError": 7.347064e-05,
+      "relativeError": 0.0016726336
+    },
+    {
+      "packageId": "local.demo-capo",
+      "fullPeak": 0.08594954758882523,
+      "lowPeak": 0.08533269912004471,
+      "backingPeak": 0.09009795635938644,
+      "gainError": 7.331604e-05,
+      "relativeError": 0.0020264052
+    },
+    {
+      "packageId": "local.demo-rock",
+      "fullPeak": 0.12076432257890701,
+      "lowPeak": 0.09387577325105667,
+      "backingPeak": 0.08499515056610107,
+      "gainError": 0.00014098873,
+      "relativeError": 0.003615324
+    },
+    {
+      "packageId": "local.daily-practice",
+      "fullPeak": 0.12523391842842102,
+      "lowPeak": 0.12672235071659088,
+      "backingPeak": 0.1273602545261383,
+      "gainError": 0.00012942562,
+      "relativeError": 0.0030383137
+    }
+  ],
+  "physicalDeviceListeningVerified": false
+}

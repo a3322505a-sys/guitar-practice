@@ -19,6 +19,7 @@
     "rhythm.tuplet.v1",
     "score.polyphony.v1",
     "score.rational.v1",
+    "teaching.lesson.v1",
     "teaching.note-fingering.v1",
     "technique.bend.v1",
     "technique.dynamics.v1",
@@ -33,7 +34,8 @@
     "technique.tie.v1",
     "technique.tremolo-bar.v1",
     "technique.vibrato.v1",
-    "tempo.map.v1"
+    "tempo.map.v1",
+    "teaching.thumb.v1"
   ],
   "limits": {
     "compressedBytes": 16777216,
@@ -252,6 +254,13 @@
       "timingPitch": "not applicable",
       "timbre": "not applicable",
       "validation": "BundledSongsTest; device acceptance pending"
+    },
+    "teaching.lesson.v1": {
+      "model": "implemented",
+      "tablature": "explicit metadata",
+      "timingPitch": "validated against source events and voicings",
+      "timbre": "not applicable",
+      "validation": "TeachingV31Test / offline converter"
     }
   }
 }

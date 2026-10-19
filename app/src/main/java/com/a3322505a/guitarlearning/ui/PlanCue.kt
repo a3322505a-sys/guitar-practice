@@ -12,10 +12,10 @@ internal fun beatUnitName(unit: Q) = when(unit) {
     Q(2) -> "二分音符"
     else -> "四分音符×"+unit
 }
-internal fun planCue(plan: PerformancePlan,cursor: Cursor?): String {
+internal fun planCue(plan: PerformancePlan,cursor: Cursor?,previewAt: Double=0.0): String {
     if(cursor?.pre==true) return "预备拍"
     val notes=if(cursor!=null) cursor.activeNoteIds.mapNotNull { plan.noteById[it] }
-        else plan.notes.filter { it.track.id==plan.practice.mainTrackId }.take(1)
+        else plan.notes.filter { it.track.id==plan.practice.mainTrackId && it.start.value()<=previewAt && maxOf(it.soundEnd,it.event.end).value()>previewAt }
     if(notes.isEmpty()) return "休止 · 留拍"
     val labels=notes.flatMap { n ->
         val a=n.articulation

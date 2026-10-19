@@ -8,6 +8,8 @@ QUALITIES = {
     'MINOR_SEVENTH_NO_FIVE': [0,3,10], 'POWER': [0,7],
     'SUS_FOUR': [0,5,7], 'MINOR_SEVENTH': [0,3,7,10],
     'DOMINANT_SEVENTH_NO_FIVE': [0,4,10], 'DIMINISHED_SEVENTH': [0,3,6,9],
+    'DOMINANT_SEVENTH':[0,4,7,10], 'DIMINISHED':[0,3,6], 'HALF_DIMINISHED':[0,3,6,10],
+    'SIXTH':[0,4,7,9], 'MINOR_SEVENTH_ADD_ELEVEN':[0,3,5,7,10], 'OCTAVE':[0],
 }
 
 def validate_teaching(score, practices):
@@ -26,13 +28,17 @@ def validate_teaching(score, practices):
             t = tracks[v['trackId']]; root = v.get('teaching',{}).get('root')
             check(type(root) is int and 0 <= root < 12, 'TEACHING', path, 'Explicit chord quality needs a sounding root')
             actual = {(t['openStringMidi'][i] + t.get('capo',0) + f) % 12 for i,f in enumerate(v['frets']) if f >= 0}
-            check(actual == {(root+i) % 12 for i in QUALITIES[v['quality']]}, 'TEACHING', path, 'Sounding pitches conflict with chord quality')
             name=v.get('teaching',{}).get('soundingName','')
             m=re.fullmatch(r'([A-G][#♯b♭]?)([^/]*)(?:/([A-G][#♯b♭]?))?',name)
+            def pitch(text): return (dict(C=0,D=2,E=4,F=5,G=7,A=9,B=11)[text[0]]+sum(1 if c in '#♯' else -1 for c in text[1:]))%12
+            expected={(root+i)%12 for i in QUALITIES[v['quality']]}
+            if m and m[3]:expected.add(pitch(m[3]))
+            check(actual == expected, 'TEACHING', path, 'Sounding pitches conflict with chord quality and specified bass')
             if m:
                 def pitch(text): return (dict(C=0,D=2,E=4,F=5,G=7,A=9,B=11)[text[0]]+sum(1 if c in '#♯' else -1 for c in text[1:]))%12
                 suffix={'MAJOR':'','MINOR':'m','MAJOR_SEVENTH':'maj7','ADD_NINE':'add9','SUS_TWO':'sus2','SUS_FOUR_NO_FIVE':'sus4(no5)','MINOR_SEVENTH_NO_FIVE':'m7(no5)','POWER':'5',
-                    'SUS_FOUR':'sus4','MINOR_SEVENTH':'m7','DOMINANT_SEVENTH_NO_FIVE':'7(no5)','DIMINISHED_SEVENTH':'dim7'}[v['quality']]
+                    'SUS_FOUR':'sus4','MINOR_SEVENTH':'m7','DOMINANT_SEVENTH_NO_FIVE':'7(no5)','DIMINISHED_SEVENTH':'dim7',
+                    'DOMINANT_SEVENTH':'7','DIMINISHED':'dim','HALF_DIMINISHED':'m7b5','SIXTH':'6','MINOR_SEVENTH_ADD_ELEVEN':'m7(add11)','OCTAVE':'8'}[v['quality']]
                 check(pitch(m[1])==root and m[2]==suffix,'TEACHING',path,'Sounding name conflicts with root/quality')
                 if m[3]:
                     lowest=min(t['openStringMidi'][i]+t.get('capo',0)+f for i,f in enumerate(v['frets']) if f>=0)%12

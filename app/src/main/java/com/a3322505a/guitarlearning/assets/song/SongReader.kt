@@ -23,7 +23,7 @@ object SongCapabilities {
         "technique.harmonic.v1","technique.tie.v1","technique.legato.v1","technique.bend.v1",
         "technique.vibrato.v1","technique.tremolo-bar.v1","technique.tapping.v1","technique.mute.v1",
         "technique.sustain.v1","technique.strum.v1","technique.grace.v1","technique.repluck.v1","technique.dynamics.v1",
-        "catalogue.teaching.v1","teaching.note-fingering.v1","teaching.lesson.v1")
+        "catalogue.teaching.v1","teaching.note-fingering.v1","teaching.lesson.v1","teaching.thumb.v1")
 }
 fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
@@ -77,7 +77,7 @@ class SongReader(private val schema: SongSchema) {
                 musicCheck(v.keys.containsAll(listOf("fingers","barres","quality","teaching")),"TEACHING","/score/voicings","Native voicing must be fully authored")
             }
             musicCheck(score.voicings.all { v -> v.frets.indices.all { i ->
-                if(v.frets[i]>0) v.fingers[i] in 1..4 else v.fingers[i]==0
+                if(v.frets[i]>0) v.fingers[i] in 1..5 else v.fingers[i]==0
             } } && score.harmonies.all { it.validUntil!=null && it.voicingId!=null },"TEACHING","/score","Native fingers and harmony intervals are required")
         }
         val derived=ScoreValidation.validate(score,practices)
@@ -93,7 +93,7 @@ class SongReader(private val schema: SongSchema) {
                 if(nativeTeaching) {
                     val lesson=it.lesson
                     musicCheck(lesson?.key!=null && lesson.actions.isNotEmpty() && it.teaching?.version?.isNotBlank()==true &&
-                        plan.notes.all { n -> n.note.fret==0 || n.finger in 1..4 } &&
+                        plan.notes.all { n -> n.note.fret==0 || n.finger in 1..5 } &&
                         lesson.actions.all { action -> plan.events.any { e -> e.event.id==action.eventId && e.track.id==it.mainTrackId } },
                         "TEACHING","/practices/"+it.id,"Native lessons require complete fingering and main-track anticipatory actions")
                 }

@@ -1,5 +1,6 @@
 """Native authoring primitives. No legacy input, inferred fingering, or data repair."""
 import copy
+import re
 from fractions import Fraction as F
 from pathlib import Path
 from .protocol import rational as rat, q, coverage, package_files, validate_payloads, write_zip, digest, dumps
@@ -9,7 +10,17 @@ from .teaching import QUALITIES
 ROOT = Path(__file__).resolve().parents[2]
 MODULES = dict(FOUNDATIONS='基础启蒙', CHORDS='和弦教学', SCALES='音阶教学', APPLICATION='综合应用')
 SUFFIX = dict(MAJOR='', MINOR='m', MAJOR_SEVENTH='maj7', ADD_NINE='add9', POWER='5', SUS_TWO='sus2',
-              SUS_FOUR_NO_FIVE='sus4(no5)', MINOR_SEVENTH_NO_FIVE='m7(no5)')
+              SUS_FOUR_NO_FIVE='sus4(no5)', MINOR_SEVENTH_NO_FIVE='m7(no5)',MINOR_SEVENTH='m7',SUS_FOUR='sus4',
+              SIXTH='6',MINOR_SEVENTH_ADD_ELEVEN='m7(add11)',DOMINANT_SEVENTH='7',OCTAVE='8')
+
+def tone_names(root,name,intervals):
+    letter=re.match('[A-G]',name)[0];letters='CDEFGAB';natural=[0,2,4,5,7,9,11]
+    result={}
+    for interval in intervals:
+        degree={0:0,2:1,3:2,4:2,5:3,7:4,9:5,10:6,11:6}[interval]
+        index=(letters.index(letter)+degree)%7;pc=(root+interval)%12;accidental=(pc-natural[index]+6)%12-6
+        result[str(pc)]=letters[index]+('♯'*accidental if accidental>=0 else '♭'*(-accidental))
+    return result
 
 def key(tonic, minor=False):
     return dict(tonic=tonic, scale='NATURAL_MINOR' if minor else 'MAJOR')
@@ -60,14 +71,14 @@ class PracticePack:
         id=track+'-v-'+str(list(CHORDS).index(name))
         if any(v['id']==id for v in self.score['voicings']):return id
         quality,root,frets,fingers=CHORDS[name];capo=next(t for t in self.score['tracks'] if t['id']==track)['capo']
-        sounding=NAMES[(root+capo)%12]+SUFFIX[quality]
+        sounding=(name.split('/')[0] if capo==0 and name!='G-open' else NAMES[(root+capo)%12]+SUFFIX[quality])
         if '/' in name:sounding+='/'+NAMES[(NAMES.index(name.split('/')[1])+capo)%12]
         teaching=dict(root=(root+capo)%12,soundingName=sounding,group='V3.1 原生配法',source='逐弦编写 · 标准调弦',
-            intervalRoles={str(i):{0:'根音',2:'九音' if quality=='ADD_NINE' else '二音',3:'小三音',4:'大三音',5:'四音',7:'五音',10:'小七音',11:'大七音'}[i] for i in QUALITIES[quality]},
-            toneNames={str((root+capo+i)%12):NAMES[(root+capo+i)%12] for i in QUALITIES[quality]})
+            intervalRoles={str(i):{0:'根音',2:'九音' if quality=='ADD_NINE' else '二音',3:'小三音',4:'大三音',5:'十一音' if quality=='MINOR_SEVENTH_ADD_ELEVEN' else '四音',7:'五音',9:'六音',10:'小七音',11:'大七音'}[i] for i in QUALITIES[quality]},
+            toneNames=tone_names((root+capo)%12,sounding,QUALITIES[quality]))
         third=next(((root+capo+i)%12 for i in QUALITIES[quality] if i in (3,4)),None)
         if third is not None:teaching['third']=third
-        self.score['voicings'].append(dict(id=id,name=name,trackId=track,frets=list(reversed(frets)),
+        self.score['voicings'].append(dict(id=id,name='G' if name=='G-open' else name,trackId=track,frets=list(reversed(frets)),
             fingers=list(reversed(fingers)),barres=copy.deepcopy(BARRES.get(name,[])),quality=quality,teaching=teaching))
         return id
 
@@ -76,20 +87,24 @@ class PracticePack:
         starts={m['id']:i*4 for i,m in enumerate(self.score['measures'])}
         for i,item in enumerate(route):
             duration=step;art=dict(pick='down' if i%2==0 else 'up',palmMute=palm)
+            harmony=None
             if isinstance(item,dict):
-                duration=F(item['duration']);art.update(item.get('articulation',{}));item=item['notes']
+                harmony=item.get('harmony');duration=F(item['duration']);art.update(item.get('articulation',{}));item=item['notes']
             mid=measures[int(at//4)];eid=id+'-e-'+str(i);positions=[]
             if isinstance(item,str):
                 vid=self.voicing(item,track);v=next(v for v in self.score['voicings'] if v['id']==vid)
                 positions=[note(s+1,f,v['fingers'][s]) for s,f in enumerate(v['frets']) if f>=0]
-                art.update(pick='down',strumDelayMs=12)
+                art.setdefault('strumDelayMs',12)
+                harmony=item
+            elif item is not None: positions=[item] if isinstance(item,tuple) else item
+            if harmony:
+                vid=self.voicing(harmony,track)
                 start=starts[mid]+at%4;end=start+duration
-                if last_harmony and last_harmony['name']==item and q(last_harmony['validUntil'])==start:
+                if last_harmony and last_harmony['voicingId']==vid and q(last_harmony['validUntil'])==start:
                     last_harmony['validUntil']=rat(end)
                 else:
-                    last_harmony=dict(id=eid+'-h',measureId=mid,onset=rat(at%4),name=item,voicingId=vid,validUntil=rat(end))
+                    last_harmony=dict(id=eid+'-h',measureId=mid,onset=rat(at%4),name='G' if harmony=='G-open' else harmony,voicingId=vid,validUntil=rat(end))
                     self.score['harmonies'].append(last_harmony)
-            elif item is not None: positions=[item] if isinstance(item,tuple) else item
             assert duration>0 and at%4+duration<=4,(id,i)
             written=next(dict(baseDenominator=d,dots=dots) for d in (1,2,4,8,16,32,64) for dots in range(3)
                 if F(4,d)*sum(F(1,2**j) for j in range(dots+1))==duration)
@@ -137,13 +152,13 @@ class PracticePack:
                 selected.update(list(indices)[indices[seg['start']['measureId']]:indices[seg['end']['measureId']]+1])
             ns=[n for v in self.score['voices'] if v['trackId'] in p['mixTrackIds'] for e in v['events'] if e['measureId'] in selected for n in e['notes']]
             p['noteFingerings']=[dict(sourceNoteId=n['id'],finger=self.fingers[n['id']],source='教材逐音显式配指') for n in ns if n['fret']>0]
-        source=ROOT/'scripts/build-teaching-v31.py'
-        provenance=dict(sources=[dict(id='native',name=self.title,sha256=digest(source.read_bytes()),format='Native V3.1 authored score',
-            license='项目原创教材',origin='scripts/build-teaching-v31.py')],tool='native-teaching',exclusions=[],
+        sources=['scripts/build-teaching-v31.py','scripts/song_package/native_teaching.py','scripts/song_package/teaching_data.py','scripts/song_package/daily_practice.py']
+        provenance=dict(sources=[dict(id='native' if i==0 else 'recipe-'+str(i),name=self.title+' · '+Path(source).name,sha256=digest((ROOT/source).read_bytes()),format='Native V3.1 authored score',
+            license='项目原创教材',origin=source) for i,source in enumerate(sources)],tool='native-teaching',exclusions=[],
             mappings=[dict(noteId=n['id'],sourceId='native',location=e['id']) for v in self.score['voices'] for e in v['events'] for n in e['notes']])
         review=dict(status='approved',reviewer='Codex structural audit',method='独立校验弦品音高、和弦集合、配指与横按、事件时值及教学引用；未作真人试听/实弹验收',
             tool='audit-native-teaching.py / Kotlin SongReader',coverage=coverage(self.score,self.practices),diagnostics=[],assumptions=[])
-        files=package_files(self.id,1,self.title,'原创教学',self.score,self.practices,provenance,review)
+        files=package_files(self.id,2,self.title,'原创教学',self.score,self.practices,provenance,review)
         manifest=__import__('json').loads(files['manifest.json']);manifest['scoreSchemaVersion']['minor']=1
         files['manifest.json']=dumps(manifest);validate_payloads(files)
         out=ROOT/'app/src/main/assets/song-packages'/filename;write_zip(files,out,overwrite=True)

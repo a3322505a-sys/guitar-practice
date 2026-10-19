@@ -145,6 +145,9 @@ internal fun PracticeWorkbench(
     var transitionTargetId by rememberSaveable { mutableStateOf<String?>(null) }
     var returnModule by rememberSaveable { mutableStateOf(TeachingModule.APPLICATION) }
     var leadFade by rememberSaveable { mutableStateOf(false) }
+    var leadLevel by rememberSaveable { mutableStateOf(1.0) }
+    var backingLevel by rememberSaveable { mutableStateOf(1.0) }
+    var backingVolumeOpen by remember { mutableStateOf(false) }
     var chainFirst by rememberSaveable { mutableIntStateOf(-1) }
     var chainLast by rememberSaveable { mutableIntStateOf(-1) }
     var chainStep by rememberSaveable { mutableIntStateOf(0) }
@@ -157,7 +160,7 @@ internal fun PracticeWorkbench(
     player.setMix(mix)
     val hint = Hint.entries[hintIndex]
     val chords = librarySnapshot.chords
-    val first = chords.firstOrNull { it.id == firstName } ?: chords.first()
+    val first = chords.firstOrNull { it.id == firstName } ?: ChordDictionary.voicings.firstOrNull { it.id == firstName }?.chord ?: chords.first()
     val phrase = remember(phraseId, librarySnapshot, preparedEpoch) { repository.named(phraseId) }
     val wholeRange = BarRange(0, phrase.sequence.barCount - 1)
     val range = BarRange(firstBar, lastBar).takeIf { it.valid(phrase.sequence) } ?: wholeRange
@@ -188,6 +191,8 @@ internal fun PracticeWorkbench(
     } else checkSequence
     LaunchedEffect(sequence) { nativePlayer?.prepareSequence(sequence) }
     nativePlayer?.leadFade = leadFade && sequence?.let(PracticeExtensions::canFade)==true
+    nativePlayer?.leadLevel = leadLevel
+    nativePlayer?.backingLevel = backingLevel
     val activeRange=if(page==1 && chordPhrases) range else sequence?.let { BarRange(0,it.barCount-1) } ?: BarRange(0,0)
     LaunchedEffect(sequence,bpm,repeats,activeRange,sourceTempo,tempoMultiplier) {
         nativePlayer?.configurePractice(sequence,bpm,repeats,activeRange,sequence?.runtimePlan!=null && sourceTempo,
@@ -203,27 +208,39 @@ internal fun PracticeWorkbench(
     else displayedSequence?.meter(if (showingSession) cursor?.bar ?: 0 else if (page == 1 && chordPhrases) range.first else 0) ?: 4
     val renderCursor = notationCursor(cursor?.takeIf { showingSession }, progress.phase)
     val event = if (showingSession && cursor?.pre == false) displayedSequence?.eventAt(cursor.localTick) else null
-    val phraseNow = if (showingSession && cursor?.pre == false) event else displayedSequence?.events?.firstOrNull()
-    val nextEvent = phraseNow?.let { now -> displayedSequence?.events?.firstOrNull { it.tick > now.tick } ?: displayedSequence?.events?.firstOrNull() }
+    val previewStart=displayedSequence?.let { it.barStart(activeRange.first.coerceIn(0,it.barCount-1)) } ?: 0
+    val previewEnd=displayedSequence?.let { it.barEnd(activeRange.last.coerceIn(0,it.barCount-1)) } ?: 0
+    val boardIndex=remember(displayedSequence) { displayedSequence?.runtimePlan?.let(::LessonBoardIndex) }
+    val previewQuarter=previewStart.toDouble()/(displayedSequence?.ticksPerQuarter ?: QUARTER)
+    val boardQuarter=if(showingSession && cursor?.pre==false) cursor.localTick/(displayedSequence?.ticksPerQuarter ?: QUARTER) else previewQuarter
+    val previewPositions=boardIndex?.targetAt(previewQuarter)?.positions.orEmpty()
+    val loopContinues=if(showingSession) practiceSession?.let { it.repeats==0 || (cursor?.loop ?: 0)+1<it.repeats }==true else repeats!=1
+    val upcomingPositions=if(cursor?.pre==true || progress.phase in listOf(Phase.ENDED,Phase.ERROR)) emptyList() else
+        boardIndex?.next(boardQuarter,previewQuarter,previewEnd.toDouble()/(displayedSequence?.ticksPerQuarter ?: QUARTER),loopContinues)?.first?.positions.orEmpty()
+    val loopEvents=remember(displayedSequence,previewStart,previewEnd) { displayedSequence?.events.orEmpty().filter { it.tick<previewEnd && it.tick+it.duration>previewStart } }
+    val phraseNow = if (showingSession && cursor?.pre == false) event else displayedSequence?.eventAt(previewStart.toDouble()) ?: loopEvents.firstOrNull()
+    val nextEvent = phraseNow?.let { now -> loopEvents.firstOrNull { it.tick > now.tick } ?: loopEvents.firstOrNull() }
     val moving = if (showingSession && cursor?.pre == false) displayedSequence?.movingAt(cursor.localTick) else null
     val current = if (showingSession && cursor?.pre == false) {
         nativePlayer?.focus?.positions ?: nativePlayer?.projection?.active(nativePlayer.currentTick, nativePlayer.selectedTrack?.index?.toInt() ?: 0)
             ?: cursor.positions
     } else event?.positions ?: emptyList()
-    val section = if (showingSession && cursor?.pre == false) displayedSequence!!.sectionAt(cursor.localTick) else -1
+    val section = displayedSequence?.sectionAt(if(showingSession && cursor?.pre==false) cursor.localTick else previewStart.toDouble()) ?: -1
     val harmony = displayedSequence?.sections.orEmpty()
     val shownChord = if (page == 1) harmony.getOrNull(if(showingSession) section else displayedSequence?.sectionAt((activeRange.first.let { displayedSequence?.barStart(it) } ?: 0).toDouble()) ?: -1)?.let { displayedSequence?.chordAt(it) } else first
     val singleVoiceMelody=displayedSequence?.runtimePlan?.let { plan ->
         plan.events.filter { it.track.id==plan.mainTrack.id }.all { it.event.notes.size<=1 }
     } == true
     val melody = page == 1 && chordPhrases && (singleVoiceMelody || harmony.isEmpty() || shownChord == null)
-    val automaticChord=if(page==0) Chords.named(scale.key.tonic+if(scale.key.mode==ScaleDefinition.NATURAL_MINOR) "m" else "") else if(!chordPhrases) first else shownChord
+    val automaticChord=if(page==0) Chords.named(scale.key.tonic+if(scale.key.mode in listOf(ScaleDefinition.NATURAL_MINOR,ScaleDefinition.MINOR_PENTATONIC,ScaleDefinition.BLUES)) "m" else "") else if(!chordPhrases) first else shownChord
     val referenceChord=Chords.named(if(referenceChordName=="auto") phrase.lesson?.referenceChordName ?: "C" else referenceChordName)
     val boardTeaching = BoardTeachingContext(if(page==0) scale.key.context else if(chordPhrases) phrase.lesson?.key else null,
         if(referenceChordName=="auto") automaticChord ?: referenceChord else referenceChord,
         referenceChordName!="auto" || automaticChord==null || page==0)
     val renderHint = hint.takeIf { it in boardTeaching.available } ?: Hint.FULL
-    val nextChord = if (page == 1 && chordPhrases && harmony.isNotEmpty()) harmony[(maxOf(0, section) + 1) % harmony.size].chord else ""
+    val nextChord = if (page == 1 && chordPhrases && harmony.isNotEmpty())
+        (harmony.firstOrNull { it.tick>(phraseNow?.tick ?: previewStart) && it.tick<previewEnd }
+            ?: harmony.getOrNull(displayedSequence?.sectionAt(previewStart.toDouble()) ?: -1))?.chord.orEmpty() else ""
     fun changed() { player.invalidate(); note = "" }
     fun scaleChange(value: ScaleOptions) { if (value != scale) { changed(); scale = value } }
     fun firstChange(value: Chord) { if (firstName != value.id) { changed(); firstName = value.id } }
@@ -423,6 +440,7 @@ internal fun PracticeWorkbench(
                         sequence, displayedSequence, scaleResult, hint, renderHint, player.active, progress.phase, renderCursor, cursor,
                         showingSession, event, phraseNow, nextEvent, moving, current, shownChord, nextChord, status,
                         if (page == 1 && !chordPhrases) chordUnavailable ?: note else note, beatsPerBar, chords, configuring,
+                        previewPositions,upcomingPositions,previewQuarter,
                     )
                     CompositionLocalProvider(
                         LocalStageViewSwitch provides false,
@@ -521,7 +539,11 @@ internal fun PracticeWorkbench(
                         }
                         if(warmups.isNotEmpty()) TextButton(onClick={ jump(warmups.first()) }) { Text("练前热身") }
                         transitions.forEach { target -> TextButton(onClick={ transitionTargetId=target.id; jump(target) }) { Text("衔接练习") } }
-                        if(sequence?.let(PracticeExtensions::canFade)==true) FilterChip(selected=leadFade,onClick={ leadFade=!leadFade },label={ Text("渐隐领奏") })
+                        if(sequence?.let(PracticeExtensions::canFade)==true) {
+                            listOf(1.0,.3,0.0).forEach { gain -> FilterChip(selected=!leadFade && leadLevel==gain,onClick={ leadFade=false;leadLevel=gain },label={ Text("领奏 ${(gain*100).toInt()}%") }) }
+                            FilterChip(selected=leadFade,onClick={ leadFade=!leadFade },label={ Text("循环渐隐") })
+                            TextButton(onClick={ backingVolumeOpen=true }) { Text("伴奏 ${(backingLevel*100).toInt()}%") }
+                        }
                         if(chain.isNotEmpty()) {
                             TextButton(onClick={
                                 changed()
@@ -543,6 +565,11 @@ internal fun PracticeWorkbench(
             }
             if(lessonActionsOpen) AlertDialog(onDismissRequest={ lessonActionsOpen=false },title={ Text("练习方式") },
                 text={ Column { lessonActions() } },confirmButton={ TextButton(onClick={ lessonActionsOpen=false }) { Text("完成") } })
+            if(backingVolumeOpen) AlertDialog(onDismissRequest={ backingVolumeOpen=false },title={ Text("伴奏音量 · ${(backingLevel*100).toInt()}%") },
+                text={ Column {
+                    Slider(value=backingLevel.toFloat(),onValueChange={ backingLevel=it.toDouble() })
+                    Choices(listOf("100%","30%","静音"),listOf(1.0,.3,0.0).indexOf(backingLevel)) { backingLevel=listOf(1.0,.3,0.0)[it] }
+                } },confirmButton={ TextButton(onClick={ backingVolumeOpen=false }) { Text("完成") } })
 
             // Root coordinate anchor: NativeScore stays at a single fixed sibling index in this root Box
             // across all orientation, deck/column, view, and overlay changes so AlphaTabView never detaches.

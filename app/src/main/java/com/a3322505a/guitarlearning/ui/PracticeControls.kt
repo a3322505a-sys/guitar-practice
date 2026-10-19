@@ -534,8 +534,10 @@ internal fun WorkbenchContentChoices(
                         ContentCards(lessons.map { it.title },-1,cardTexts=lessons.map(content::phraseText)) { onPhrase(lessons[it]) }
                     }
                     ScaleContentSection("1. 调性 · 关系大小调") {
-                        ContentCards(Tonality.entries.map { it.title }, scale.key.ordinal,
-                            cardTexts = Tonality.entries.map(::tonalityText), singleLinePrimary = true) { onScale(scale.copy(key = Tonality.entries[it])) }
+                        val introductory=Tonality.entries.take(6)
+                        ContentCards(introductory.map { it.title }, introductory.indexOf(scale.key),
+                            cardTexts = introductory.map(::tonalityText), singleLinePrimary = true) { onScale(scale.copy(key = introductory[it],pattern=0)) }
+                        ScaleDictionaryEntry(scale.key) { onScale(scale.copy(key=it,pattern=0,pentatonic=false)) }
                     }
                     Label("和弦音靶心 · 明确选择") {
                         Choices(listOf("C","Am","G","D","Em","Bm","Fmaj7"),listOf("C","Am","G","D","Em","Bm","Fmaj7").indexOf(first.name)) {
@@ -564,6 +566,7 @@ internal fun WorkbenchContentChoices(
                             cardTexts = rhythmCardTexts, singleLinePrimary = true) { onScale(scale.copy(notesPerBeat = it + 1)) }
                     }
                 } else if (module == TeachingModule.CHORDS && !chordPhrases) {
+                    ChordDictionaryEntry(onChord)
                     val pairSections = content.phraseSections(effectiveSource,TeachingModule.CHORDS)
                     pairSections.forEach { section ->
                         ContentSectionTitle("双和弦转换", section.items.size)

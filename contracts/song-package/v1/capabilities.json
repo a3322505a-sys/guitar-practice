@@ -34,7 +34,8 @@
     "technique.tie.v1",
     "technique.tremolo-bar.v1",
     "technique.vibrato.v1",
-    "tempo.map.v1"
+    "tempo.map.v1",
+    "teaching.thumb.v1"
   ],
   "limits": {
     "compressedBytes": 16777216,

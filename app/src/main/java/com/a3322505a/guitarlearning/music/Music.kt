@@ -13,7 +13,61 @@ object Music {
 enum class Tonality(val title: String, val tonic: String, val mode: ScaleDefinition) {
     C_MAJOR("C 大调", "C", ScaleDefinition.MAJOR), A_MINOR("A 自然小调", "A", ScaleDefinition.NATURAL_MINOR),
     G_MAJOR("G 大调", "G", ScaleDefinition.MAJOR), E_MINOR("E 自然小调", "E", ScaleDefinition.NATURAL_MINOR),
-    D_MAJOR("D 大调", "D", ScaleDefinition.MAJOR), B_MINOR("B 自然小调", "B", ScaleDefinition.NATURAL_MINOR);
+    D_MAJOR("D 大调", "D", ScaleDefinition.MAJOR), B_MINOR("B 自然小调", "B", ScaleDefinition.NATURAL_MINOR),
+    C_NATURAL_MINOR("C 自然小调","C",ScaleDefinition.NATURAL_MINOR),
+    C_MAJOR_PENTATONIC("C 大调五声","C",ScaleDefinition.MAJOR_PENTATONIC),
+    C_MINOR_PENTATONIC("C 小调五声","C",ScaleDefinition.MINOR_PENTATONIC),
+    C_BLUES("C 小调布鲁斯","C",ScaleDefinition.BLUES),
+    CS_MAJOR("C♯ 大调","C♯",ScaleDefinition.MAJOR),
+    CS_NATURAL_MINOR("C♯ 自然小调","C♯",ScaleDefinition.NATURAL_MINOR),
+    CS_MAJOR_PENTATONIC("C♯ 大调五声","C♯",ScaleDefinition.MAJOR_PENTATONIC),
+    CS_MINOR_PENTATONIC("C♯ 小调五声","C♯",ScaleDefinition.MINOR_PENTATONIC),
+    CS_BLUES("C♯ 小调布鲁斯","C♯",ScaleDefinition.BLUES),
+    D_NATURAL_MINOR("D 自然小调","D",ScaleDefinition.NATURAL_MINOR),
+    D_MAJOR_PENTATONIC("D 大调五声","D",ScaleDefinition.MAJOR_PENTATONIC),
+    D_MINOR_PENTATONIC("D 小调五声","D",ScaleDefinition.MINOR_PENTATONIC),
+    D_BLUES("D 小调布鲁斯","D",ScaleDefinition.BLUES),
+    EF_MAJOR("E♭ 大调","E♭",ScaleDefinition.MAJOR),
+    EF_NATURAL_MINOR("E♭ 自然小调","E♭",ScaleDefinition.NATURAL_MINOR),
+    EF_MAJOR_PENTATONIC("E♭ 大调五声","E♭",ScaleDefinition.MAJOR_PENTATONIC),
+    EF_MINOR_PENTATONIC("E♭ 小调五声","E♭",ScaleDefinition.MINOR_PENTATONIC),
+    EF_BLUES("E♭ 小调布鲁斯","E♭",ScaleDefinition.BLUES),
+    E_MAJOR("E 大调","E",ScaleDefinition.MAJOR),
+    E_MAJOR_PENTATONIC("E 大调五声","E",ScaleDefinition.MAJOR_PENTATONIC),
+    E_MINOR_PENTATONIC("E 小调五声","E",ScaleDefinition.MINOR_PENTATONIC),
+    E_BLUES("E 小调布鲁斯","E",ScaleDefinition.BLUES),
+    F_MAJOR("F 大调","F",ScaleDefinition.MAJOR),
+    F_NATURAL_MINOR("F 自然小调","F",ScaleDefinition.NATURAL_MINOR),
+    F_MAJOR_PENTATONIC("F 大调五声","F",ScaleDefinition.MAJOR_PENTATONIC),
+    F_MINOR_PENTATONIC("F 小调五声","F",ScaleDefinition.MINOR_PENTATONIC),
+    F_BLUES("F 小调布鲁斯","F",ScaleDefinition.BLUES),
+    FS_MAJOR("F♯ 大调","F♯",ScaleDefinition.MAJOR),
+    FS_NATURAL_MINOR("F♯ 自然小调","F♯",ScaleDefinition.NATURAL_MINOR),
+    FS_MAJOR_PENTATONIC("F♯ 大调五声","F♯",ScaleDefinition.MAJOR_PENTATONIC),
+    FS_MINOR_PENTATONIC("F♯ 小调五声","F♯",ScaleDefinition.MINOR_PENTATONIC),
+    FS_BLUES("F♯ 小调布鲁斯","F♯",ScaleDefinition.BLUES),
+    G_NATURAL_MINOR("G 自然小调","G",ScaleDefinition.NATURAL_MINOR),
+    G_MAJOR_PENTATONIC("G 大调五声","G",ScaleDefinition.MAJOR_PENTATONIC),
+    G_MINOR_PENTATONIC("G 小调五声","G",ScaleDefinition.MINOR_PENTATONIC),
+    G_BLUES("G 小调布鲁斯","G",ScaleDefinition.BLUES),
+    AF_MAJOR("A♭ 大调","A♭",ScaleDefinition.MAJOR),
+    AF_NATURAL_MINOR("A♭ 自然小调","A♭",ScaleDefinition.NATURAL_MINOR),
+    AF_MAJOR_PENTATONIC("A♭ 大调五声","A♭",ScaleDefinition.MAJOR_PENTATONIC),
+    AF_MINOR_PENTATONIC("A♭ 小调五声","A♭",ScaleDefinition.MINOR_PENTATONIC),
+    AF_BLUES("A♭ 小调布鲁斯","A♭",ScaleDefinition.BLUES),
+    A_MAJOR("A 大调","A",ScaleDefinition.MAJOR),
+    A_MAJOR_PENTATONIC("A 大调五声","A",ScaleDefinition.MAJOR_PENTATONIC),
+    A_MINOR_PENTATONIC("A 小调五声","A",ScaleDefinition.MINOR_PENTATONIC),
+    A_BLUES("A 小调布鲁斯","A",ScaleDefinition.BLUES),
+    BF_MAJOR("B♭ 大调","B♭",ScaleDefinition.MAJOR),
+    BF_NATURAL_MINOR("B♭ 自然小调","B♭",ScaleDefinition.NATURAL_MINOR),
+    BF_MAJOR_PENTATONIC("B♭ 大调五声","B♭",ScaleDefinition.MAJOR_PENTATONIC),
+    BF_MINOR_PENTATONIC("B♭ 小调五声","B♭",ScaleDefinition.MINOR_PENTATONIC),
+    BF_BLUES("B♭ 小调布鲁斯","B♭",ScaleDefinition.BLUES),
+    B_MAJOR("B 大调","B",ScaleDefinition.MAJOR),
+    B_MAJOR_PENTATONIC("B 大调五声","B",ScaleDefinition.MAJOR_PENTATONIC),
+    B_MINOR_PENTATONIC("B 小调五声","B",ScaleDefinition.MINOR_PENTATONIC),
+    B_BLUES("B 小调布鲁斯","B",ScaleDefinition.BLUES);
     val context get() = KeyContext(SpelledPitch.parse(tonic), mode)
     val root get() = context.tonic.pitchClass
     val pitchClasses get() = context.pitchClasses
@@ -29,11 +83,9 @@ data class Pattern(val solfege: String, val caged: String, val frets: List<List<
 }
 
 object Patterns {
-    val all get() = NativeScalePatterns.byKey.getValue(Tonality.C_MAJOR)
+    val all get() = ScaleDictionary.patterns(Tonality.C_MAJOR.context)
     fun forKey(key: Tonality, pentatonic: Boolean = false): List<Pattern> =
-        NativeScalePatterns.byKey.getValue(key).map { p ->
-            if(!pentatonic) p else p.copy(frets=p.frets.mapIndexed { i,row -> row.filter { (Music.openMidi[i]+it)%12 in key.context.pentatonic } })
-        }
+        ScaleDictionary.patterns(if(pentatonic) key.context.copy(scale=key.mode.pentatonic) else key.context)
     val s1 = listOf(Position(5,3),Position(4,0),Position(4,2),Position(4,3),Position(3,0),Position(3,2),Position(2,0),Position(2,1))
 }
 
@@ -47,7 +99,7 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
     val unavailableReason: String? get() = when {
         frets.size!=6 || fingers.size!=6 -> "和弦数据不可用：缺少完整的六弦指法。"
         openStringMidi.size!=6 || openStringMidi.any { it !in 0..127 } || capoFret !in 0..12 -> "和弦数据不可用：调弦或变调夹数据不完整。"
-        frets.any { it!=null && it !in 0..36 } || fingers.any { it !in 0..4 } -> "和弦数据不可用：弦品或手指数据无效。"
+        frets.any { it!=null && it !in 0..36 } || fingers.any { it !in 0..5 } -> "和弦数据不可用：弦品或手指数据无效。"
         positions.isEmpty() -> "和弦数据不可用：没有可弹奏的弦。"
         positions.any { midi(it) !in 0..127 } -> "和弦数据不可用：发声音高超出支持范围。"
         else -> null
@@ -63,13 +115,18 @@ data class Chord(val name: String, val root: Int, val third: Int?, val frets: Li
     }.joinToString(" · ")
     fun midi(p: Position) = openStringMidi[p.string-1]+p.fret+capoFret
     fun isRoot(p: Position) = midi(p)%12==root
-    fun noteName(p: Position, octave: Boolean = false) = (toneNames[midi(p)%12] ?: definition?.noteName(midi(p)) ?: Music.name(midi(p))) + if(octave) (midi(p)/12-1) else ""
+    fun noteName(p: Position, octave: Boolean = false): String {
+        val name=toneNames[midi(p)%12] ?: definition?.noteName(midi(p)) ?: Music.name(midi(p))
+        val spelling=SpelledPitch.parse(name)
+        val natural=SpelledPitch(spelling.letter).pitchClass
+        return name+if(octave) ((midi(p)-natural-spelling.accidental)/12-1).toString() else ""
+    }
     val arpeggio get() = positions.take(1) + positions.filter { it.string <= 3 }
     val definition get() = quality?.takeIf { root in 0..11 }?.let { q ->
         ChordDefinition.parse(soundingName)?.takeIf { it.root.pitchClass == root } ?: ChordDefinition(SpelledPitch.parse(Music.name(root)),q) }
     val toneSummary get() = definition?.let { d -> d.quality.intervals.joinToString(" ") { d.noteName(root+it) } + " / " + d.quality.degreeLabels.joinToString(" ") }
         ?: positions.distinctBy { midi(it)%12 }.joinToString(" ") { noteName(it) }
-    fun role(p: Position) = if(root<0) "按法音" else when (midi(p) % 12) {
+    fun role(p: Position) = if(definition?.let { d -> d.bass?.pitchClass==midi(p)%12 && midi(p)%12 !in d.pitchClasses }==true) "指定非和弦低音" else if(root<0) "按法音" else when (midi(p) % 12) {
         root -> "根音"
         third -> "三音"
         else -> intervalRoles[Math.floorMod(midi(p)-root,12)] ?: when (Math.floorMod(midi(p)-root,12)) {
@@ -104,6 +161,6 @@ fun com.a3322505a.guitarlearning.music.score.GuitarVoicing.chord(
 }
 
 object Chords {
-    val all = TeachingVoicings.all
-    fun named(name: String) = all.first { it.name == name }
+    val all = TeachingVoicings.introductory
+    fun named(name: String) = all.firstOrNull { it.name == name } ?: ChordDictionary.find(name).first().chord
 }

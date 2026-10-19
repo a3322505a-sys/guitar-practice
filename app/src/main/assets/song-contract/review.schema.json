@@ -1195,7 +1195,8 @@
             "MAJOR",
             "NATURAL_MINOR",
             "MAJOR_PENTATONIC",
-            "MINOR_PENTATONIC"
+            "MINOR_PENTATONIC",
+            "BLUES"
           ]
         }
       },
@@ -1340,7 +1341,7 @@
           "items": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 4
+            "maximum": 5
           },
           "minItems": 6,
           "maxItems": 6
@@ -1369,7 +1370,13 @@
             "SUS_FOUR",
             "MINOR_SEVENTH",
             "DOMINANT_SEVENTH_NO_FIVE",
-            "DIMINISHED_SEVENTH"
+            "DIMINISHED_SEVENTH",
+            "DOMINANT_SEVENTH",
+            "DIMINISHED",
+            "HALF_DIMINISHED",
+            "SIXTH",
+            "MINOR_SEVENTH_ADD_ELEVEN",
+            "OCTAVE"
           ]
         }
       },
@@ -1536,7 +1543,7 @@
             {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 5
             },
             {
               "type": "null"
@@ -1662,6 +1669,15 @@
         },
         "lesson": {
           "$ref": "#/$defs/lesson"
+        },
+        "legacyIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "maxItems": 32
         },
         "noteFingerings": {
           "type": "array",

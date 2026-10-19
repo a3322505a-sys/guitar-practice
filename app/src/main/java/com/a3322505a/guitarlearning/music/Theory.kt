@@ -19,10 +19,11 @@ enum class ScaleDefinition(val title: String, val semitones: List<Int>, val degr
     MAJOR("大调", listOf(0,2,4,5,7,9,11), listOf("1","2","3","4","5","6","7"), (0..6).toList()),
     NATURAL_MINOR("自然小调", listOf(0,2,3,5,7,8,10), listOf("1","2","♭3","4","5","♭6","♭7"), (0..6).toList()),
     MAJOR_PENTATONIC("大调五声", listOf(0,2,4,7,9), listOf("1","2","3","5","6"), listOf(0,1,2,4,5)),
-    MINOR_PENTATONIC("小调五声", listOf(0,3,5,7,10), listOf("1","♭3","4","5","♭7"), listOf(0,2,3,4,6));
+    MINOR_PENTATONIC("小调五声", listOf(0,3,5,7,10), listOf("1","♭3","4","5","♭7"), listOf(0,2,3,4,6)),
+    BLUES("小调布鲁斯", listOf(0,3,5,6,7,10), listOf("1","♭3","4","♭5","5","♭7"), listOf(0,2,3,4,4,6));
     val pentatonic get() = when(this) {
         MAJOR, MAJOR_PENTATONIC -> MAJOR_PENTATONIC
-        NATURAL_MINOR, MINOR_PENTATONIC -> MINOR_PENTATONIC
+        NATURAL_MINOR, MINOR_PENTATONIC, BLUES -> MINOR_PENTATONIC
     }
 }
 
@@ -51,10 +52,15 @@ private object KeySpellings {
         "G" to "G A Bb C D Eb F", "C" to "C D Eb F G Ab Bb", "F" to "F G Ab Bb C Db Eb",
         "B♭" to "Bb C Db Eb F Gb Ab", "E♭" to "Eb F Gb Ab Bb Cb Db", "A♭" to "Ab Bb Cb Db Eb Fb Gb")
     fun notes(tonic: SpelledPitch, scale: ScaleDefinition): List<SpelledPitch> {
-        val table = if(scale in listOf(ScaleDefinition.NATURAL_MINOR, ScaleDefinition.MINOR_PENTATONIC)) minor else major
+        val table = if(scale in listOf(ScaleDefinition.NATURAL_MINOR, ScaleDefinition.MINOR_PENTATONIC, ScaleDefinition.BLUES)) minor else major
         val names = table[tonic.name]?.split(' ')?.map(SpelledPitch::parse)
-        return scale.semitones.mapIndexed { i, interval -> names?.get(scale.letters[i])
-            ?: SpelledPitch.parse(Music.name((tonic.pitchClass + interval) % 12)) }
+        return scale.semitones.mapIndexed { i, interval ->
+            if(scale!=ScaleDefinition.BLUES && names!=null) names[scale.letters[i]] else {
+                val letter="CDEFGAB"[("CDEFGAB".indexOf(tonic.letter)+scale.letters[i])%7]
+                val accidental=Math.floorMod(tonic.pitchClass+interval-SpelledPitch(letter).pitchClass+6,12)-6
+                SpelledPitch(letter,accidental)
+            }
+        }
     }
 }
 
@@ -82,12 +88,25 @@ enum class ChordQuality(val suffix: String, val intervals: List<Int>, val degree
     SUS_FOUR("sus4",listOf(0,5,7),listOf("1","4","5"),"挂四和弦"),
     MINOR_SEVENTH("m7",listOf(0,3,7,10),listOf("1","♭3","5","♭7"),"小七和弦"),
     DOMINANT_SEVENTH_NO_FIVE("7(no5)",listOf(0,4,10),listOf("1","3","♭7"),"属七省五"),
-    DIMINISHED_SEVENTH("dim7",listOf(0,3,6,9),listOf("1","♭3","♭5","♭♭7"),"减七和弦");
+    DIMINISHED_SEVENTH("dim7",listOf(0,3,6,9),listOf("1","♭3","♭5","♭♭7"),"减七和弦"),
+    DOMINANT_SEVENTH("7",listOf(0,4,7,10),listOf("1","3","5","♭7"),"属七和弦"),
+    DIMINISHED("dim",listOf(0,3,6),listOf("1","♭3","♭5"),"减三和弦"),
+    HALF_DIMINISHED("m7b5",listOf(0,3,6,10),listOf("1","♭3","♭5","♭7"),"半减七和弦"),
+    SIXTH("6",listOf(0,4,7,9),listOf("1","3","5","6"),"大六和弦"),
+    MINOR_SEVENTH_ADD_ELEVEN("m7(add11)",listOf(0,3,5,7,10),listOf("1","♭3","11","5","♭7"),"小七加十一和弦"),
+    OCTAVE("8",listOf(0),listOf("1"),"八度音型 · 不含五音");
 }
 
 data class ChordDefinition(val root: SpelledPitch, val quality: ChordQuality, val bass: SpelledPitch? = null) {
     val name get() = root.name + quality.suffix + (bass?.let { "/" + it.name } ?: "")
     val pitchClasses get() = quality.intervals.map { (root.pitchClass + it) % 12 }.toSet()
+    val allowedOmissions get() = if(quality in listOf(ChordQuality.MAJOR_SEVENTH,ChordQuality.MINOR_SEVENTH,ChordQuality.DOMINANT_SEVENTH)) setOf(7) else emptySet()
+    val aliases get() = listOf(name.replace("♯","#").replace("♭","b")) + when(quality) {
+        ChordQuality.MAJOR_SEVENTH -> listOf(root.name+"Δ7")
+        ChordQuality.HALF_DIMINISHED -> listOf(root.name+"ø7")
+        ChordQuality.DIMINISHED_SEVENTH -> listOf(root.name+"°7")
+        else -> emptyList()
+    }
     fun interval(midi: Int) = quality.degreeLabels.getOrNull(quality.intervals.indexOf(Math.floorMod(midi-root.pitchClass,12)))
     fun noteName(midi: Int): String {
         val interval = interval(midi) ?: return Music.name(midi)
@@ -98,7 +117,8 @@ data class ChordDefinition(val root: SpelledPitch, val quality: ChordQuality, va
     }
     companion object {
         fun parse(name: String): ChordDefinition? {
-            val match = Regex("^([A-G][#♯b♭]?)([^/]*)(?:/([A-G][#♯b♭]?))?$").matchEntire(name) ?: return null
+            val canonical=name.replace("Δ7","maj7").replace("ø7","m7b5").replace("°7","dim7").replace("°","dim")
+            val match = Regex("^([A-G][#♯b♭]?)([^/]*)(?:/([A-G][#♯b♭]?))?$").matchEntire(canonical) ?: return null
             val quality = ChordQuality.entries.firstOrNull { it.suffix == match.groupValues[2] } ?: return null
             return ChordDefinition(SpelledPitch.parse(match.groupValues[1]),quality,
                 match.groupValues[3].takeIf(String::isNotBlank)?.let(SpelledPitch::parse))

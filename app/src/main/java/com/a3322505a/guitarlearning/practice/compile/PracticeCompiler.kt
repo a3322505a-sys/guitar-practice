@@ -266,7 +266,7 @@ object PracticeCompiler {
             val finger=if(explicit!=null) explicit.finger else {
                 activeVoicing(e)
                     ?.takeIf { it.frets.getOrNull(n.string-1)==n.fret && n.fret>0 && !n.dead }
-                    ?.fingers?.getOrNull(n.string-1)?.takeIf { it in 1..4 }
+                    ?.fingers?.getOrNull(n.string-1)?.takeIf { it in 1..5 }
             }
             PlanNote(e.id+"/"+n.id,n,e,e.start,minOf(e.end,musicEnd),art,finger)
         } }.sortedBy { it.start }

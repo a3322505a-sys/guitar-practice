@@ -431,7 +431,7 @@ fun ChordDiagram(
             }
             label(
                 measurer,
-                if (hint == Hint.ROOTS) (if(teaching.key!=null) "1" else "根") else if (p.fret == 0) "O" else chord.fingers[6 - p.string].takeIf { it in 1..4 }?.toString() ?: chord.noteName(p,true),
+                if (hint == Hint.ROOTS) (if(teaching.key!=null) "1" else "根") else if (p.fret == 0) "O" else chord.fingers[6 - p.string].takeIf { it in 1..5 }?.let { if(it==5) "T" else it.toString() } ?: chord.noteName(p,true),
                 center.x,
                 center.y,
                 (if (active) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal).copy(alpha=toneAlpha),
@@ -447,7 +447,7 @@ fun ChordDiagram(
     val blankTop = with(density) { (geometry.openY - 17 * geometry.unit).toDp() }
     if (hint == Hint.FULL && blankTop >= 14.dp * density.fontScale) {
         Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().clearAndSetSemantics {}, horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("指法：1食 · 2中 · 3无 · 4小", fontSize = 10.sp, lineHeight = 12.sp,
+            Text("指法：1食 · 2中 · 3无 · 4小"+if(5 in chord.fingers) " · T拇" else "", fontSize = 10.sp, lineHeight = 12.sp,
                 color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (barres.isNotEmpty() && blankTop >= 28.dp * density.fontScale) {
                 Text(barres.joinToString("；") { it.caption }, fontSize = 10.sp, lineHeight = 12.sp,
@@ -538,7 +538,7 @@ internal class LessonBoardIndex(private val plan: PerformancePlan) {
         return heads.groupBy { it.position }.mapValues { (position,values) ->
             when {
                 mode=="fingers" && position.fret==0 -> "O"
-                mode=="fingers" && values.map { it.finger }.distinct().singleOrNull()!=null -> values.first().finger.toString()
+                mode=="fingers" && values.map { it.finger }.distinct().singleOrNull()!=null -> if(values.first().finger==5) "T" else values.first().finger.toString()
                 mode=="degrees" && root!=null -> keyContext?.degree(values.first().note.midi) ?: listOf("1","♭2","2","♭3","3","4","♯4","5","♭6","6","♭7","7")[Math.floorMod(values.first().note.midi-root,12)]
                 else -> values.map { val midi=it.note.harmonic?.soundMidi ?: it.note.midi; (keyContext?.noteName(midi) ?: Music.name(midi))+(midi/12-1) }.distinct().singleOrNull() ?: "${position.fret}品"
             }

@@ -403,7 +403,7 @@ def validate_music(score,practices):
             target=notes.get(f["sourceNoteId"])
             check(target is not None and target[0]["trackId"] in p["mixTrackIds"],"MUSIC","/practices/noteFingerings","Unknown or excluded source note")
             finger=f.get("finger")
-            check(finger is None or isinstance(finger,int) and not isinstance(finger,bool) and 1<=finger<=4,"MUSIC","/practices/noteFingerings","Finger must be 1..4 or null")
+            check(finger is None or isinstance(finger,int) and not isinstance(finger,bool) and 1<=finger<=5,"MUSIC","/practices/noteFingerings","Finger must be 1..4, 5 (thumb) or null")
             check(f.get("source","").strip() and ("occurrence" not in f or f["occurrence"]>0),"MUSIC","/practices/noteFingerings","Review source/occurrence required")
             key=(f["sourceNoteId"],f.get("occurrence"))
             check(key not in assignments,"MUSIC","/practices/noteFingerings","Duplicate fingering assignment");assignments.add(key)
@@ -425,6 +425,7 @@ def validate_music(score,practices):
     if score["form"].get("jumps"): caps.add("form.jump.v1")
     if teaching: caps.add("catalogue.teaching.v1")
     from .teaching import validate_teaching
+    if any(5 in v["fingers"] for v in score["voicings"]) or any(f.get("finger")==5 for p in practices for f in p.get("noteFingerings",[])): caps.add("teaching.thumb.v1")
     if validate_teaching(score, practices): caps.add("teaching.lesson.v1")
     return caps
 

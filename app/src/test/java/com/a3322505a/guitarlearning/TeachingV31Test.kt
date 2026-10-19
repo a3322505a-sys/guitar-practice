@@ -50,7 +50,7 @@ class TeachingV31Test {
     @Test fun everyNewLessonAndMigratedBuiltinReachesTheOneNativeMidiAndCursorModel() {
         val repo=SongTestLibrary.repository
         val all=repo.snapshot.phrases.filter { it.assetKey?.packageId?.startsWith("local.teaching-")==true }
-        assertEquals(86,all.size)
+        assertEquals(89,all.size)
         all.forEach { descriptor ->
             val phrase=repo.resolve(descriptor.id)
             val plan=phrase.sequence.performance

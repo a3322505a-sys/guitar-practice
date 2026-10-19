@@ -37,7 +37,7 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
     } ?: BASIC_CONTENT
 
     fun phraseSections(source: String, module: TeachingModule? = null): List<ContentSection<Phrase>> {
-        val filtered = phrases.filter { sourceOf(it) == source && (module == null || moduleOf(it) == module) }
+        val filtered = phrases.filter { sourceOf(it) == source && (source != BASIC_CONTENT || module == null || moduleOf(it) == module) }
         if (source == BASIC_CONTENT) return filtered.groupBy { it.lesson?.module?.title ?: it.use }.map { ContentSection(it.key,it.value) }
         return filtered.groupBy { sectionTitle(it.use, source) }.map { ContentSection(it.key, it.value) }
     }

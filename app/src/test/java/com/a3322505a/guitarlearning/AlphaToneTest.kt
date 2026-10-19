@@ -111,8 +111,9 @@ class AlphaToneTest {
     }
     @Test fun bothAuthoredLeadDemosFadeOnlyLeadAndKeepAnAudibleBackingTrack() {
         val reports=mutableListOf<String>()
-        for(id in listOf("local.demo-c","local.demo-capo","local.demo-rock")) {
-            val plan=SongTestLibrary.repository.resolve(PracticeKey(id,"SOLO-original").encoded).sequence.performance
+        for(id in listOf("local.demo-c","local.demo-capo","local.demo-rock","local.daily-practice")) {
+            val practice=if(id=="local.daily-practice") "DP-03-advanced" else "SOLO-original"
+            val plan=SongTestLibrary.repository.resolve(PracticeKey(id,practice).encoded).sequence.performance
             val score=AlphaScoreAdapter.fromPlan(plan)
             val (midi,_)=EngineProjection.generate(score)
             val sourceTracks=plan.score.tracks.filter { it.id in plan.practice.mixTrackIds }

@@ -49,6 +49,9 @@ internal data class PracticeContentState(
     val beatsPerBar: Int,
     val chords: List<Chord> = Chords.all,
     val configuring: Boolean = false,
+    val previewPositions: List<Position> = emptyList(),
+    val upcomingPositions: List<Position> = emptyList(),
+    val previewAt: Double = 0.0,
 )
 
 @Composable
@@ -194,7 +197,7 @@ internal fun PracticeContent(
                     }
                     if (phraseCard) {
                         val cue = if (hint == Hint.HIDDEN) "已撤提示" else displayedSequence?.runtimePlan?.let {
-                            planCue(it, if (showingSession) cursor else null)
+                            planCue(it, if (showingSession) cursor else null,previewAt)
                         } ?: if (!melody) "${cardChord.name} · ${phraseCue(phraseNow, displayedSequence!!)}"
                         else phraseCue(phraseNow, displayedSequence!!)
                         Row(
@@ -323,12 +326,12 @@ internal fun PracticeContent(
                                     null,
                                     renderHint,
                                     false,
-                                    if (showingSession) current else phraseNow?.positions ?: displayedSequence.runtimePlan?.notes?.take(1)?.map { it.position }.orEmpty(),
+                                    if (showingSession) current else if(displayedSequence.runtimePlan!=null) previewPositions else phraseNow?.positions.orEmpty(),
                                     !active && phase != Phase.PAUSED,
                                     viewportHeight.coerceAtMost(310.dp * fontScale),
                                     onTap,
                                     moving,
-                                    nextEvent?.positions.orEmpty(),
+                                    if(displayedSequence.runtimePlan!=null) upcomingPositions else nextEvent?.positions.orEmpty(),
                                     showLegend = false,
                                     capoFret = displayedSequence.capoFret,
                                     openStringMidi = displayedSequence.runtimePlan?.mainTrack?.openStringMidi ?: Music.openMidi.toList(),

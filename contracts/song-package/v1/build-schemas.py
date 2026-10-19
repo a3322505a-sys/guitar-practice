@@ -71,13 +71,13 @@ tone_labels = dict(type="object",patternProperties={"^(?:[0-9]|1[01])$":TEXT},ad
 defs["voicingTeaching"] = obj(dict(root=integer(-1,11),third=integer(0,11),soundingName=TEXT,
     group=TEXT,source=TEXT,intervalRoles=tone_labels,toneNames=tone_labels),["root","soundingName","group","source"])
 defs["barre"] = obj(dict(finger=integer(1,4),fret=integer(1,36),fromString=integer(1,6),toString=integer(1,6)),["finger","fret","fromString","toString"])
-defs["keyContext"] = obj(dict(tonic=dict(type="string",pattern="^[A-G][#♯b♭]{0,2}$"),scale=enum("MAJOR","NATURAL_MINOR","MAJOR_PENTATONIC","MINOR_PENTATONIC")),["tonic","scale"])
+defs["keyContext"] = obj(dict(tonic=dict(type="string",pattern="^[A-G][#♯b♭]{0,2}$"),scale=enum("MAJOR","NATURAL_MINOR","MAJOR_PENTATONIC","MINOR_PENTATONIC","BLUES")),["tonic","scale"])
 defs["action"] = obj(dict(eventId=ID,kind=enum("barre","position","retained","pick","strum","release"),text=TEXT,voicingId=ID,fromVoicingId=ID),["eventId","kind","text"])
 defs["lesson"] = obj(dict(module=enum("FOUNDATIONS","CHORDS","SCALES","APPLICATION"),key=ref("keyContext"),referenceChordName=TEXT,
     warmupIds=arr(TEXT,32),transitionIds=arr(ID,32),leadTrackIds=arr(ID,8),chainStarts=arr(ID,256),actions=arr(ref("action"),1000)),["module"])
 
 defs["voicing"] = obj(dict(id=ID,name=TEXT,trackId=ID,frets=arr(integer(-1,36),6,6),
-    fingers=arr(integer(0,4),6,6),teaching=ref("voicingTeaching"),barres=arr(ref("barre"),4),quality=enum("MAJOR","MINOR","MAJOR_SEVENTH","ADD_NINE","SUS_TWO","SUS_FOUR_NO_FIVE","MINOR_SEVENTH_NO_FIVE","POWER","SUS_FOUR","MINOR_SEVENTH","DOMINANT_SEVENTH_NO_FIVE","DIMINISHED_SEVENTH")),["id","name","trackId","frets","fingers"])
+    fingers=arr(integer(0,5),6,6),teaching=ref("voicingTeaching"),barres=arr(ref("barre"),4),quality=enum("MAJOR","MINOR","MAJOR_SEVENTH","ADD_NINE","SUS_TWO","SUS_FOUR_NO_FIVE","MINOR_SEVENTH_NO_FIVE","POWER","SUS_FOUR","MINOR_SEVENTH","DOMINANT_SEVENTH_NO_FIVE","DIMINISHED_SEVENTH","DOMINANT_SEVENTH","DIMINISHED","HALF_DIMINISHED","SIXTH","MINOR_SEVENTH_ADD_ELEVEN","OCTAVE")),["id","name","trackId","frets","fingers"])
 defs["harmony"] = obj(dict(id=ID,measureId=ID,onset=ref("q"),name=TEXT,voicingId=ID,condition=ref("condition"),validUntil=ref("q")),
     ["id","measureId","onset","name"])
 defs["coordinate"] = obj(dict(measureId=ID,offset=ref("q"),occurrence=integer(1,50000)),["measureId"])
@@ -86,7 +86,7 @@ defs["segment"] = obj(dict(start=ref("coordinate"),end=ref("coordinate"),formPol
     affectedNoteIds=arr(ID)),["start","end"])
 defs["practiceTeaching"] = obj(dict(category=TEXT,passage=TEXT,source=TEXT,technique=TEXT,
     use=TEXT,version=TEXT,tempoLabel=TEXT,explanation=TEXT))
-defs["noteFingering"] = obj(dict(sourceNoteId=ID,finger={"anyOf":[integer(1,4),dict(type="null")]},
+defs["noteFingering"] = obj(dict(sourceNoteId=ID,finger={"anyOf":[integer(1,5),dict(type="null")]},
     source=dict(type="string",minLength=1,maxLength=4096),occurrence=integer(1,50000)),["sourceNoteId","source"])
 
 defs["practice"] = obj(dict(id=ID,title=TEXT,goal=TEXT,mainTrackId=ID,mixTrackIds=arr(ID,8,1),

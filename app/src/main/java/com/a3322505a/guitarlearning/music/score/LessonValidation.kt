@@ -20,7 +20,9 @@ object LessonValidation {
                 val root = v.teaching?.root
                 check(root in 0..11,path,"Explicit quality needs a sounding root")
                 val actual = v.frets.mapIndexedNotNull { index, fret -> if(fret < 0) null else track.midi(index+1,fret)%12 }.toSet()
-                check(actual == quality.intervals.map { (root!!+it)%12 }.toSet(),path,"Voicing pitches conflict with the declared chord quality")
+                val declared=ChordDefinition.parse(v.teaching!!.soundingName)
+                val expected=quality.intervals.map { (root!!+it)%12 }.toSet() + listOfNotNull(declared?.bass?.pitchClass)
+                check(actual == expected,path,"Voicing pitches conflict with the declared chord quality and specified bass")
                 ChordDefinition.parse(v.teaching!!.soundingName)?.let { definition ->
                     check(definition.root.pitchClass==root && definition.quality==quality,path,"Sounding chord name conflicts with its root/quality")
                     definition.bass?.let { bass ->

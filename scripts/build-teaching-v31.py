@@ -2,7 +2,7 @@
 import json,re
 from fractions import Fraction as F
 from song_package.native_teaching import PracticePack,ROOT,key,note,movement,practice_key
-from song_package.teaching_data import CHORDS,BARRES,OPEN
+from song_package.teaching_data import CHORDS,BARRES,OPEN,LESSON_CHORDS
 from song_package.teaching import QUALITIES
 LIBRARY='local.teaching-native'
 def slug(s):return re.sub('[^A-Za-z0-9._-]','-',s)
@@ -29,8 +29,9 @@ def kotlin_data():
         third=next((str((root+i)%12) for i in QUALITIES[quality] if i in (3,4)),'null')
         bars='listOf('+','.join('Barre({finger},{fret},{fromString},{toString})'.format(**b) for b in BARRES.get(n,[]))+')'
         group='强力和弦' if quality=='POWER' else 'C / Am 家族' if n in ('C','Am','F','Fmaj7','Cadd9','Dm') else 'G / Em 家族' if n in ('G','Em','E','Gsus2','D/F♯') else 'D / Bm 家族'
-        lines.append(f'        Chord("{n}",{root},{third},{li(frets)},{li(fingers)},group="{group}",source="V3.1 原生教材",barres={bars},quality=ChordQuality.{quality}),')
-    (folder/'TeachingVoicings.kt').write_text('\n'.join(lines+['    )','}'])+'\n',encoding='utf8')
+        display='G' if n=='G-open' else n
+        lines.append(f'        Chord("{display}",{root},{third},{li(frets)},{li(fingers)},group="{group}",source="V3.1 原生教材",id="{n}",barres={bars},quality=ChordQuality.{quality}),')
+    (folder/'TeachingVoicings.kt').write_text('\n'.join(lines+['    )','    val introductory = all.take('+str(len(LESSON_CHORDS))+')','}'])+'\n',encoding='utf8')
     lines=head+['internal object NativeScalePatterns {','    val byKey = mapOf(']
     for n in ROUTES:
         enum={'C':'C_MAJOR','Am':'A_MINOR','G':'G_MAJOR','Em':'E_MINOR','D':'D_MAJOR','Bm':'B_MINOR'}[n]
@@ -50,7 +51,7 @@ def library():
         '仅本专项上行暂留前指；下行按4→3→2→1逐指释放，换弦全部放松。',F(1,2),actions=[dict(eventId='FB-2-e-'+str(i),kind='position',text=t) for i,t in [(0,'食指落四弦一品，上行暂留前指'),(4,'下行逐指释放'),(8,'换三弦，四弦全部放松')]])
     r=line(ROUTES['C']);motif=[r[i] for i in (0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,5,4,5,4,3,4,3,2,1,2,1,0)]+[None]
     b.phrase('FB-3','FB-3 · 三音模进与问答句',motif,'FOUNDATIONS',key('C'),'三音动机逐级模进；问句上行，答句回 C，句尾留呼吸。',F(1,2))
-    for n in CHORDS:
+    for n in LESSON_CHORDS:
         b.phrase(slug('CHORD-'+n),'配法 · '+n,[n]*4,'CHORDS',CONTEXTS.get(n,key('C')),'低音起逐弦检查 O/X；按标号落指，仅按图示横按范围发力。',warmups=['FB-2'])
     for a,c in [('C','Am'),('C','Fmaj7'),('C','G'),('G','Em'),('Em','Am'),('G','D'),('D','Bm'),('Bm','A'),('C','F'),('D','A'),('G','Gsus2'),('Bm','Bm7(no5)')]:
         id=slug('CHANGE-'+a+'-'+c);b.track('guitar');actions=[]
@@ -61,6 +62,11 @@ def library():
         if (aa,cc)!=(a,c):
             text,_=movement(aa,cc)
             b.phrase(id+'-easy',aa+' ↔ '+cc,[aa]*4+[cc]*4+[aa]*4+[cc]*4,'CHORDS',CONTEXTS.get(a,key('D')),text,variant=id,version='新手简化版',warmups=['FB-2'])
+    for id,title,chords in [
+        ('PROG-15634145','1–5–6–3–4–1–4–5',['C','G','Am','Em','F','C','F','G']),
+        ('PROG-4536251','4–5–3–6–2–5–1',['F','G','Em','Am','Dm','G','C']),
+        ('PROG-456','J-Rock · 4–5–6',['F','G','Am'])]:
+        b.phrase(id,title,chords,'CHORDS',key('C'),'在 C 大调语境听各级和弦的作用；每小节一和弦，先慢速听完整落点。',F(4),warmups=['CHANGE-C-Am'])
     for n,route in ROUTES.items():
         context=CONTEXTS[n];root=CHORDS[n][1];pent={0,3,5,7,10} if n.endswith('m') else {0,2,4,7,9}
         b.phrase('S-'+n+'-open',n+' · 开放单八度',loop(line(route)),'SCALES',context,'主音起止，八度往返；读调内音级，对照参照和弦音。',F(1,2),warmups=['FB-3'])
@@ -108,6 +114,8 @@ def main():
     packs=[library(),demo('local.demo-c','晨光问答 · C/Am 满配示范',key('C'),['C','Am','F','G','C','F','G','C'],['C','Am','Fmaj7','Gsus2','C','Fmaj7','Gsus2','C'],melody,'CHANGE-C-Fmaj7'),
         demo('local.demo-capo','远行 · Capo 2 实音示范',key('D'),['C','G','Am','Fmaj7']*2,['C','Gsus2','Am','Fmaj7']*2,melody,'CAPO-2',2),
         demo('local.demo-rock','夜行驱动 · J-Rock 五声示范',key('A',True),['A5','C5','D5','E5']*2,['A5','C5','D5','E5']*2,rock,'JR-RIFF')]
-    result=[b.finish(n+'.gpractice') for b,n in zip(packs,['teaching-native','demo-c','demo-capo','demo-rock'])]
-    out=ROOT/'docs/validation/v106-native-data.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf8');print(json.dumps(result,ensure_ascii=False))
+    from song_package.daily_practice import daily
+    packs.append(daily())
+    result=[b.finish(n+'.gpractice') for b,n in zip(packs,['teaching-native','demo-c','demo-capo','demo-rock','daily-practice'])]
+    out=ROOT/'docs/validation/v107-native-data.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf8');print(json.dumps(result,ensure_ascii=False))
 if __name__=='__main__':main()

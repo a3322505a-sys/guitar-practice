@@ -27,7 +27,7 @@
 
 ## 练习与修订
 
-逐音指法使用练习中的 `noteFingerings` 数组，并声明能力 `teaching.note-fingering.v1`。每项包含 `sourceNoteId`、审核依据 `source`、可选 `finger`（1–4 或 null）和可选 `occurrence`。它是练习教学数据，不修改 score 音符。相同 sourceNoteId/occurrence 不得重复；引用必须属于参与轨道和当前练习实际路线。具体经过覆盖无经过限定的指法，null 明确表示未知。空弦或死音不接受左手数字。未知数据回退实音音名；选定和弦可复用其实际 voicing 的 fingers，不按和弦名称另找按法。
+逐音指法使用练习中的 `noteFingerings` 数组，并声明能力 `teaching.note-fingering.v1`。每项包含 `sourceNoteId`、审核依据 `source`、可选 `finger`（1–4、5=T 或 null）和可选 `occurrence`。它是练习教学数据，不修改 score 音符。相同 sourceNoteId/occurrence 不得重复；引用必须属于参与轨道和当前练习实际路线。具体经过覆盖无经过限定的指法，null 明确表示未知。空弦或死音不接受左手数字。未知数据回退实音音名；选定和弦可复用其实际 voicing 的 fingers，不按和弦名称另找按法。
 
 `fixtures/note-fingering.gpractice` 是修订 2 的原创协议样例，保留 simple 的源谱，重新绑定教学、review 和 manifest 哈希。生产工具 `validate/pack --capabilities <旧能力文件>` 会明确拒绝新能力。给现有歌曲增加或改动教学数据也必须递增修订并重新审核、绑定哈希。原生教材不复用旧包；通用协议夹具只用于解析器边界回归。
 
@@ -48,3 +48,5 @@ diagnostics 分类 supported / approximation / out-of-scope / review-needed / un
 统一错误含 code、pointer、reason、sourceRef（可提供时）。JSON/ZIP、SCHEMA、MUSIC/EXPRESSION/BOUNDARY、FORM、HASH/REVIEW_HASH、CAPABILITY_DECLARATION/CAPABILITY、REVIEW_NEEDED、COVERAGE、NAMESPACE、REVISION_CONFLICT/ROLLBACK_REQUIRED、LIMIT/PLAN_LIMIT/TIMING_RESOLUTION 分开。
 
 资源数值见 capabilities.json。首次 limits 是实现边界，不是所有手机已通过的性能保证。cases.json 的有效与无效包共用两端；手列曲序与解析时间期望在测试中，源曲独立 CSV 不由新生成器重写。
+
+V107 扩展：五类音阶包含 `BLUES`；完整性质包含属七、减三、半减七、六和弦、小七加十一和八度。八度只有根音的八度重复，不能标作强力和弦。`fingers` 的 5 和逐音 `finger=5` 都表示拇指 T；使用时必须声明 `teaching.thumb.v1`。0 只表示 O/X 的无按指值，不能当成按弦拇指。Barre 手指仍限定 1–4；指定非和弦低音须用准确斜杠名，并同时核对理论集合、指定低音及实际最低音。

@@ -99,7 +99,8 @@ object Routes {
             .distinct().filter { it.string in o.firstString..o.lastString }
         val ordered = available.sortedWith(compareBy<Position> { it.midi }.thenBy { it.fret }).distinctBy { it.midi }
         val roots = ordered.filter(o.key::isRoot)
-        val octave = roots.firstOrNull { root -> (root.midi..root.midi+12).count { m -> ordered.any { it.midi == m } } == (if(o.pentatonic) 6 else 8) }
+        val noteCount=(if(o.pentatonic) o.key.mode.pentatonic else o.key.mode).semitones.size+1
+        val octave = roots.firstOrNull { root -> (root.midi..root.midi+12).count { m -> ordered.any { it.midi == m } } == noteCount }
         if (ordered.isEmpty()) return RouteResult(null, "所选弦范围没有音位。")
         if (o.octave && o.exercise != ScaleExercise.ROOTS && octave == null) return RouteResult(null, "所选弦范围不够组成主音起的一八度；扩大弦范围或选择整型音域。")
         val pool = if(o.octave && octave != null) ordered.filter { it.midi in octave.midi..octave.midi+12 } else ordered

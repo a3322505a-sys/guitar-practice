@@ -1,0 +1,49 @@
+{
+  "fullCompare": {
+    "tests": 66,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "previewRelatedRerun": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finalDictionaryRerun": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "composeUi": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "python": {
+    "protocol": 15,
+    "sourceTools": 4
+  },
+  "lint": {
+    "Error": 0,
+    "Fatal": 0,
+    "Warning": 16
+  },
+  "builds": [
+    "assembleCompare",
+    "assembleRelease",
+    "compileP0Kotlin",
+    "compileDebugUnitTestKotlin"
+  ],
+  "remoteCiTriggered": false,
+  "physicalDeviceVerified": false,
+  "nativeAndroidSkiaSurfaceVerified": false,
+  "logs": [
+    "work/v107-acceptance.log",
+    "work/v107-preview-closeout.log",
+    "work/v107-final-data.log"
+  ]
+}

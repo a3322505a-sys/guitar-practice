@@ -36,6 +36,8 @@ class PackageTests(unittest.TestCase):
             validate_payloads(candidate,capabilities=old_caps)
         s=roots["score.json"];p=deepcopy(roots["practices.json"]["practices"])
         p[0]["noteFingerings"][1]["finger"]=5
+        self.assertIn("teaching.thumb.v1",validate_music(s,p))
+        p[0]["noteFingerings"][1]["finger"]=6
         with self.assertRaises(Blocked): validate_music(s,p)
         p=deepcopy(roots["practices.json"]["practices"])
         p[0]["noteFingerings"][1]["occurrence"]=2
@@ -126,14 +128,14 @@ class PackageTests(unittest.TestCase):
         import importlib.util
         spec=importlib.util.spec_from_file_location("bundled_audit",CONTRACT.parents[2]/"scripts/verify-bundled-songs.py")
         audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
-        self.assertEqual(4,len(audit.audit()))
+        self.assertEqual(5,len(audit.audit()))
     def test_native_teaching_completeness_and_real_demo_prerequisites(self):
         import importlib.util
         spec=importlib.util.spec_from_file_location('native',CONTRACT.parents[2]/'scripts/audit-native-teaching.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         report=module.audit()
-        self.assertEqual(4,len(report))
+        self.assertEqual(5,len(report))
         self.assertEqual(0,sum(r['missing'] for r in report))
-        self.assertEqual(6,sum(r['adjacentJoins'] for r in report))
+        self.assertEqual(8,sum(r['adjacentJoins'] for r in report))
 
 if __name__=="__main__": unittest.main(verbosity=2)
