@@ -21,7 +21,7 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".compare"
             versionNameSuffix = "-compare"
-            manifestPlaceholders["appLabel"] = "¼ªËûÁ·Ï°¡¤¶ÔÕÕ"
+            manifestPlaceholders["appLabel"] = "å‰ä»–ç»ƒä¹ Â·å¯¹ç…§"
             isDebuggable = false
             matchingFallbacks += "release"
         }
