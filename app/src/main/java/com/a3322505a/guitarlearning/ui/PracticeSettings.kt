@@ -42,6 +42,8 @@ internal data class PracticeSettingsState(
     )),
     val activeSourceFilter: String = BASIC_CONTENT,
     val focusedPracticeId: String? = null,
+    val dictionaryChord: Chord = first,
+    val dictionaryScale: ScaleOptions = scale,
     val module: TeachingModule = if(page==0) TeachingModule.SCALES else if(!chordPhrases) TeachingModule.CHORDS else TeachingModule.APPLICATION,
 )
 

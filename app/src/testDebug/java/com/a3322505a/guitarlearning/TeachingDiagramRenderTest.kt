@@ -96,8 +96,8 @@ class TeachingDiagramRenderTest {
         compose.onNodeWithTag("fretboard").assertContentDescriptionContains("下一 3 弦 5 品", substring = true)
         compose.onAllNodesWithContentDescription("滑音", substring = true).assertCountEquals(0)
         capture("plain-next-note-ring")
-        listOf("SL01" to "滑音 5/7", "H01" to "击弦 5h7", "P01" to "勾弦 7p5").forEach { (id, mark) ->
-            compose.runOnIdle { sequence = Phrases.named(id).sequence }
+        listOf(Technique.SLIDE to "滑音 5/7", Technique.HAMMER to "击弦 5h7", Technique.PULL to "勾弦 9p7").forEach { (id, mark) ->
+            compose.runOnIdle { sequence = NotationFixtures.legato(id) }
             compose.onNodeWithTag("fretboard").assertContentDescriptionContains(mark, substring = true)
             capture("technique-$id")
         }

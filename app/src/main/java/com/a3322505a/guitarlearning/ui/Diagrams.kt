@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
@@ -167,7 +168,7 @@ fun Fretboard(
                 val top = 40.dp.toPx() * vertical
                 val row = 32.dp.toPx() * vertical
                 drawRoundRect(
-                    colors.diagramSurface,
+                    colors.fretboardWood,
                     Offset(left, top - 12.dp.toPx() * vertical),
                     androidx.compose.ui.geometry.Size(size.width - left, 5 * row + 24.dp.toPx() * vertical),
                     androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()),
@@ -175,15 +176,15 @@ fun Fretboard(
                 for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
                     val cx = gridLeft + (fretNumber - animatedLow + 0.5f) * cell
                     if (fretNumber in SINGLE_INLAY_FRETS) {
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
                     } else if (fretNumber in DOUBLE_INLAY_FRETS) {
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
                     }
                 }
                 for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns).toInt()) {
                     drawLine(
-                        colors.diagramGrid,
+                        colors.fretboardWire,
                         Offset(gridLeft + (fretNumber - animatedLow) * cell, top - 12.dp.toPx() * vertical),
                         Offset(gridLeft + (fretNumber - animatedLow) * cell, top + 5 * row + 12.dp.toPx() * vertical),
                         metrics.borderWidth.toPx(),
@@ -211,7 +212,7 @@ fun Fretboard(
                 }
                 for (s in 1..6) {
                     val y = top + (s - 1) * row
-                    drawLine(colors.diagramGrid, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), (0.45 + s * 0.13).dp.toPx())
+                    drawLine(colors.fretboardWire, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), (0.45 + s * 0.13).dp.toPx())
                     label(measurer, "$s ${Music.name(openStringMidi[s - 1] + capoFret)}", 21.dp.toPx(), y, colors.textSecondary, size = 12)
                 }
                 for (p in visible) {
@@ -219,19 +220,28 @@ fun Fretboard(
                     val root = (openStringMidi[p.string-1]+p.fret+capoFret)%12 == (if(hint==Hint.CHORD_TONES) teaching.emphasisRoot(hint) else key?.root ?: teaching.root)
                     val active = p in current
                     val emphasized = teaching.emphasized(hint,openStringMidi[p.string-1]+p.fret+capoFret)
+                    val midi = openStringMidi[p.string - 1] + p.fret + capoFret
+                    val characteristic = teaching.key?.scale == ScaleDefinition.BLUES && Math.floorMod(midi - teaching.key.tonic.pitchClass, 12) == 6
+                    val fill = when {
+                        root -> colors.noteRoot
+                        characteristic -> colors.noteCharacteristic
+                        midi % 12 in teaching.chordTones -> colors.noteChordTone
+                        else -> colors.noteScalePassing
+                    }
+                    val ink = if (fill.luminance() > .18f) colors.noteInkDark else colors.noteInkLight
                     val radius = (if (root || active) 13.5f else 12.5f).dp.toPx() * vertical
                     drawCircle(
-                        if (active && !staticFocus) colors.fretboardNoteActive else if (root) colors.fretboardRoot else if (!emphasized || subtleContext) colors.fretboardNoteNormal.copy(alpha = .16f) else colors.fretboardNoteNormal,
+                        if (!root && !active && (!emphasized || subtleContext)) fill.copy(alpha = .35f) else fill,
                         radius,
                         center,
                     )
                     if (!active && !root) {
                         drawCircle(colors.fretboardNoteStroke, radius, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
                     } else if (root && !active) {
-                        drawCircle(colors.primary.copy(alpha = 0.32f), 16.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
+                        drawCircle(colors.noteRoot, 16.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2.5f).toPx()))
                     }
                     if (active) {
-                        drawCircle(colors.textPrimary, 16.5.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2).toPx()))
+                        drawCircle(colors.fretboardWire, 16.5.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2).toPx()))
                     }
                     if (p in upcoming && !active) {
                         drawCircle(colors.primary, 19.dp.toPx() * vertical, center, style = Stroke(metrics.borderWidth.toPx()))
@@ -242,7 +252,7 @@ fun Fretboard(
                         else noteLabels[p] ?: (key?.context ?: teaching.key)?.noteName(openStringMidi[p.string - 1] + p.fret + capoFret) ?: Music.name(openStringMidi[p.string - 1] + p.fret + capoFret),
                         center.x,
                         center.y,
-                        if (active && !staticFocus) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal.copy(alpha=if(emphasized) 1f else .3f),
+                        ink.copy(alpha = if (emphasized || active || root) 1f else .6f),
                         bold = root || active,
                     )
                 }
@@ -408,7 +418,7 @@ fun ChordDiagram(
             }
         }
         barres.forEach { barre ->
-            drawLine(colors.primary.copy(alpha = .32f),
+            drawLine(colors.noteChordTone,
                 geometry.position(Position(barre.fromString, barre.fret)),
                 geometry.position(Position(barre.toString, barre.fret)),
                 strokeWidth = 23 * geometry.unit, cap = StrokeCap.Round)
@@ -427,7 +437,7 @@ fun ChordDiagram(
             if (!active && !root) {
                 drawCircle(colors.fretboardNoteStroke.copy(alpha=toneAlpha), 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
             } else if (root && !active) {
-                drawCircle(colors.primary.copy(alpha = 0.35f), 15.5f * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
+                drawCircle(colors.noteRoot, 15.5f * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
             }
             label(
                 measurer,
@@ -577,12 +587,12 @@ internal class LessonBoardIndex(private val plan: PerformancePlan) {
 @Composable
 internal fun BoardLabelMenu(
     hint: Hint,
-    onHint: () -> Unit,
+    onHint: (() -> Unit)?,
     title: String = "提示",
     status: String? = null,
     labels: String? = null,
     labelRoot: Int? = null,
-    onLabel: (String) -> Unit = {},
+    onLabel: ((String) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var referencePicker by remember { mutableStateOf(false) }
@@ -598,7 +608,7 @@ internal fun BoardLabelMenu(
             }
         }
         DropdownMenu(expanded, { expanded = false }) {
-            if (labels != null) {
+            if (labels != null && onLabel != null) {
                 listOf("fingers" to "可靠指法", "notes" to "实际音名", "degrees" to (if(teaching.key!=null) "调内音级 · ${teaching.key.tonic.name}" else "和弦内音程")).forEach { (id, name) ->
                     DropdownMenuItem(text = { Text(name) }, enabled = id != "degrees" || labelRoot != null, onClick = {
                         onLabel(id)
@@ -607,18 +617,18 @@ internal fun BoardLabelMenu(
                 }
             }
             teaching.available.forEach { mode ->
-                DropdownMenuItem(text = { Text((if(mode==hint) "✓ " else "") + teaching.title(mode)) }, onClick = {
-                    selectHint(mode); expanded = false
+                DropdownMenuItem(text = { Text((if(mode==hint) "✓ " else "") + teaching.title(mode)) }, enabled = selectHint != null, onClick = {
+                    selectHint?.invoke(mode); expanded = false
                 })
             }
-            DropdownMenuItem(text={ Text("选择参照和弦…") },onClick={ expanded=false; referencePicker=true })
+            DropdownMenuItem(text={ Text("选择参照和弦…") },enabled=selectReference!=null,onClick={ expanded=false; referencePicker=true })
         }
     }
     if(referencePicker) AlertDialog(onDismissRequest={ referencePicker=false },title={ Text("和弦音参照") },
         text={ LazyColumn(Modifier.heightIn(max=360.dp)) {
-            item { TextButton(onClick={ selectReference("auto");referencePicker=false }) { Text("自动跟随当前和弦／教材主和弦") } }
+            item { TextButton(onClick={ selectReference?.invoke("auto");referencePicker=false }) { Text("自动跟随当前和弦／教材主和弦") } }
             items(Chords.all,key={it.id}) { chord ->
-                TextButton(onClick={ selectReference(chord.name);referencePicker=false },modifier=Modifier.fillMaxWidth()) { Text("参照 ${chord.name}") }
+                TextButton(onClick={ selectReference?.invoke(chord.name);referencePicker=false },modifier=Modifier.fillMaxWidth()) { Text("参照 ${chord.name}") }
             }
         } },confirmButton={ TextButton(onClick={ referencePicker=false }) { Text("完成") } })
 }

@@ -79,8 +79,8 @@ fun PracticeTheme(
                 titleSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"),
                 labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 16.sp else 14.sp, lineHeight = if (largeControls) 22.sp else 20.sp, fontFeatureSettings = "tnum"),
                 labelMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = "tnum"),
-                bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum"),
-                labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 15.sp, fontFeatureSettings = "tnum"),
+                bodySmall = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"),
+                labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = "tnum"),
             ),
             shapes = Shapes(
                 extraSmall = RoundedCornerShape(m.cornerSmall),
@@ -106,18 +106,10 @@ fun PracticeContentCard(
 ) {
     val c = PracticeSkin.colors
     val m = PracticeSkin.metrics
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(m.cornerLarge),
-        color = c.surface,
-        contentColor = c.textPrimary,
-        border = BorderStroke(m.borderWidth, c.border),
-        shadowElevation = m.shadowLevel,
-    ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (title != null || subtitle != null || actions != null) {
                 Row(
-                    Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -136,25 +128,15 @@ fun PracticeContentCard(
             }
             content()
             if (footer != null) {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp), content = footer)
+                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp), content = footer)
             }
-        }
     }
 }
 
 /** Warm recessed instrument well without redundant double-white borders. */
 @Composable
 fun DiagramContainer(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    val c = PracticeSkin.colors
-    val m = PracticeSkin.metrics
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(m.cornerMedium),
-        color = c.diagramSurface,
-        border = BorderStroke(m.borderWidth, c.border.copy(alpha = 0.55f)),
-    ) {
-        Box(Modifier.padding(4.dp), content = content)
-    }
+    Box(modifier, content = content)
 }
 
 @Composable

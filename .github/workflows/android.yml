@@ -15,7 +15,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: python -m pip install -r scripts/song_package/requirements.txt
       - run: python scripts/test_song_assets.py && python scripts/test_song_packages.py
-      - run: chmod +x gradlew && ./gradlew testCompareUnitTest lintCompare assembleCompare assembleRelease :app:compileDebugUnitTestKotlin :app:compileP0Kotlin
+      - run: chmod +x gradlew && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug :app:assembleDebug testCompareUnitTest lintCompare assembleCompare assembleRelease :app:compileDebugUnitTestKotlin :app:compileP0Kotlin
       - run: python scripts/audit-native-teaching.py
       - uses: actions/upload-artifact@v4
         with:

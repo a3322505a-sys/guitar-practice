@@ -150,10 +150,9 @@ class SongAdvancedTest {
                 "firstBlockMs" to timings.first(),"blockP99Ms" to p99,"heapBeforeBytes" to before,
                 "sampledPeakHeapBytes" to peak,"heapAfterBytes" to heap())
         }
-        val dense=Phrases.all.filter { it.sequence.events.all { e -> e.positions.size<=1 } }
-            .maxBy { it.sequence.events.size }
+        val dense=Phrases.singleNote.copy(id="notation-fixture", sequence=NotationFixtures.legato(Technique.HAMMER))
         val scenarios=listOf(
-            measure("legacy-short-M01") { LegacySequenceAdapter.compile(Phrases.singleNote.sequence) },
+            measure("legacy-short-M01") { Phrases.singleNote.sequence.performance },
             measure("legacy-dense-"+dense.id) { LegacySequenceAdapter.compile(dense.sequence) },
             measure("ten-minute-four-tracks") { PracticeCompiler.compile(score,spec) })
         assertEquals(600.0,scenarios.last().getValue("durationSeconds") as Double,1e-9)

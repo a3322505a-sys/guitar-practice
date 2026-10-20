@@ -69,7 +69,8 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
         subtitle = phrase.technique.takeIf { it.isNotBlank() },
         categoryBadge = if (sourceOf(phrase) == "local.daily-practice") "每日跟练" else moduleOf(phrase).title,
         versionBadge = phrase.version,
-        metaSummary = "${phrase.suggestedBpm} BPM · ${phrase.sequence.barCount} 小节",
+        metaSummary = "${phrase.suggestedBpm} BPM" + if (phrase.unprepared) phrase.passage.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
+            else " · ${phrase.sequence.barCount} 小节",
         isPinnedFocus = pinned,
     )
 

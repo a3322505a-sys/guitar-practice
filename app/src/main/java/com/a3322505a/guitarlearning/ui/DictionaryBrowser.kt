@@ -1,6 +1,8 @@
 package com.a3322505a.guitarlearning.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -125,7 +127,8 @@ internal fun ScaleDictionaryView(selected: ScaleOptions, modifier: Modifier = Mo
             Text(tonality.title, style = MaterialTheme.typography.titleMedium)
             Text(tonality.context.spelling.zip(tonality.mode.degrees).joinToString(" · ") { "${it.first.name} ${it.second}" }, style = MaterialTheme.typography.bodySmall)
             if (tonality.mode == ScaleDefinition.BLUES) Text("♭5 · 蓝调特征音", color = PracticeSkin.colors.noteCharacteristic, style = MaterialTheme.typography.titleSmall)
-            CompositionLocalProvider(LocalBoardTeaching provides BoardTeachingContext(tonality.context)) {
+            CompositionLocalProvider(LocalBoardTeaching provides BoardTeachingContext(tonality.context,
+                Chords.named(tonality.tonic + if (tonality.mode in listOf(ScaleDefinition.NATURAL_MINOR, ScaleDefinition.MINOR_PENTATONIC, ScaleDefinition.BLUES)) "m" else ""))) {
                 Fretboard(pattern.positions, tonality, Hint.FULL, true, emptyList(), false, height = 180.dp,
                     onTap = { onSelect(selected.copy(key = tonality, pattern = box, pentatonic = false)) }, showLegend = false)
             }
@@ -164,7 +167,7 @@ private fun DictionaryLayout(modifier: Modifier, preview: @Composable () -> Unit
         } else {
             Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 filters(Modifier.weight(.45f).fillMaxHeight())
-                Column(Modifier.weight(.55f), verticalArrangement = Arrangement.spacedBy(8.dp)) { preview(); selector() }
+                Column(Modifier.weight(.55f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) { preview(); selector() }
             }
         }
     }

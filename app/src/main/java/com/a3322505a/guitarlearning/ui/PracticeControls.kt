@@ -335,74 +335,31 @@ internal fun PracticeNavigation(
 }
 
 
-/** The workbench keeps navigation separate from playback and content state. */
+/** Current practice opens the unified workbench; three fixed actions remain reachable. */
 @Composable
-internal fun CompactTopBar(
-    title: String,
-    subtitle: String,
-    stageLayout: StageLayout,
-    onStageLayoutChange: (StageLayout) -> Unit,
-    onOpenLibrary: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onManagement: () -> Unit,
-    linkedAvailable: Boolean,
-    extraActions: @Composable () -> Unit = {},
+internal fun StageTopBar(
+    title: String, subtitle: String, stageLayout: StageLayout,
+    onStageLayoutChange: (StageLayout) -> Unit, onOpenLibrary: () -> Unit,
+    onOpenDictionary: () -> Unit, onOpenSettings: () -> Unit, linkedAvailable: Boolean,
 ) {
     val colors = PracticeSkin.colors
-    var moreOpen by remember { mutableStateOf(false) }
-    val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val actions: @Composable (Boolean) -> Unit = { compact ->
-        TextButton(
-            onClick = {
-                onStageLayoutChange(if (stageLayout == StageLayout.TAB_ONLY) { if (linkedAvailable) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY } else StageLayout.TAB_ONLY)
-            },
-            modifier = Modifier.heightIn(min = 48.dp).testTag("dock-toggle"),
-            contentPadding = PaddingValues(horizontal = 8.dp),
-        ) {
-            Text(when (stageLayout) {
-                StageLayout.LINKED -> "收起指板"
-                StageLayout.TAB_ONLY -> if (linkedAvailable) "展开指板" else "指板"
-                StageLayout.FRETBOARD_ONLY -> "六线谱"
-            }, maxLines = 1)
-        }
-        if (!compact) TextButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 48.dp).testTag("preferences-button")) { Text("偏好") }
-        extraActions()
-        Box {
-            IconButton(onClick = { moreOpen = true }, modifier = Modifier.size(48.dp).testTag("management-button").semantics { contentDescription = if (compact) "偏好与更多" else "更多" }) {
-                Text(if (compact) "⚙" else "⋯", fontSize = 22.sp)
-            }
-            DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
-                if (compact) DropdownMenuItem(text = { Text("练习偏好") }, onClick = { moreOpen = false; onOpenSettings() })
-                DropdownMenuItem(text = { Text("仅指板") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.FRETBOARD_ONLY) })
-                DropdownMenuItem(text = { Text("仅六线谱") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.TAB_ONLY) })
-                if (linkedAvailable) DropdownMenuItem(text = { Text("指板 + 六线谱") }, onClick = { moreOpen = false; onStageLayoutChange(StageLayout.LINKED) })
-                HorizontalDivider()
-                DropdownMenuItem(text = { Text("曲包与帮助") }, onClick = { moreOpen = false; onManagement() })
+    Row(Modifier.fillMaxWidth().testTag("practice-navigation"), verticalAlignment = Alignment.CenterVertically) {
+        Surface(onClick = onOpenLibrary, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("config-summary"),
+            color = colors.surfaceSelected, shape = MaterialTheme.shapes.medium) {
+            Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("$subtitle ▾", style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
             }
         }
-    }
-    val summary: @Composable (Modifier) -> Unit = { modifier ->
-        Surface(
-            onClick = onOpenLibrary,
-            modifier = modifier.heightIn(min = 48.dp).testTag("config-summary"),
-            shape = MaterialTheme.shapes.medium,
-            color = colors.primaryContainer,
-        ) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                Text(" ▾")
-            }
-        }
-    }
-    BoxWithConstraints(Modifier.fillMaxWidth().testTag("practice-navigation")) {
-        val compact = maxWidth < 520.dp * scale
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            summary(Modifier.weight(1f))
-            actions(compact)
-        }
+        IconButton(onClick = {
+            onStageLayoutChange(when (stageLayout) {
+                StageLayout.FRETBOARD_ONLY -> if (linkedAvailable) StageLayout.LINKED else StageLayout.TAB_ONLY
+                StageLayout.LINKED -> StageLayout.TAB_ONLY
+                StageLayout.TAB_ONLY -> StageLayout.FRETBOARD_ONLY
+            })
+        }, modifier = Modifier.size(48.dp).testTag("dock-toggle").semantics { contentDescription = "视图模式：${stageLayout.name}，点击切换" }) { Text("▦", fontSize = 24.sp) }
+        IconButton(onClick = onOpenDictionary, modifier = Modifier.size(48.dp).testTag("quick-dictionary").semantics { contentDescription = "速查当前和弦或调式" }) { Text("词典") }
+        IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp).testTag("preferences-button").semantics { contentDescription = "外观与音频偏好" }) { Text("⚙", fontSize = 22.sp) }
     }
 }
 
@@ -444,8 +401,8 @@ internal fun ContentWorkbenchSheet(
                     when (destination) {
                         WorkbenchDestination.Curriculum -> WorkbenchContentChoices(state, onCategory, onScale, onChord, onPhrase, onRange,
                             Modifier.fillMaxSize(), onSourceFilter, onManagePackages, onDestination, onFocus)
-                        WorkbenchDestination.Chords -> ChordDictionaryView(state.first, Modifier.fillMaxSize(), onChord)
-                        WorkbenchDestination.Scales -> ScaleDictionaryView(state.scale, Modifier.fillMaxSize()) {
+                        WorkbenchDestination.Chords -> ChordDictionaryView(state.dictionaryChord, Modifier.fillMaxSize(), onChord)
+                        WorkbenchDestination.Scales -> ScaleDictionaryView(state.dictionaryScale, Modifier.fillMaxSize()) {
                             onCategory(TeachingModule.SCALES.ordinal); onScale(it); onClose()
                         }
                     }

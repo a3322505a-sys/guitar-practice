@@ -64,8 +64,10 @@ internal fun PracticeContent(
     onTap: (Position) -> Unit,
     onAudition: (Chord) -> Unit,
     legacyTab: (@Composable (PracticeContentState, Modifier, (Int) -> Unit) -> Unit)? = null,
-    onHint: () -> Unit = {},
+    onHint: (() -> Unit)? = null,
 ) = with(state) {
+    // A dictionary grip is a real practice choice, independent of the curated chord deck.
+    val chords = if (state.chords.any { it.id == first.id }) state.chords else listOf(first)
     val colors = PracticeSkin.colors
     val metrics = PracticeSkin.metrics
     if (displayedSequence == null && (page != 1 || chordPhrases)) {

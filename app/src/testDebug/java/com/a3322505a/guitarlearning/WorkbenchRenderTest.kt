@@ -1,20 +1,16 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.Phrases as Phrases
-
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.os.Looper
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.*
-import com.a3322505a.guitarlearning.audio.*
+import androidx.compose.ui.unit.Density
 import com.a3322505a.guitarlearning.ui.*
 import org.junit.Assert.*
 import org.junit.Rule
@@ -24,214 +20,86 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk=[28],qualifiers="w411dp-h891dp-mdpi")
+@Config(sdk = [28], qualifiers = "w360dp-h780dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class WorkbenchRenderTest {
-    @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
-    @org.junit.Before fun selectScaleFixture() {
-        compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-            compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("config-summary").performClick(); expand()
-        compose.onNode(hasText("音阶教学") and hasClickAction()).performClick()
-        compose.onNodeWithText("完成").performClick()
+    @get:Rule val compose = createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    private fun ready() = compose.waitUntil(45000) {
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty()
     }
-    private fun preferences() {
-        if (compose.onAllNodesWithTag("preferences-button").fetchSemanticsNodes().isEmpty()) {
-            compose.onNodeWithTag("management-button").performClick()
-            compose.onNodeWithText("练习偏好").performClick()
-        } else compose.onNodeWithTag("preferences-button").performClick()
-    }
-    private fun expand() {
-        val matcher=SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)
-        if(compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()) compose.onNode(matcher).performSemanticsAction(SemanticsActions.Expand) { it() }
-        compose.waitForIdle()
-    }
-    private fun capture(name: String) {
-        compose.runOnIdle {
-            val base=compose.activity.window.decorView
-            val bitmap=Bitmap.createBitmap(base.width,base.height,Bitmap.Config.ARGB_8888)
-            val canvas=Canvas(bitmap);base.draw(canvas)
-            val type=Class.forName("android.view.WindowManagerGlobal")
-            val manager=type.getDeclaredMethod("getInstance").invoke(null)
-            @Suppress("UNCHECKED_CAST")
-            val views=type.getDeclaredField("mViews").apply { isAccessible=true }.get(manager) as List<android.view.View>
-            val origin=IntArray(2);base.getLocationOnScreen(origin)
-            views.filter { it!==base && it.visibility==android.view.View.VISIBLE }.forEach {
-                val at=IntArray(2);it.getLocationOnScreen(at)
-                canvas.save();canvas.translate((at[0]-origin[0]).toFloat(),(at[1]-origin[1]).toFloat());it.draw(canvas);canvas.restore()
-            }
-            File("../.local/ui-v81/$name.png").apply { parentFile!!.mkdirs();outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) } }
-            bitmap.recycle()
-        }
-    }
-    @Test fun phonePartialSheetShowsWholeFretboardAndChangesPreviewWithoutClosing() {
-        compose.onNodeWithText("结束").assertDoesNotExist()
-        capture("phone-workbench")
+    @Test fun scrimDismissesTheModalAndTheStageAnchorsRemainSeparate() {
+        ready()
         compose.onNodeWithTag("config-summary").performClick()
-        val diagram=compose.onNodeWithTag("fretboard").fetchSemanticsNode()
-        val panel=compose.onNodeWithTag("practice-settings").fetchSemanticsNode().boundsInRoot
-        assertTrue("Actual strings are above the sheet",diagram.boundsInRoot.bottom<=panel.top)
-        assertEquals("All six strings are visible",diagram.layoutInfo.coordinates.size.height.toFloat(),diagram.boundsInRoot.height,.5f)
-        assertTrue("The diagram has meaningful height",diagram.boundsInRoot.height>90)
-        capture("phone-partial-content")
-        expand()
-        capture("phone-expanded-content")
-        compose.onNode(hasText("和弦教学") and hasClickAction()).performClick()
-        capture("phone-chord-content")
-        compose.onNode(hasText("音阶教学") and hasClickAction()).performClick()
-        compose.onNodeWithText("三度跳进").performScrollTo().performClick()
-        compose.onNodeWithText("la 指型").performScrollTo().performClick()
-        compose.onNodeWithText("每拍1音").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("content-panel").assertIsDisplayed()
+        compose.onNodeWithTag("tab-chords").assertExists()
+        compose.onNodeWithTag("tab-scales").assertExists()
+        compose.onNodeWithTag("modal-scrim").performTouchInput { click(Offset(10f, 10f)) }
+        compose.onNodeWithTag("content-panel").assertDoesNotExist()
+        compose.onNodeWithTag("preferences-button").performClick()
+        compose.onNodeWithText("外观").performClick()
+        compose.onNodeWithTag("theme-forest_daylight").performScrollTo().performClick()
         compose.onNodeWithText("完成").performClick()
-        preferences();expand()
-        compose.onNodeWithText("跟练").performClick()
-        compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
-        compose.onNodeWithText("声音").performClick()
-        compose.onNodeWithTag("music-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
-        compose.onNodeWithText("完成").performClick()
-        compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
-        compose.onNodeWithTag("management-button").performClick();compose.onNodeWithText("曲包与帮助").performClick()
-        compose.onNodeWithText("选择曲包").assertIsDisplayed()
-        capture("management-packages")
-        compose.onNodeWithText("帮助说明").performClick()
-        compose.onNodeWithText("x 为死音",substring=true).assertIsDisplayed()
-        capture("management-help")
-        compose.runOnIdle {
-            val type=Class.forName("android.view.WindowManagerGlobal")
-            val manager=type.getDeclaredMethod("getInstance").invoke(null)
-            @Suppress("UNCHECKED_CAST")
-            val dialog=(type.getDeclaredField("mViews").apply { isAccessible=true }.get(manager) as List<android.view.View>).last()
-            dialog.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,android.view.KeyEvent.KEYCODE_BACK))
-            dialog.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP,android.view.KeyEvent.KEYCODE_BACK))
-        };compose.waitForIdle()
-        compose.onNodeWithTag("management-sheet").assertDoesNotExist()
-        compose.onNodeWithTag("config-summary").assertTextContains("三度跳进",substring=true).assertTextContains("每拍1音",substring=true)
-        // Render the production linked toolbar without loading the native score engine on the host.
+        compose.onNodeWithTag("quick-dictionary").assertIsDisplayed()
+    }
+    @Test @Config(qualifiers = "w1024dp-h768dp-mdpi")
+    fun tabletDictionaryKeepsItsPreviewWhileTheFilterListScrolls() {
+        ready(); compose.onNodeWithTag("config-summary").performClick()
+        compose.onNodeWithTag("chord-dictionary").performClick()
+        val before = compose.onNodeWithTag("dictionary-results").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithTag("dictionary-quality-options").performScrollToNode(hasText("强力与八度"))
+        val after = compose.onNodeWithTag("dictionary-results").fetchSemanticsNode().boundsInRoot
+        assertEquals(before, after)
+        compose.onNodeWithText("使用此配法").assertIsDisplayed()
+    }
+    @Test fun transportKeepsFortyEightDpTargetsAndNonOverlappingPrimaryControlsAtLargeText() {
+        var mode by mutableStateOf(TransportMode.IDLE)
+        val actions = mutableListOf<String>()
+        compose.activity.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.5f)) {
+                PracticeTheme {
+                    Column {
+                        PracticeTransportDock(82, 1.0, "4/4", mode, true, false, "小节 1–8",
+                            { actions += "tempo" }, { actions += "loop" }, { actions += "range" }, { actions += "mix" },
+                            { actions += "pause" }, { actions += "restart" }, { actions += "demo" },
+                            { actions += "follow" }, { actions += "stop" }, { Text("练习策略") }, "继续")
+                    }
+                }
+            }
+        }
+        TransportMode.entries.forEach { value ->
+            compose.runOnIdle { mode = value }
+            val controls = listOf("tempo-button", "loop-button", "volume-button").map {
+                compose.onNodeWithTag(it).assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+            }
+            controls.forEach { assertTrue(it.width >= 48 && it.height >= 48) }
+            controls.forEachIndexed { i, a -> controls.drop(i + 1).forEach { b -> assertFalse(a.overlaps(b)) } }
+            val dock = compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot
+            assertTrue(dock.width <= 360f)
+            assertTrue(dock.height < 210f)
+        }
+        compose.runOnIdle { mode = TransportMode.IDLE }
+        compose.onNodeWithText("听示范").performClick()
+        compose.onNodeWithText("开始跟练").performClick()
+        compose.onNodeWithTag("loop-button").performClick()
+        assertEquals(listOf("demo", "follow", "loop"), actions)
+    }
+    @Test fun speedStepsAndPresetsUpdateTheRealCallbacks() {
+        var bpm by mutableIntStateOf(80)
+        var multiplier by mutableDoubleStateOf(1.0)
+        var open by mutableStateOf(true)
         compose.activity.setContent {
             PracticeTheme {
-                Column(Modifier.fillMaxSize()) {
-                    CompactTopBar("M01 · 单音短句", "第 1–4 小节", StageLayout.LINKED, {}, {}, {}, {}, true)
-                    LinkedFretboardDock(
-                        sequence = com.a3322505a.guitarlearning.practice.Phrases.singleNote.sequence,
-                        cursor = null, phase = Phase.IDLE, current = emptyList(),
-                        range = com.a3322505a.guitarlearning.practice.BarRange(0, 0),
-                        hint = Hint.FULL, onHint = {}, onTap = {},
-                        modifier = Modifier.fillMaxWidth().height(218.dp),
-                        controls = { BreakdownControls(true, false, true, {}, {}, {}) },
-                    )
-                }
+                if (open) SpeedAndTempoSheet(bpm, multiplier, 30, 180, "固定 BPM", { bpm = it }, { multiplier = it }, { open = false })
             }
         }
-        capture("phone-linked-toolbar")
-        compose.onNodeWithTag("board-label-menu").performClick()
-        capture("phone-linked-label-menu")
-    }
-    private fun sidePanel() {
-        preferences()
-        val side=compose.onNodeWithTag("practice-side-panel").fetchSemanticsNode().boundsInRoot
-        val diagram=compose.onNodeWithTag("tablature").fetchSemanticsNode().boundsInRoot
-        assertTrue("Panel and TAB occupy separate horizontal space",diagram.right<=side.left)
-        assertTrue("TAB retains useful width",diagram.width>300)
-        compose.onNodeWithText("跟练").performClick()
-        compose.onNodeWithText("4 次").performScrollTo().assertIsDisplayed()
-    }
-    @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeTabKeepsNotationBesideConfiguration() {
-        compose.onNodeWithText("六线谱").performClick();capture("phone-landscape-default");sidePanel();capture("phone-landscape-side")
-        compose.activity.onBackPressedDispatcher.onBackPressed();compose.waitForIdle()
-        compose.onNodeWithTag("practice-side-panel").assertDoesNotExist()
-        compose.onNodeWithTag("tablature").assertIsDisplayed()
-    }
-    private fun transportBudget(fontScale: Float) {
-        var mode by mutableStateOf(TransportMode.IDLE)
-        compose.activity.setContent { CompositionLocalProvider(LocalDensity provides Density(1f,fontScale)) {
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val height=maxHeight
-                Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
-                    Box(Modifier.width(224.dp)) {
-                        PracticeTransport(80,"2/4",Hint.FULL,mode,true,{},{},{},{},{},{},{},availableHeight=height,verticalDeck=true)
-                    }
-                }
-            }
-        } }
-        val heights=mutableMapOf<TransportMode,Float>()
-        TransportMode.entries.forEach { value ->
-            compose.runOnIdle { mode=value };compose.waitForIdle()
-            val bounds=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot
-            val root=compose.onRoot().fetchSemanticsNode().boundsInRoot
-            heights[value]=bounds.height
-            assertTrue("$value control deck fits the window ${bounds.height}/${root.height}",bounds.height<=root.height)
-            listOf("tempo-slower","tempo-button","tempo-faster").forEach { tag ->
-                val button=compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
-                assertTrue(button.height>=48 && button.width>=48)
-            }
-            val buttons=compose.onAllNodes(hasClickAction()).fetchSemanticsNodes().map { it.boundsInRoot }
-            buttons.forEach { assertTrue("$value touch bounds $it",it.height>=48 && it.width>=48 && it.left>=root.left && it.right<=root.right) }
-            buttons.forEachIndexed { index,a -> buttons.drop(index+1).forEach { b -> assertFalse("$value overlapping buttons",a.overlaps(b)) } }
-        }
-        assertEquals(heights[TransportMode.PLAYING]!!,heights[TransportMode.PAUSED]!!,.5f)
-        compose.runOnIdle { mode=TransportMode.IDLE };compose.waitForIdle()
-        val before=compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot.height
-        listOf(IntRect(0,300,90,348),IntRect(800,300,891,348)).forEach { anchor ->
-            val at=TempoPopupPosition.calculatePosition(anchor,IntSize(891,411),LayoutDirection.Ltr,IntSize(360,104))
-            assertTrue(at.x>=0 && at.x+360<=891 && at.y>=0 && at.y+104<=411)
-        }
-        compose.onNodeWithTag("tempo-button").performClick()
-        compose.onNodeWithTag("tempo-slider").assertIsDisplayed()
-        assertEquals("The popup must not consume more content height",before,compose.onNodeWithTag("transport-bar").fetchSemanticsNode().boundsInRoot.height,.5f)
-        capture("transport-${fontScale}-expanded")
+        compose.onNodeWithTag("tempo-step-10").performScrollTo().performClick()
+        assertEquals(90, bpm)
+        compose.onNodeWithText("0.75x").performScrollTo().performClick()
+        assertEquals(.75, multiplier, .0001)
         compose.onNodeWithText("收起").performClick()
-        compose.onNodeWithTag("tempo-slider").assertDoesNotExist()
-    }
-    @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeTransportKeepsTouchTargetsAndContentAcrossEveryPhase()=transportBudget(1f)
-    @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun shortWindowLargeTextTransportKeepsItsBudget()=transportBudget(1.4f)
-    @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletLargeTextKeepsTabAndSidePanelVisible() {
-        compose.activity.resources.configuration.fontScale=1.3f
-        @Suppress("DEPRECATION")
-        compose.activity.resources.updateConfiguration(compose.activity.resources.configuration,compose.activity.resources.displayMetrics)
-        compose.activityRule.scenario.recreate();compose.waitForIdle()
-        compose.onNodeWithText("六线谱").performClick();sidePanel();capture("tablet-large-text-side")
-        compose.activity.setContent { CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-            PracticeTheme {
-                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    listOf(420.dp, 550.dp).forEach { width ->
-                        Column(Modifier.width(width)) {
-                            ContentCards(com.a3322505a.guitarlearning.music.Chords.all.map { it.name }, 0, compact = true) {}
-                        }
-                    }
-                }
-            }
-        } }
-        capture("tablet-chord-grids")
-    }
-    @Test fun overlayTabsSoundsAndSliderPreviewKeepSessionUntilSpeedIsCommitted() {
-        val player=Player(compose.activity) { ManualSink() }
-        try {
-            compose.waitUntil(15000) { Shadows.shadowOf(Looper.getMainLooper()).idle();
-                compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
-            Shadows.shadowOf(compose.activity.getSystemService(android.media.AudioManager::class.java)).setNextFocusRequestResponse(android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
-            compose.activity.setContent { PracticeApp(player) }
-        compose.waitForIdle()
-        compose.waitUntil(45000) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
-            compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess }
-            compose.onNodeWithText("开始跟练").performClick()
-            compose.waitUntil(8000) { Shadows.shadowOf(Looper.getMainLooper()).idle();player.progress.phase==Phase.PLAYING }
-            val session=player.session
-            preferences();expand()
-            compose.onNodeWithText("跟练").performClick();assertSame(session,player.session)
-            compose.onNodeWithText("声音").performClick()
-            compose.onNodeWithTag("music-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) };assertSame(session,player.session)
-            compose.onNodeWithTag("metronome-volume").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(0f) };assertSame(session,player.session)
-            compose.onNodeWithText("完成").performClick();assertSame(session,player.session)
-            compose.onNodeWithTag("tempo-button").performClick()
-            compose.onNodeWithTag("tempo-slider").performTouchInput { down(center);moveTo(centerRight) }
-            assertSame("Dragging only previews the value",session,player.session)
-            compose.onNodeWithTag("tempo-slider").performTouchInput { up() }
-            assertNull("Only the committed speed invalidates the old session",player.session)
-            compose.onNodeWithText("结束").assertDoesNotExist()
-            compose.onNodeWithText("开始跟练").assertIsEnabled()
-        } finally { player.release() }
+        compose.onNodeWithTag("tempo-popup").assertDoesNotExist()
     }
 }

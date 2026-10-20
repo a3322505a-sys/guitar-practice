@@ -1,10 +1,8 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.Phrases as Phrases
-
 import android.content.Context
 import com.a3322505a.guitarlearning.assets.song.*
-import com.a3322505a.guitarlearning.music.*
+import com.a3322505a.guitarlearning.music.score.PracticeKey
 import com.a3322505a.guitarlearning.practice.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -15,86 +13,52 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk=[28])
+@Config(sdk = [28])
 class BundledSongsTest {
-    @Test fun preinstalledPackagesResolveOldIdsCompileAllPracticesAndPreserveSettingsAcrossRestart() {
-        val root=java.nio.file.Files.createTempDirectory("bundle-restart").toFile()
-        val repo=SongTestLibrary.repository(root);val library=repo.reload()
-        assertTrue(library.diagnostics.toString(),library.diagnostics.isEmpty())
-        assertEquals(6,library.packages.size)
-        assertEquals(154,library.phrases.count { it.assetKey!=null })
-        assertEquals(21,Chords.all.size)
-        assertTrue(library.chords.size>=50)
-        assertTrue(library.chords.all { chord -> chord.positions.all { it.fret==0 || chord.fingers[6-it.string] in 1..4 } })
-        assertTrue(Phrases.all.none { it.id.startsWith("SHA-") || it.id.startsWith("YT-") || it.id.startsWith("KAF-") || it.id.startsWith("K265-") })
-        assertEquals(7,Phrases.all.count { it.id.startsWith("SB-") })
-        assertEquals("M01",repo.named("KAF-B-9-G3").id)
-        val expectedBars=mapOf("local.usotsuki" to listOf(2),"local.mozart" to listOf(8,8,8),
-            "local.shayou" to listOf(8,9,8,6,8),"local.yourtrip" to listOf(10,16,8,17,19,6))
-        expectedBars.forEach { (packageId,bars) ->
-            val phrases=library.catalogue.filter { it.assetKey?.packageId==packageId }.map { repo.resolve(it.id) }
-            assertEquals(bars,phrases.map { it.sequence.barCount })
-            phrases.forEach { phrase ->
-                assertTrue(phrase.sequence.performance.notes.isNotEmpty())
-                assertEquals(phrase.id,repo.versions(phrase).first().id)
-                val session=Session(phrase.sequence,60,true,2)
-                assertEquals(2,session.repeats)
-                assertTrue(session.frame(session.totalTicks!!.toDouble())>0)
-            }
-        }
-        (1..6).forEach { old -> assertEquals(repo.named("K265-"+('A'+(old-1)/2)).id,repo.named("K265-$old").id) }
-        val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("bundle-settings",Context.MODE_PRIVATE)
-        prefs.edit().clear().putString("phrase-selected","SHA-RIFF").putInt("phrase.SHA-RIFF.bpm",73)
-            .putInt("phrase.SHA-RIFF.repeats",8).putInt("phrase.SHA-RIFF.first",2).putInt("phrase.SHA-RIFF.last",3).commit()
-        val selected=repo.resolve("SHA-RIFF")
-        val store=PhraseSettingsStore(prefs,repo::named)
-        assertEquals(selected.id,store.selected().id)
-        assertEquals(PhraseSettings(73,8,BarRange(2,3)),store.load(selected))
-        assertEquals(false,store.tempo(selected).first)
-        assertEquals(73,prefs.getInt("phrase.SHA-RIFF.bpm",0))
-        assertTrue(selected.sequence.explanation.contains("第9小节前三拍休止"))
-        val index=repo.revisions("local.shayou")
-        repo.disable("local.shayou");assertTrue(SongTestLibrary.repository(root).reload().packages.none { it.identity.packageId=="local.shayou" })
-        assertEquals("M01",store.selected().id)
-        repo.rollback(index.single());assertEquals(selected.id,store.selected().id)
-        assertEquals(73,store.load(repo.resolve("SHA-RIFF")).bpm)
-        assertEquals(21,Chords.all.size)
-        assertNotNull(Routes.scale(ScaleOptions()).sequence)
-        assertTrue(chordSequence(Chords.named("C"),Chords.named("Am"),ChordExercise.CHANGE,4).performance.notes.isNotEmpty())
+    @Test fun nativePackagesCompileAndPracticeSettingsSurviveReloadDisableAndRollback() {
+        val root = java.nio.file.Files.createTempDirectory("bundle-restart").toFile()
+        val repo = SongTestLibrary.repository(root)
+        val library = repo.reload()
+        assertTrue(library.diagnostics.toString(), library.diagnostics.isEmpty())
+        assertEquals(setOf("local.teaching-native", "local.daily-practice", "local.demo-c", "local.demo-capo", "local.demo-rock"), library.packages.map { it.identity.packageId }.toSet())
+        assertFalse(library.aliases.keys.any { it.startsWith("SB-") || it.startsWith("K265-") })
+        val selected = repo.resolve(PracticeKey("local.daily-practice", "DP-03-basic").encoded)
+        val prefs = RuntimeEnvironment.getApplication().getSharedPreferences("bundle-settings", Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+        val store = PhraseSettingsStore(prefs, repo::named)
+        store.select(selected); store.save(selected, 73, 8, BarRange(2, 3))
+        val reloaded = SongTestLibrary.repository(root).also { it.reload() }
+        val restored = PhraseSettingsStore(prefs, reloaded::named)
+        assertEquals(selected.id, restored.selected().id)
+        assertEquals(PhraseSettings(73, 8, BarRange(2, 3)), restored.load(reloaded.resolve(selected.id)))
+        val revision = repo.revisions("local.daily-practice").single()
+        repo.disable("local.daily-practice")
+        assertNotEquals(selected.id, store.selected().id)
+        repo.rollback(revision)
+        assertEquals(selected.id, store.selected().id)
+        assertEquals(73, store.load(repo.resolve(selected.id)).bpm)
     }
 
-    @Test fun sourceRowsAndChordTeachingSurvivePackageReaderAndPlanCompilation() {
-        val repo=SongTestLibrary.repository();repo.reload()
-        val expected=File("src/test/resources/mozart-k265-v2.csv").readLines().drop(1).map { it.split(',').map(String::toInt) }
-        val actual=listOf("K265-A","K265-B","K265-C").flatMap { id ->
-            val plan=repo.resolve(id).sequence.performance
-            plan.events.map { e ->
-                val n=e.event.notes.singleOrNull()
-                listOf(plan.score.measures.first { it.id==e.event.measureId }.label.toInt(),(e.event.onset.value()*12).toInt(),
-                    (e.duration.value()*12).toInt(),n?.string ?: 0,n?.fret ?: 0,n?.midi ?: 0)
+    @Test fun independentPackageReadsKeepAllPracticeIdsScoresAndExplicitFingerings() {
+        val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
+        val repo = SongTestLibrary.repository().also { it.reload() }
+        var count = 0
+        SongTestLibrary.assets.listFiles()!!.filter { it.extension == "gpractice" }.forEach { file ->
+            val source = reader.read(file.readBytes())
+            source.practices.forEach { practice ->
+                val phrase = repo.resolve(PracticeKey(source.identity.packageId, practice.id).encoded)
+                val plan = phrase.sequence.performance
+                assertEquals(practice.id, plan.practice.id)
+                assertEquals(source.score, plan.score)
+                assertTrue(phrase.id, plan.notes.isNotEmpty())
+                plan.notes.forEach { note -> assertEquals(note.track.midi(note.note.string, note.note.fret), note.note.midi) }
+                count++
             }
         }
-        assertEquals(expected,actual)
-        val sourceIds=SongReader(SongSchema { File("../contracts/song-package/v1",it).readBytes() })
-            .read(File("../scripts/archive/teaching-v31/packages/shayou-v2.gpractice").readBytes()).score.voicings.map {
-                com.a3322505a.guitarlearning.music.score.PracticeKey("local.shayou",it.id).encoded
-            }.toSet()
-        val grips=repo.snapshot.chords.filter { it.id in sourceIds }
-        assertEquals(16,grips.size)
-        assertEquals(mapOf("斜阳 · 伴奏指法" to 11,"斜阳 · 双音 riff" to 5),grips.groupingBy { it.group }.eachCount())
-        grips.forEach { grip -> assertTrue(grip.source.contains("用指为参考"));assertEquals(3,grip.capoFret) }
-        val dim=grips[7]
-        assertEquals("减五音",dim.role(Position(4,2)))
-        assertEquals("减七音",dim.role(Position(3,0)))
-        assertEquals("B♭",dim.noteName(Position(3,0)))
-        assertEquals("A♭",grips[9].noteName(Position(6,1)))
-        val dead=repo.resolve("SHA-CHORUS").sequence.performance.notes.filter { it.note.dead }
-        assertTrue(dead.isNotEmpty())
-        assertTrue(dead.all { it.note.fret==10 && it.note.midi==it.track.midi(it.note.string,10) })
-        val trip=repo.resolve("YT-RING").sequence.performance
-        assertTrue(trip.notes.any { it.articulation.letRing==true })
-        assertTrue(trip.score.relations.any { it.kind=="tie" })
-        assertTrue(repo.resolve("YT-GROOVE").sequence.performance.notes.any { it.articulation.bend.orEmpty().isNotEmpty() })
-        assertTrue(repo.resolve("YT-LEGATO").sequence.performance.relations.any { it.kind=="hammer" || it.kind=="pull" })
+        assertEquals(repo.snapshot.phrases.size, count)
+        repo.snapshot.chords.forEach { chord ->
+            assertNull(chord.id, chord.unavailableReason)
+            chord.positions.filter { it.fret > 0 }.forEach { assertTrue(chord.fingers[6 - it.string] in 1..5) }
+        }
     }
 }

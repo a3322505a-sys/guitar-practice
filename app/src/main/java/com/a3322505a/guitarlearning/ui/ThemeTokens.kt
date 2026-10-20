@@ -56,6 +56,10 @@ data class ThemeTokens(
     val diagramGrid: Color,
     val primaryText: Color = primary,
     val fretboardNoteStroke: Color = primary.copy(alpha = .65f),
+    val noteInkLight: Color = Color.White,
+    val noteInkDark: Color = Color.Black,
+    val fretboardWire: Color = Color(0xFFBCC6CC),
+    val fretboardInlay: Color = Color(0xFF64748B),
 )
 
 @Immutable

@@ -112,11 +112,11 @@ class ThemeRenderTest {
     }
     @Test @Config(qualifiers="w891dp-h411dp-land-mdpi") fun landscapeUsesSameCardAndIntegratedPod() {
         compose.waitUntil(45000) { Shadows.shadowOf(Looper.getMainLooper()).idle(); runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess }
-        compose.onNodeWithText("六线谱").performClick()
+        compose.onNodeWithTag("dock-toggle").performClick()
         compose.onNodeWithTag("tablature").assertIsDisplayed()
         capture("forest-landscape-tab")
         preferences()
-        compose.onNodeWithTag("practice-side-panel").assertIsDisplayed()
+        compose.onNodeWithTag("practice-settings").assertIsDisplayed()
         compose.onNodeWithText("外观").performClick()
         compose.onNodeWithTag("theme-studio_dark").performScrollTo().performClick()
         capture("studio-dark-landscape-side")

@@ -20,7 +20,7 @@ internal sealed class WorkbenchDestination(val id: String, val title: String) {
     data object Chords : WorkbenchDestination("chords", "和弦词典")
     data object Scales : WorkbenchDestination("scales", "音阶词典")
     companion object {
-        val all = listOf(Curriculum, Chords, Scales)
+        val all: List<WorkbenchDestination> get() = listOf(Curriculum, Chords, Scales)
         fun fromId(id: String) = all.firstOrNull { it.id == id } ?: Curriculum
     }
 }

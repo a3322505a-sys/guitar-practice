@@ -18,7 +18,7 @@ class KernelTest {
     private fun rejects(seq: Sequence)=assertTrue(runCatching { seq.tabBars() }.isFailure)
     private fun pcm(e: Event)=Pcm(Session(Sequence(listOf(e.copy(tick=0,duration=48)),48,"test"),60,false,1),sampler())
     @Test fun tripletsKeepExactDurationsRestsAndGroupsInBothMeters() {
-        val two=Phrases.named("T01").sequence
+        val two=NotationFixtures.triplets
         val four=two.copy(length=48,beatsPerBar=4,events=two.events+Event(24,24,emptyList()))
         listOf(two,four).forEach { seq ->
             val segments=seq.tabBars().flatMap { it.segments }
@@ -56,7 +56,7 @@ class KernelTest {
         assertEquals(12,seq.soundDuration(seq.events[0],p))
         assertFalse(seq.tabBars().single().segments[1].rest)
         assertTrue(seq.tabBars().single().segments[1].positions.isEmpty())
-        val mixed=Phrases.named("R02").sequence.events.first { it.positions.isNotEmpty() && it.deadStrings.isNotEmpty() }
+        val mixed=NotationFixtures.mixedStrings.events.first { it.positions.isNotEmpty() && it.deadStrings.isNotEmpty() }
         assertEquals(setOf(5,4,3),mixed.strings.toSet())
         assertTrue(pcm(mixed).block(100,4000,true,false).any { it!=0.toShort() })
     }
@@ -119,8 +119,8 @@ class KernelTest {
         }
     }
     @Test fun legatoSurvivesBarSelectionAndRejectsMissingOrIllegalRelations() {
-        listOf("SL01","H01","P01").forEach { id ->
-            val seq=Phrases.named(id).sequence
+        Technique.entries.forEach { kind ->
+            val seq=NotationFixtures.legato(kind)
             assertEquals(2,seq.links.size)
             assertEquals(Pick.NONE,seq.events.first { it.tick==48 }.stroke)
             val session=Session(seq,60,true,1,range=BarRange(1,1))
@@ -134,13 +134,13 @@ class KernelTest {
             rejects(seq.copy(links=listOf(seq.links[0].copy(targetTick=11))))
             rejects(seq.copy(links=listOf(seq.links[0].copy(string=2))))
         }
-        val seq=Phrases.named("H01").sequence
+        val seq=NotationFixtures.legato(Technique.HAMMER)
         rejects(seq.copy(links=listOf(seq.links[0].copy(kind=Technique.PULL),seq.links[1])))
     }
     @Test fun allNewContentRendersInChunksAndExportsDemonstrations() {
         val bank=sampler()
-        listOf("T01","R01","R02","PM01","SL01","H01","P01").forEach { id ->
-            val session=Session(Phrases.named(id).sequence,60,false,1)
+        NotationFixtures.demonstrations.forEach { (id, sequence) ->
+            val session=Session(sequence,60,false,1)
             val pcm=Pcm(session,bank);val frames=session.frame(session.totalTicks!!.toDouble()).toInt()
             val all=pcm.block(0,frames,true,false)
             val chunks=ShortArray(frames)
