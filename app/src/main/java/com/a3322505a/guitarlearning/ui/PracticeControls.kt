@@ -82,6 +82,7 @@ internal fun PracticeSegments(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     accentSelected: Boolean = false,
+    optionTags: List<String?> = emptyList(),
 ) {
     val colors = PracticeSkin.colors
     val style = PracticeSkin.metrics.segmentStyle
@@ -111,6 +112,7 @@ internal fun PracticeSegments(
                 val selectedFg = if (accentSelected) colors.onPrimary else colors.textPrimary
                 Box(
                     Modifier.weight(widths[index].value).fillMaxHeight()
+                        .then(optionTags.getOrNull(index)?.let { Modifier.testTag(it) } ?: Modifier)
                         .selectable(selected = checked, enabled = enabled, role = Role.Tab, onClick = { onSelect(index) })
                         .padding(style.inset),
                     contentAlignment = Alignment.Center,
@@ -406,10 +408,12 @@ internal fun CompactTopBar(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WorkbenchPanel(
+internal fun ContentWorkbenchSheet(
     state: PracticeSettingsState,
     contentOnly: Boolean,
-    sidePanel: Boolean,
+    destination: WorkbenchDestination,
+    onDestination: (WorkbenchDestination) -> Unit,
+    onFocus: (String?) -> Unit,
     onClose: () -> Unit,
     onCategory: (Int) -> Unit,
     onScale: (ScaleOptions) -> Unit,
@@ -421,20 +425,33 @@ internal fun WorkbenchPanel(
     onGuitar: (Boolean) -> Unit,
     onClick: (Boolean) -> Unit,
     themeManager: ThemeManager,
-    mix: com.a3322505a.guitarlearning.audio.PlaybackMix = com.a3322505a.guitarlearning.audio.PlaybackMix(),
-    onMix: (com.a3322505a.guitarlearning.audio.PlaybackMix) -> Unit = {},
-    onSourceFilter: (String) -> Unit = {},
-    onManagePackages: () -> Unit = {},
+    mix: com.a3322505a.guitarlearning.audio.PlaybackMix,
+    onMix: (com.a3322505a.guitarlearning.audio.PlaybackMix) -> Unit,
+    onSourceFilter: (String) -> Unit,
+    onManagePackages: () -> Unit,
 ) {
     val body: @Composable () -> Unit = {
-        Column(Modifier.fillMaxSize().padding(14.dp).navigationBarsPadding().testTag("practice-settings"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize().padding(12.dp).testTag("practice-settings"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(if (contentOnly) "练习内容" else "练习偏好", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text("完成") }
             }
             if (contentOnly) {
-                WorkbenchContentChoices(state, onCategory, onScale, onChord, onPhrase, onRange, Modifier.weight(1f), onSourceFilter, onManagePackages)
+                PracticeSegments(WorkbenchDestination.all.map { it.title }, WorkbenchDestination.all.indexOf(destination),
+                    { onDestination(WorkbenchDestination.all[it]) }, Modifier.fillMaxWidth(),
+                    optionTags = listOf("workbench-curriculum", "chord-dictionary", "scale-dictionary"))
+                Box(Modifier.weight(1f).fillMaxWidth().testTag("content-panel")) {
+                    when (destination) {
+                        WorkbenchDestination.Curriculum -> WorkbenchContentChoices(state, onCategory, onScale, onChord, onPhrase, onRange,
+                            Modifier.fillMaxSize(), onSourceFilter, onManagePackages, onDestination, onFocus)
+                        WorkbenchDestination.Chords -> ChordDictionaryView(state.first, Modifier.fillMaxSize(), onChord)
+                        WorkbenchDestination.Scales -> ScaleDictionaryView(state.scale, Modifier.fillMaxSize()) {
+                            onCategory(TeachingModule.SCALES.ordinal); onScale(it); onClose()
+                        }
+                    }
+                }
             } else {
+                TextButton(onClick = onManagePackages, modifier = Modifier.testTag("content-package-management")) { Text("曲包与帮助") }
                 var tab by rememberSaveable { mutableIntStateOf(0) }
                 PracticeSegments(listOf("跟练", "声音", "外观"), tab, { tab = it }, Modifier.fillMaxWidth())
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -468,14 +485,7 @@ internal fun WorkbenchPanel(
             }
         }
     }
-    if (sidePanel) {
-        Surface(Modifier.fillMaxSize().testTag("practice-side-panel"), color = PracticeSkin.colors.background, shadowElevation = 4.dp) { body() }
-    } else {
-        ModalBottomSheet(onDismissRequest = onClose, containerColor = PracticeSkin.colors.background, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false), modifier = Modifier.fillMaxHeight(.92f)) {
-            ImmersiveOverlayWindow()
-            body()
-        }
-    }
+    StudioModal(onClose, wideContent = contentOnly) { body() }
 }
 
 @Composable
@@ -487,19 +497,22 @@ internal fun WorkbenchContentChoices(
     onPhrase: (com.a3322505a.guitarlearning.practice.Phrase) -> Unit,
     onRange: (com.a3322505a.guitarlearning.practice.BarRange) -> Unit,
     modifier: Modifier,
-    onSourceFilter: (String) -> Unit = {},
-    onManagePackages: () -> Unit = {},
+    onSourceFilter: (String) -> Unit,
+    onManagePackages: () -> Unit,
+    onDestination: (WorkbenchDestination) -> Unit,
+    onFocus: (String?) -> Unit,
 ) = with(state) {
     val effectiveSource = content.effectiveSource(activeSourceFilter, chordPhrases)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        PracticeSegments(TeachingModule.entries.map { it.title }, module.ordinal, onCategory, Modifier.fillMaxWidth())
+        PracticeSegments(TeachingModule.entries.map { it.title }, module.ordinal, onCategory, Modifier.fillMaxWidth(),
+            optionTags = listOf("tab-foundations", "tab-chords", "tab-scales", "tab-application"))
         if(module==TeachingModule.APPLICATION) {
             val demo=content.phraseSections(BASIC_CONTENT,TeachingModule.APPLICATION).flatMap { it.items }.firstOrNull { it.lesson?.leadTrackIds?.isNotEmpty()==true }
             if(demo!=null) TextButton(onClick={ onSourceFilter(BASIC_CONTENT);onPhrase(demo) },modifier=Modifier.testTag("p5-direct-entry")) {
                 Text("领奏渐隐与倒序接龙 · 双轨练习")
             }
         }
-        if (page != 0) {
+        run {
             val sourceScroll = rememberLazyListState()
             LaunchedEffect(effectiveSource, content.sources) {
                 val index = content.sources.indexOfFirst { it.id == effectiveSource }
@@ -526,18 +539,27 @@ internal fun WorkbenchContentChoices(
                 )
             }
         }
+        if (page == 1 && chordPhrases) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = focusedPracticeId == phrase.id,
+                    onClick = { onFocus(if (focusedPracticeId == phrase.id) null else phrase.id) },
+                    label = { Text(if (focusedPracticeId == phrase.id) "取消重点" else "设为重点") }, modifier = Modifier.heightIn(min = 48.dp))
+                TextButton(onClick = { onRange(wholeRange) }, modifier = Modifier.heightIn(min = 48.dp)) { Text("完整练习") }
+            }
+        }
         key(page, chordPhrases, effectiveSource) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).testTag("content-card-list"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (effectiveSource == "local.daily-practice") Text("每日练习", Modifier.testTag("tab-daily-practice"), style = MaterialTheme.typography.titleSmall)
                 if (page == 0) {
-                    val lessons=content.phraseSections(BASIC_CONTENT,TeachingModule.SCALES).flatMap { it.items }
+                    val lessons=content.phraseSections(effectiveSource,TeachingModule.SCALES).flatMap { it.items }
                     if(lessons.isNotEmpty()) ScaleContentSection("标准短句 · 单八度、五声与封闭 Box") {
-                        ExerciseCards(lessons.mapIndexed { i, item -> content.phraseCard(item, i) }, -1) { onPhrase(lessons[it]) }
+                        ExerciseCards(lessons.mapIndexed { i, item -> content.phraseCard(item, i, item.id == focusedPracticeId) }, -1) { onPhrase(lessons[it]) }
                     }
                     ScaleContentSection("1. 调性 · 关系大小调") {
                         val introductory=Tonality.entries.take(6)
                         ContentCards(introductory.map { it.title }, introductory.indexOf(scale.key),
                             cardTexts = introductory.map(::tonalityText), singleLinePrimary = true) { onScale(scale.copy(key = introductory[it],pattern=0)) }
-                        ScaleDictionaryEntry(scale.key) { onScale(scale.copy(key=it,pattern=0,pentatonic=false)) }
+                        TextButton(onClick = { onDestination(WorkbenchDestination.Scales) }) { Text("完整音阶词典 · 12 主音 × 5 类") }
                     }
                     Label("和弦音靶心 · 明确选择") {
                         Choices(listOf("C","Am","G","D","Em","Bm","Fmaj7"),listOf("C","Am","G","D","Em","Bm","Fmaj7").indexOf(first.name)) {
@@ -566,11 +588,11 @@ internal fun WorkbenchContentChoices(
                             cardTexts = rhythmCardTexts, singleLinePrimary = true) { onScale(scale.copy(notesPerBeat = it + 1)) }
                     }
                 } else if (module == TeachingModule.CHORDS && !chordPhrases) {
-                    ChordDictionaryEntry(onChord)
+                    TextButton(onClick = { onDestination(WorkbenchDestination.Chords) }) { Text("查和弦词典 · 12 主音与多配法") }
                     val pairs = content.pairSection(effectiveSource)
                     if (pairs.items.isNotEmpty()) {
                         ContentSectionTitle(pairs.title, pairs.items.size)
-                        ExerciseCards(pairs.items.mapIndexed { i, item -> content.phraseCard(item, i) },
+                        ExerciseCards(pairs.items.mapIndexed { i, item -> content.phraseCard(item, i, item.id == focusedPracticeId) },
                             pairs.items.indexOfFirst { it.id == phrase.id }) { onPhrase(pairs.items[it]) }
                     }
                     val sections = content.chordSections(effectiveSource)
@@ -583,7 +605,7 @@ internal fun WorkbenchContentChoices(
                     val sections = content.phraseSections(effectiveSource,module)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
-                        ExerciseCards(items.mapIndexed { i, item -> content.phraseCard(item, i) }, items.indexOfFirst { it.id == family.id }) { onPhrase(items[it]) }
+                        ExerciseCards(items.mapIndexed { i, item -> content.phraseCard(item, i, item.id == focusedPracticeId) }, items.indexOfFirst { it.id == family.id }) { onPhrase(items[it]) }
                     }
                     if (content.sourceOf(family) == effectiveSource) {
                         if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }

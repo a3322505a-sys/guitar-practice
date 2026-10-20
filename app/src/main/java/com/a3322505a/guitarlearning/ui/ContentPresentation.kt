@@ -9,6 +9,7 @@ import com.a3322505a.guitarlearning.music.score.PracticeKey
 import com.a3322505a.guitarlearning.practice.Phrase
 import com.a3322505a.guitarlearning.practice.ScaleExercise
 
+internal const val ALL_CONTENT = "__all__"
 internal const val BASIC_CONTENT = "__basic__"
 
 internal data class ExerciseCardUiModel(
@@ -31,7 +32,7 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
     private val packageNames = snapshot.packages.associate { it.identity.packageId to sourceTitle(it.title) }
     private val phrases = snapshot.catalogue
     private val chords = snapshot.chords
-    val sources = listOf(ContentSource(BASIC_CONTENT, "基础训练")) +
+    val sources = listOf(ContentSource(ALL_CONTENT, "全部"), ContentSource(BASIC_CONTENT, "基础教学")) +
         (phrases.map(::sourceOf) + chords.map(::sourceOf)).distinct().filter { it != BASIC_CONTENT }
             .sorted().map { ContentSource(it, packageNames[it] ?: it) }
 
@@ -44,20 +45,20 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
     fun restoredSource(requested: String, ready: Boolean): String =
         if (!ready || sources.any { it.id == requested }) requested else BASIC_CONTENT
 
-    fun effectiveSource(requested: String, songs: Boolean): String = requested.takeIf { id ->
+    fun effectiveSource(requested: String, songs: Boolean): String = if (requested == ALL_CONTENT) ALL_CONTENT else requested.takeIf { id ->
         if (songs) phrases.any { sourceOf(it) == id } else chords.any { sourceOf(it) == id }
     } ?: BASIC_CONTENT
 
     fun phraseSections(source: String, module: TeachingModule? = null): List<ContentSection<Phrase>> {
-        val filtered = phrases.filter { sourceOf(it) == source && (source != BASIC_CONTENT || module == null || moduleOf(it) == module) }
-        if (source == BASIC_CONTENT) return filtered.groupBy { it.lesson?.module?.title ?: it.use }.map { ContentSection(it.key,it.value) }
+        val filtered = phrases.filter { (source == ALL_CONTENT || sourceOf(it) == source) && (source != BASIC_CONTENT && source != ALL_CONTENT || module == null || moduleOf(it) == module) }
+        if (source == BASIC_CONTENT || source == ALL_CONTENT) return filtered.groupBy { it.lesson?.module?.title ?: it.use }.map { ContentSection(it.key,it.value) }
         return filtered.groupBy { sectionTitle(it.use, source) }.map { ContentSection(it.key, it.value) }
     }
 
     fun moduleOf(phrase: Phrase) = phrase.lesson?.module ?: TeachingModule.APPLICATION
     fun chordSections(source: String): List<ContentSection<Chord>> {
-        val filtered = com.a3322505a.guitarlearning.music.ChordSlots.grouped(chords.filter { sourceOf(it) == source })
-        if (source == BASIC_CONTENT) return filtered.groupBy { it.group }.map { ContentSection(it.key,it.value) }
+        val filtered = com.a3322505a.guitarlearning.music.ChordSlots.grouped(chords.filter { source == ALL_CONTENT || sourceOf(it) == source })
+        if (source == BASIC_CONTENT || source == ALL_CONTENT) return filtered.groupBy { it.group }.map { ContentSection(it.key,it.value) }
         return filtered.groupBy { sectionTitle(it.group, source) }
         .map { ContentSection(it.key, it.value) }
     }

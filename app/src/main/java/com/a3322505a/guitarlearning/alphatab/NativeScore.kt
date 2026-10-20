@@ -60,10 +60,22 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         viewport=null
         super.onDetachedFromWindow()
     }
+    var inputEnabled = true
+        set(value) {
+            if (field && !value) {
+                val cancel = MotionEvent.obtain(0L, android.os.SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, 0f, 0f, 0)
+                super.dispatchTouchEvent(cancel)
+                cancel.recycle()
+                tapped = false
+                moved = true
+            }
+            field = value
+        }
     private var x=0f; private var y=0f; private var down=0L
     private var moved=false; private var tapped=false
     private val slop=ViewConfiguration.get(context).scaledTouchSlop
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (!inputEnabled) return true
         when(event.actionMasked) {
             MotionEvent.ACTION_DOWN -> { x=event.x; y=event.y; down=event.eventTime; moved=false; tapped=false }
             MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> { moved=true; tapped=false }
@@ -106,7 +118,7 @@ internal fun applyScoreResources(resources: alphaTab.RenderingResources, colors:
 
 /** Mounted in both views, so changing to the fretboard cannot destroy the session. */
 @Composable
-fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean) {
+fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean, inputEnabled: Boolean = true) {
     val colors = PracticeSkin.colors
     val applied = remember(player) { arrayOfNulls<ThemeTokens>(1) }
     AndroidView(factory = { context -> PracticeScoreHost(context).also { host ->
@@ -116,6 +128,7 @@ fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean) {
         player.attach(host.native,host::consumeTap)
     } },
         modifier = modifier, update = {
+            it.inputEnabled = inputEnabled && visible
             it.visibility = if (visible) View.VISIBLE else View.INVISIBLE
             if (applied[0] != colors) {
                 applyScoreSkin(it.native, colors)

@@ -41,6 +41,7 @@ internal data class PracticeSettingsState(
         emptyList(), catalogueGroups.values.flatten(), emptyList(), chords = chordGroups.values.flatten(),
     )),
     val activeSourceFilter: String = BASIC_CONTENT,
+    val focusedPracticeId: String? = null,
     val module: TeachingModule = if(page==0) TeachingModule.SCALES else if(!chordPhrases) TeachingModule.CHORDS else TeachingModule.APPLICATION,
 )
 

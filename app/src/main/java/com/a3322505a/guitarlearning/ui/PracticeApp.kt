@@ -81,7 +81,17 @@ internal fun phraseCue(event: Event?, sequence: Sequence): String {
 
 enum class StageLayout { LINKED, TAB_ONLY, FRETBOARD_ONLY }
 
-private enum class PracticeOverlay { NONE, CONTENT, PRACTICE, MANAGEMENT }
+private sealed class PracticeOverlay(val id: String) {
+    data object NONE : PracticeOverlay("none")
+    data object CONTENT : PracticeOverlay("content")
+    data object PRACTICE : PracticeOverlay("practice")
+    data object MANAGEMENT : PracticeOverlay("management")
+    companion object {
+        val saver = Saver<PracticeOverlay, String>(save = { it.id }, restore = { id ->
+            listOf(NONE, CONTENT, PRACTICE, MANAGEMENT).firstOrNull { it.id == id } ?: NONE
+        })
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,7 +150,9 @@ internal fun PracticeWorkbench(
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var stageLayout by rememberSaveable { mutableStateOf(StageLayout.FRETBOARD_ONLY) }
     val activity = checkNotNull(LocalActivity.current)
-    var overlay by rememberSaveable { mutableStateOf(PracticeOverlay.NONE) }
+    var overlay by rememberSaveable(stateSaver = PracticeOverlay.saver) { mutableStateOf<PracticeOverlay>(PracticeOverlay.NONE) }
+    var workbenchDestinationId by rememberSaveable { mutableStateOf("curriculum") }
+    var focusedPracticeId by rememberSaveable { mutableStateOf(preferences.getString("focused-practice", null)) }
     var returnPhraseId by rememberSaveable { mutableStateOf<String?>(null) }
     var transitionTargetId by rememberSaveable { mutableStateOf<String?>(null) }
     var returnModule by rememberSaveable { mutableStateOf(TeachingModule.APPLICATION) }
@@ -339,8 +351,6 @@ internal fun PracticeWorkbench(
             }
             val windowHeight = maxHeight
             val configuring = overlay == PracticeOverlay.PRACTICE || overlay == PracticeOverlay.CONTENT
-            val sidePanel = maxWidth >= 600.dp || maxWidth > maxHeight
-            val panelWidth = if (configuring && sidePanel) { if(overlay==PracticeOverlay.CONTENT) minOf(960.dp,maxWidth*.82f) else minOf(400.dp,maxWidth*.44f) } else 0.dp
 
             val tempoVisit = if (showingSession) nativePlayer?.currentVisit ?: cursor?.bar ?: activeRange.first else activeRange.first
             val tempoReference = sequence?.let { if(showingSession) TempoControl.sourceBpmAt(it,(cursor?.localTick ?: (it.barStart(tempoVisit).toDouble()))/it.ticksPerQuarter) else TempoControl.sourceBpm(it, tempoVisit) } ?: 60.0
@@ -434,7 +444,7 @@ internal fun PracticeWorkbench(
 
             val stageSlot: @Composable (Modifier) -> Unit = { stageModifier ->
                 BoxWithConstraints(stageModifier) {
-                    val contentHeight = if (configuring && !sidePanel) minOf(maxHeight, (windowHeight * .48f - 112.dp).coerceAtLeast(120.dp)) else maxHeight
+                    val contentHeight = maxHeight
                     val contentState = PracticeContentState(
                         page, chordPhrases, tab, tabletControls, scale, first, phrase, melody,
                         sequence, displayedSequence, scaleResult, hint, renderHint, player.active, progress.phase, renderCursor, cursor,
@@ -575,7 +585,7 @@ internal fun PracticeWorkbench(
             // across all orientation, deck/column, view, and overlay changes so AlphaTabView never detaches.
             Box(Modifier.fillMaxSize().onGloballyPositioned { hostOrigin = it.positionInRoot() }) {
                 Scaffold(
-                    modifier = Modifier.fillMaxSize().padding(end = panelWidth),
+                    modifier = Modifier.fillMaxSize(),
                     containerColor = Color.Transparent,
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     bottomBar = { transportBlock(false) },
@@ -592,7 +602,7 @@ internal fun PracticeWorkbench(
                                 overlay = PracticeOverlay.NONE
                                 stageLayout = if (nativePlayer == null && requested == StageLayout.LINKED) StageLayout.TAB_ONLY else requested
                             },
-                            onOpenLibrary = { overlay = PracticeOverlay.CONTENT },
+                            onOpenLibrary = { workbenchDestinationId = WorkbenchDestination.Curriculum.id; overlay = PracticeOverlay.CONTENT },
                             onOpenSettings = { overlay = PracticeOverlay.PRACTICE },
                             onManagement = { overlay = PracticeOverlay.MANAGEMENT },
                             linkedAvailable = nativePlayer != null,
@@ -617,7 +627,8 @@ internal fun PracticeWorkbench(
                 } else Modifier.fillMaxSize()
 
                 if (nativePlayer != null) {
-                    NativeScore(nativePlayer, frame, showNativeScore && displayedSequence != null && hasFrame)
+                    NativeScore(nativePlayer, frame, showNativeScore && displayedSequence != null && hasFrame,
+                        inputEnabled = overlay == PracticeOverlay.NONE && !volumeOpen && !backingVolumeOpen && !lessonActionsOpen)
                 }
                 if (showNativeScore && nativePlayer != null && (nativePlayer.loading || nativePlayer.error.isNotBlank())) {
                     Box(frame.background(PracticeSkin.colors.diagramSurface), contentAlignment = Alignment.Center) {
@@ -625,30 +636,26 @@ internal fun PracticeWorkbench(
                     }
                 }
 
-                if (configuring && sidePanel) {
-                    Box(
-                        Modifier.fillMaxSize().padding(end = panelWidth)
-                            .clickable { overlay = PracticeOverlay.NONE },
-                    )
-                }
                 if (configuring) {
-                    Box(if (sidePanel) Modifier.align(Alignment.CenterEnd).width(panelWidth).fillMaxHeight() else Modifier) {
-                        WorkbenchPanel(
+                    Box {
+                        ContentWorkbenchSheet(
                             state = PracticeSettingsState(
                                 page, chordPhrases, tabletControls, scale, first, phrase,
                                 repository.family(phrase), repository.versions(phrase), librarySnapshot.catalogue.groupBy { it.use }, chords.groupBy { it.group },
                                 phrase.relatedId?.let { repository.named(it).title }, bpm, repeats, firstBar, lastBar, range, wholeRange, guitar, click,
                                 moreExercisesOpen, beatsPerBar, sequence, displayedSequence, scaleResult, sourceTempo, tempoMultiplier, selectedTrackId, soloTrack,
                                 if (page == 0) scaleResult.reason else if (!libraryReady) "正在加载曲库…" else if (!chordPhrases) chordUnavailable ?: note else note,
-                                content = contentPresentation, activeSourceFilter = activeSourceFilter, module = module,
+                                content = contentPresentation, activeSourceFilter = activeSourceFilter, module = module, focusedPracticeId = focusedPracticeId,
                             ),
                             contentOnly = overlay == PracticeOverlay.CONTENT,
-                            sidePanel = sidePanel,
+                            destination = WorkbenchDestination.fromId(workbenchDestinationId),
+                            onDestination = { workbenchDestinationId = it.id },
+                            onFocus = { focusedPracticeId = it; preferences.edit().putString("focused-practice", it).apply() },
                             onClose = { overlay = PracticeOverlay.NONE },
                             onCategory = ::category,
                             onScale = ::scaleChange,
-                            onChord = { firstChange(it); if(module==TeachingModule.CHORDS) { chordPhrases=false; page=1 }; overlay = PracticeOverlay.NONE },
-                            onPhrase = { changed(); chordPhrases=true; page=1; stageLayout=if(nativePlayer!=null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY; phraseChange(it); overlay = PracticeOverlay.NONE },
+                            onChord = { firstChange(it); module = TeachingModule.CHORDS; chordPhrases = false; page = 1; overlay = PracticeOverlay.NONE },
+                            onPhrase = { changed(); chordPhrases=true; page=1; module=contentPresentation.moduleOf(it); stageLayout=if(nativePlayer!=null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY; phraseChange(it); overlay = PracticeOverlay.NONE },
                             onRange = { value -> if (value != range) { changed(); firstBar = value.first; lastBar = value.last } },
                             onRepeats = { value -> if (value != repeats) { changed(); repeats = value } },
                             onSourceTempo = { value -> if (value != sourceTempo) { changed(); sourceTempo = value; phraseStore.saveTempo(phrase, value, tempoMultiplier) } },

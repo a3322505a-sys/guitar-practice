@@ -18,10 +18,10 @@ class ContentPresentationTest {
 
     @Test fun everyVisibleNativePracticeAppearsOnceInItsSourceAndModule() {
         assertTrue(snapshot.diagnostics.joinToString(),snapshot.diagnostics.isEmpty())
-        val shown=content.sources.flatMap { content.phraseSections(it.id) }.flatMap { it.items }
+        val shown=content.sources.filter { it.id != ALL_CONTENT }.flatMap { content.phraseSections(it.id) }.flatMap { it.items }
         assertEquals(snapshot.catalogue.map { it.id }.sorted(),shown.map { it.id }.sorted())
         assertEquals(shown.size,shown.map { it.id }.distinct().size)
-        assertEquals(5,content.sources.size)
+        assertEquals(6,content.sources.size)
         TeachingModule.entries.forEach { module ->
             val lessons=content.phraseSections(BASIC_CONTENT,module).flatMap { it.items }
             assertTrue(module.title,lessons.isNotEmpty())
