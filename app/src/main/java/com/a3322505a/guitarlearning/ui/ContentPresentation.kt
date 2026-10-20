@@ -5,10 +5,22 @@ import com.a3322505a.guitarlearning.music.TeachingModule
 import com.a3322505a.guitarlearning.music.Chord
 import com.a3322505a.guitarlearning.music.Pattern
 import com.a3322505a.guitarlearning.music.Tonality
+import com.a3322505a.guitarlearning.music.score.PracticeKey
 import com.a3322505a.guitarlearning.practice.Phrase
 import com.a3322505a.guitarlearning.practice.ScaleExercise
 
 internal const val BASIC_CONTENT = "__basic__"
+
+internal data class ExerciseCardUiModel(
+    val index: Int,
+    val key: PracticeKey,
+    val title: String,
+    val subtitle: String?,
+    val categoryBadge: String,
+    val versionBadge: String?,
+    val metaSummary: String?,
+    val isPinnedFocus: Boolean = false,
+)
 
 internal data class ContentCardText(val primary: String, val tag: String? = null)
 internal data class ContentSource(val id: String, val title: String)
@@ -50,23 +62,41 @@ internal class ContentPresentation(snapshot: LibrarySnapshot) {
         .map { ContentSection(it.key, it.value) }
     }
 
-    fun phraseText(phrase: Phrase): ContentCardText {
-        val source = sourceOf(phrase)
-        if (source != BASIC_CONTENT) return ContentCardText(stripPrefix(phrase.title, packageNames[source]))
-        return ContentCardText(phrase.title)
+    fun phraseCard(phrase: Phrase, index: Int = 0, pinned: Boolean = false) = ExerciseCardUiModel(
+        index = index, key = phrase.assetKey ?: displayKey(phrase.id, sourceOf(phrase)),
+        title = displayTitle(phrase.title, packageNames[sourceOf(phrase)]),
+        subtitle = phrase.technique.takeIf { it.isNotBlank() },
+        categoryBadge = if (sourceOf(phrase) == "local.daily-practice") "每日跟练" else moduleOf(phrase).title,
+        versionBadge = phrase.version,
+        metaSummary = "${phrase.suggestedBpm} BPM · ${phrase.sequence.barCount} 小节",
+        isPinnedFocus = pinned,
+    )
+
+    fun chordCard(chord: Chord, index: Int = 0, pinned: Boolean = false): ExerciseCardUiModel {
+        val text = chordText(chord)
+        return ExerciseCardUiModel(index, displayKey(chord.id, sourceOf(chord)), text.primary, text.tag,
+            chord.quality?.description ?: "和弦", null,
+            chord.positions.filter { it.fret > 0 }.let { points ->
+                if (points.isEmpty()) "开放弦" else "${points.minOf { it.fret }}–${points.maxOf { it.fret }} 品"
+            }, pinned)
     }
+
+    fun phraseText(phrase: Phrase) = phraseCard(phrase).let { ContentCardText(it.title, it.subtitle) }
 
     fun chordText(chord: Chord): ContentCardText {
         val source = sourceOf(chord)
-        val title = stripPrefix(chord.name, packageNames[source])
+        val title = displayTitle(chord.name, packageNames[source])
         val split = title.lastIndexOf(" · ")
         return if (split > 0 && title.substring(split + 3).contains("品"))
             ContentCardText(title.substring(0, split), title.substring(split + 3))
-        else ContentCardText(title, if (source != BASIC_CONTENT) chordNatureTag(title) else null)
+        else ContentCardText(title, chordNatureTag(title))
     }
 
+    fun pairSection(source: String): ContentSection<Phrase> = ContentSection("双和弦转换练习",
+        phraseSections(source, TeachingModule.CHORDS).flatMap { it.items }.distinctBy { it.id })
+
     private fun sectionTitle(raw: String, source: String): String {
-        val stripped = stripPrefix(raw.removePrefix("本地曲库 · "), packageNames[source])
+        val stripped = displayTitle(raw.removePrefix("本地曲库 · "), packageNames[source])
         return if (stripped == packageNames[source] || stripped.matches(Regex("\\d+段完整乐句"))) "练习片段" else stripped
     }
 }
@@ -86,7 +116,12 @@ internal fun encodedPackageId(id: String): String? {
 internal fun sourceTitle(raw: String): String = raw.removePrefix("本地曲库 · ").trim()
     .replace(Regex(" · (\\d+段完整乐句|节奏与伴奏|旋律与连奏)$"), "")
 
-private fun stripPrefix(raw: String, prefix: String?): String =
+private fun displayKey(id: String, source: String): PracticeKey {
+    val packageId = encodedPackageId(id) ?: return PracticeKey(source, id)
+    return PracticeKey(packageId, id.substring(id.indexOf(':') + 1 + packageId.length))
+}
+
+private fun displayTitle(raw: String, prefix: String?): String =
     if (prefix != null && raw.startsWith("$prefix · ")) raw.removePrefix("$prefix · ").takeIf { it.isNotBlank() } ?: raw else raw
 
 internal fun tonalityText(key: Tonality) = ContentCardText(key.title, when (key) {

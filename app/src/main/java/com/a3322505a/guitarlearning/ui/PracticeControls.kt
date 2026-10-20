@@ -531,7 +531,7 @@ internal fun WorkbenchContentChoices(
                 if (page == 0) {
                     val lessons=content.phraseSections(BASIC_CONTENT,TeachingModule.SCALES).flatMap { it.items }
                     if(lessons.isNotEmpty()) ScaleContentSection("标准短句 · 单八度、五声与封闭 Box") {
-                        ContentCards(lessons.map { it.title },-1,cardTexts=lessons.map(content::phraseText)) { onPhrase(lessons[it]) }
+                        ExerciseCards(lessons.mapIndexed { i, item -> content.phraseCard(item, i) }, -1) { onPhrase(lessons[it]) }
                     }
                     ScaleContentSection("1. 调性 · 关系大小调") {
                         val introductory=Tonality.entries.take(6)
@@ -567,23 +567,23 @@ internal fun WorkbenchContentChoices(
                     }
                 } else if (module == TeachingModule.CHORDS && !chordPhrases) {
                     ChordDictionaryEntry(onChord)
-                    val pairSections = content.phraseSections(effectiveSource,TeachingModule.CHORDS)
-                    pairSections.forEach { section ->
-                        ContentSectionTitle("双和弦转换", section.items.size)
-                        ContentCards(section.items.map { it.title }, -1, cardTexts=section.items.map(content::phraseText)) { onPhrase(section.items[it]) }
+                    val pairs = content.pairSection(effectiveSource)
+                    if (pairs.items.isNotEmpty()) {
+                        ContentSectionTitle(pairs.title, pairs.items.size)
+                        ExerciseCards(pairs.items.mapIndexed { i, item -> content.phraseCard(item, i) },
+                            pairs.items.indexOfFirst { it.id == phrase.id }) { onPhrase(pairs.items[it]) }
                     }
                     val sections = content.chordSections(effectiveSource)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
-                        ContentCards(items.map { it.name }, items.indexOfFirst { it.id == first.id || ChordSlots.slot(first)?.original==it.name }, compact = true,
-                            cardTexts = items.map(content::chordText)) { onChord(items[it]) }
+                        ExerciseCards(items.mapIndexed { i, item -> content.chordCard(item, i) },
+                            items.indexOfFirst { it.id == first.id || ChordSlots.slot(first)?.original==it.name }) { onChord(items[it]) }
                     }
                 } else {
                     val sections = content.phraseSections(effectiveSource,module)
                     sections.forEach { (group, items) ->
                         if (showContentSectionTitles(effectiveSource, sections.size)) ContentSectionTitle(group, items.size)
-                        ContentCards(items.map { it.title }, items.indexOfFirst { it.id == family.id },
-                            cardTexts = items.map(content::phraseText)) { onPhrase(items[it]) }
+                        ExerciseCards(items.mapIndexed { i, item -> content.phraseCard(item, i) }, items.indexOfFirst { it.id == family.id }) { onPhrase(items[it]) }
                     }
                     if (content.sourceOf(family) == effectiveSource) {
                         if (versions.size > 1) Choices(versions.map { it.version ?: it.title }, versions.indexOfFirst { it.id == phrase.id }) { onPhrase(versions[it]) }

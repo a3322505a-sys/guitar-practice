@@ -1,92 +1,71 @@
 package com.a3322505a.guitarlearning.ui
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun ContentCards(titles: List<String>, selected: Int, compact: Boolean = false, cardTexts: List<ContentCardText>? = null,
-    singleLinePrimary: Boolean = false, onSelect: (Int) -> Unit) {
-    val fontScale=LocalDensity.current.fontScale.coerceAtLeast(1f)
+internal fun ExerciseCards(models: List<ExerciseCardUiModel>, selected: Int, onSelect: (Int) -> Unit) {
+    ContentCards(models.map { it.title }, selected, uiModels = models, onSelect = onSelect)
+}
+
+/** Cards reflow at window breakpoints; labels never shrink to fit their container. */
+@Composable
+internal fun ContentCards(
+    titles: List<String>, selected: Int, compact: Boolean = false,
+    cardTexts: List<ContentCardText>? = null, singleLinePrimary: Boolean = false,
+    uiModels: List<ExerciseCardUiModel>? = null, onSelect: (Int) -> Unit,
+) {
+    val colors = PracticeSkin.colors
+    val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns=(if (cardTexts != null) (maxWidth / ((if (compact) 96.dp else 152.dp) * fontScale)).toInt().coerceIn(1, if (compact || singleLinePrimary) 5 else 6)
-        else if (compact) when {
-            maxWidth < 400.dp*fontScale -> 3
-            maxWidth < 480.dp*fontScale -> 4
-            else -> 5
-        }
-            else (maxWidth/(144.dp*fontScale)).toInt().coerceIn(1,6)).coerceAtMost(titles.size.coerceAtLeast(1))
-        val gap=if (compact) 6.dp else 8.dp
-        Column(Modifier.selectableGroup(), verticalArrangement=Arrangement.spacedBy(gap)) {
+        val columns = studioWidth(maxWidth).columns.coerceAtMost(titles.size.coerceAtLeast(1))
+        Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             titles.indices.chunked(columns).forEach { row ->
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(gap)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { i ->
-                        if (cardTexts != null) {
-                            val checked = i == selected
-                            val colors = PracticeSkin.colors
-                            Surface(
-                                onClick = { onSelect(i) },
-                                modifier = Modifier.weight(1f).heightIn(min = if (compact) 60.dp else 76.dp).semantics {
-                                    this.selected = checked
-                                    role = Role.RadioButton
-                                    contentDescription = listOfNotNull(titles[i], cardTexts[i].tag).joinToString("，")
-                                },
-                                shape = MaterialTheme.shapes.medium,
-                                color = if (checked) colors.primary.copy(alpha = .10f).compositeOver(colors.surface) else colors.surface,
-                                border = BorderStroke(if (checked) 1.5.dp else 1.dp, if (checked) colors.primary else colors.border),
-                            ) {
-                                val text = cardTexts[i]
-                                Column(
-                                    Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-                                    horizontalAlignment = Alignment.Start,
-                                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-                                ) {
-                                    if (text.tag != null) Text(text.tag, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary,
-                                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    if (compact) {
-                                        // Measure once per layout. Never shrink through a recomposition loop.
-                                        val measurer = rememberTextMeasurer()
-                                        val style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (checked) FontWeight.Bold else FontWeight.SemiBold)
-                                        BoxWithConstraints(Modifier.fillMaxWidth()) {
-                                            val width = with(LocalDensity.current) { maxWidth.toPx() }
-                                            val measured = measurer.measure(text.primary, style = style, maxLines = 1).size.width
-                                            val size = (style.fontSize.value * (width / measured.coerceAtLeast(1)).coerceAtMost(1f)).coerceAtLeast(12f).sp
-                                            Text(text.primary, style = style.copy(fontSize = size), color = colors.textPrimary)
-                                        }
-                                    } else Text(text.primary, style = MaterialTheme.typography.labelLarge,
-                                        maxLines = if (singleLinePrimary) 1 else Int.MAX_VALUE,
-                                        softWrap = !singleLinePrimary,
-                                        overflow = TextOverflow.Ellipsis,
-                                        fontWeight = if (checked) FontWeight.Bold else FontWeight.SemiBold, color = colors.textPrimary)
+                        val checked = i == selected
+                        val model = uiModels?.get(i)
+                        val text = cardTexts?.get(i) ?: ContentCardText(model?.title ?: titles[i], model?.subtitle)
+                        Surface(
+                            onClick = { onSelect(i) },
+                            modifier = Modifier.weight(1f).heightIn(min = 68.dp)
+                                .then(if (model != null) Modifier.testTag("exercise-${model.key.encoded}") else Modifier)
+                                .semantics { this.selected = checked; role = Role.RadioButton },
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (checked) colors.surfaceSelected else colors.surfaceLow,
+                        ) {
+                            Row(Modifier.heightIn(min = 68.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.width(4.dp).height(44.dp).background(if (checked) colors.primary else colors.surfaceLow))
+                                Column(Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (model != null) Text(
+                                        listOfNotNull(model.categoryBadge, model.versionBadge, "重点".takeIf { model.isPinnedFocus }).joinToString(" · "),
+                                        style = MaterialTheme.typography.labelMedium, color = colors.textSecondary,
+                                    )
+                                    Text(text.primary, fontSize = 16.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold,
+                                        maxLines = if (fontScale > 1.2f) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis,
+                                        color = colors.textPrimary)
+                                    text.tag?.takeIf { it.isNotBlank() }?.let {
+                                        Text(it, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
+                                    }
+                                    model?.metaSummary?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary) }
                                 }
+                                if (checked) Text("✓", Modifier.padding(end = 12.dp), color = colors.primaryText, fontWeight = FontWeight.Bold)
                             }
-                        } else {
-                        OutlinedButton({onSelect(i)},modifier=Modifier.weight(1f).heightIn(min=if (compact) 48.dp else 56.dp),
-                            shape=MaterialTheme.shapes.medium,
-                            colors=ButtonDefaults.outlinedButtonColors(contentColor=PracticeSkin.colors.primaryText),
-                            border=BorderStroke(1.dp,if(i==selected) PracticeSkin.colors.primary else PracticeSkin.colors.border),
-                            contentPadding=if (compact) PaddingValues(horizontal=6.dp,vertical=4.dp) else PaddingValues(10.dp)) {
-                            Text(titles[i], style=MaterialTheme.typography.labelLarge)
-                        }
                         }
                     }
-                    repeat(columns-row.size) { Spacer(Modifier.weight(1f)) }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }

@@ -66,6 +66,21 @@ class ContentPresentationTest {
         }
     }
 
+    @Test fun structuredCardsRetainIdentityAndPairLessonsAppearOnce() {
+        val pairs = content.pairSection(BASIC_CONTENT)
+        assertEquals("双和弦转换练习", pairs.title)
+        assertEquals(pairs.items.size, pairs.items.map { it.id }.distinct().size)
+        snapshot.catalogue.forEachIndexed { i, phrase ->
+            val card = content.phraseCard(phrase, i)
+            assertEquals(phrase.assetKey, card.key)
+            assertEquals(i, card.index)
+            assertFalse(card.title.contains("[和弦]"))
+            assertFalse(card.title.contains("[音阶]"))
+            assertTrue(card.categoryBadge.isNotBlank())
+            assertTrue(card.metaSummary!!.contains("BPM"))
+        }
+    }
+
     @Test fun identityParserHandlesColonsAndRejectsMalformedKeys() {
         assertEquals("package:one",encodedPackageId(PracticeKey("package:one","practice:two").encoded))
         listOf("C","-1:a","999999999999:a","4:abc","3:abc","x:abcde").forEach { assertNull(encodedPackageId(it)) }

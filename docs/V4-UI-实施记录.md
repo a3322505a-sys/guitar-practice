@@ -17,3 +17,9 @@
 实际类型为 `ThemeTokens` / `ThemeMetrics`。增加背景层级、乐理语义色及尺寸字段，保留旧字段映射。主题收敛为黑金录音室（默认）、暖木工坊、森林日间；废弃 ID 回退并持久化默认值。更新主题与迁移测试。
 
 验证：`./gradlew :app:compileDebugKotlin` 通过（JDK 17，未增加依赖）。
+
+## Phase 2：展示投影与卡片
+
+增加 `ExerciseCardUiModel`，保留真实 PracticeKey，把标题、教学分类、版本、技巧与 BPM/小节信息分开。转换练习投影为单一分区；无边框卡片采用左侧选中条和层级背景。600/840 dp 分别切换双列/三列；标题固定 16 sp，大字体允许完整换行。
+
+验证：`./gradlew :app:clean :app:compileDebugKotlin -Pkotlin.incremental=false` 通过。干净构建排除了当前工具链增量缓存中旧顶层声明引发的重复符号。
