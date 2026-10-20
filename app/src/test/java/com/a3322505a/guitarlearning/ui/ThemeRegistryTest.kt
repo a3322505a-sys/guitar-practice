@@ -7,25 +7,31 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ThemeRegistryTest {
-    @Test fun defaultPaletteMatchesTheRequestedForestColors() {
-        val c = ThemeRegistry.default.colors
-        assertEquals(Color(0xFFF4F6F8), c.background)
-        assertEquals(Color(0xFFFFFFFF), c.surface)
-        assertEquals(Color(0xFF057A55), c.primary)
-        assertEquals(Color(0xFFF59E0B), c.accent)
-        val night = ThemeRegistry.find("studio_dark")
-        assertTrue(night.isDark)
-        assertEquals("黑金暗夜 · Studio Dark", night.displayName)
-        assertEquals(Color(0xFF14171A), night.colors.background)
-        assertEquals(Color(0xFF1E2328), night.colors.surface)
-        assertEquals(Color(0xFFD99B26), night.colors.primary)
-        assertEquals(Color(0xFF38BDF8), night.colors.accent)
-        assertEquals(Color(0xFF2B323B), night.colors.fretboardNoteNormal)
-        assertEquals(Color(0xFFF3F4F6), night.colors.textPrimary)
+    @Test fun studioIsDefaultAndForestValuesAreExact() {
+        assertEquals("studio_dark", ThemeRegistry.default.id)
+        assertTrue(ThemeRegistry.default.isDark)
+        assertEquals(Color(0xFF0F1216), ThemeRegistry.default.colors.background)
+        val c = ThemeRegistry.find("forest_daylight").colors
+        assertEquals(Color(0xFFF4F7F5), c.background)
+        assertEquals(Color(0xFFE9EFEA), c.surfaceLow)
+        assertEquals(Color(0xFFDCE5DF), c.surfaceHigh)
+        assertEquals(Color(0xFFD0ECE3), c.surfaceSelected)
+        assertEquals(Color(0x80111C16), c.scrim)
+        assertEquals(Color(0xFF0D9488), c.primary)
+        assertEquals(Color(0xFFEA580C), c.secondary)
+        assertEquals(Color(0x1F000000), c.borderSubtle)
+        assertEquals(Color(0xFFEA580C), c.noteRoot)
+        assertEquals(Color(0xFF0284C7), c.noteChordTone)
+        assertEquals(Color(0xFF7C3AED), c.noteCharacteristic)
+        assertEquals(Color(0xFF64748B), c.noteScalePassing)
+        assertEquals(Color(0xFF231F1D), c.fretboardWood)
+        assertEquals(StudioWidth.Compact, studioWidth(599.dp))
+        assertEquals(StudioWidth.Medium, studioWidth(600.dp))
+        assertEquals(StudioWidth.Expanded, studioWidth(840.dp))
     }
 
     @Test fun everyPresetHasReadableTextAndMusicalMarkers() {
-        assertTrue(ThemeRegistry.all.size >= 6)
+        assertTrue(ThemeRegistry.all.size == 3)
         assertEquals(ThemeRegistry.all.size, ThemeRegistry.all.map { it.id }.distinct().size)
         ThemeRegistry.all.forEach { theme ->
             val c = theme.colors
@@ -60,7 +66,7 @@ class ThemeRegistryTest {
             assertEquals(14.dp, it.metrics.cornerMedium)
             assertEquals(12.dp, it.metrics.cornerSmall)
             assertEquals(1.dp, it.metrics.borderWidth)
-            assertEquals(44.dp, it.metrics.segmentStyle.height)
+            assertEquals(48.dp, it.metrics.segmentStyle.height)
         }
     }
 

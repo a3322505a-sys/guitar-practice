@@ -9,6 +9,16 @@ import androidx.compose.ui.unit.dp
 @Immutable
 data class ThemeTokens(
     val background: Color,
+    val surfaceLow: Color,
+    val surfaceHigh: Color,
+    val surfaceSelected: Color,
+    val secondary: Color,
+    val borderSubtle: Color,
+    val noteRoot: Color,
+    val noteChordTone: Color,
+    val noteCharacteristic: Color,
+    val noteScalePassing: Color,
+    val fretboardWood: Color,
     val surface: Color,
     val surfaceSecondary: Color,
     val primary: Color,
@@ -57,12 +67,15 @@ data class ThemeButtonStyle(
 
 @Immutable
 data class ThemeSegmentStyle(
-    val height: Dp = 44.dp,
+    val height: Dp = 48.dp,
     val inset: Dp = 3.dp,
 )
 
 @Immutable
 data class ThemeMetrics(
+    val stageHorizontalPadding: Dp = 0.dp,
+    val transportButtonHeight: Dp = 52.dp,
+    val workbenchWidth: Dp = 420.dp,
     val cornerLarge: Dp = 20.dp,
     val cornerMedium: Dp = 14.dp,
     val cornerSmall: Dp = 12.dp,
@@ -81,3 +94,11 @@ data class AppThemeSpec(
     val metrics: ThemeMetrics = ThemeMetrics(),
     val isDark: Boolean = false,
 )
+
+/** Window breakpoints use existing Compose constraints, without a sizing dependency. */
+internal enum class StudioWidth(val columns: Int) { Compact(1), Medium(2), Expanded(3) }
+internal fun studioWidth(width: Dp): StudioWidth = when {
+    width < 600.dp -> StudioWidth.Compact
+    width < 840.dp -> StudioWidth.Medium
+    else -> StudioWidth.Expanded
+}

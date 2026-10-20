@@ -12,7 +12,13 @@ class ThemeManager(context: Context) : SharedPreferences.OnSharedPreferenceChang
     var current: AppThemeSpec by mutableStateOf(ThemeRegistry.find(preferences.getString(THEME_ID, null)))
         private set
 
-    init { preferences.registerOnSharedPreferenceChangeListener(this) }
+    init {
+        // Persist the fallback once so retired theme IDs do not survive recreation.
+        if (preferences.getString(THEME_ID, null) != current.id) {
+            preferences.edit().putString(THEME_ID, current.id).apply()
+        }
+        preferences.registerOnSharedPreferenceChangeListener(this)
+    }
 
     fun select(id: String) {
         val selected = ThemeRegistry.find(id)

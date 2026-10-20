@@ -54,7 +54,7 @@ fun PracticeTheme(
             colorScheme = baseColors.copy(
                 primary = c.primary, onPrimary = c.onPrimary,
                 primaryContainer = c.primaryContainer, onPrimaryContainer = c.textPrimary,
-                secondary = c.primary, onSecondary = c.onPrimary,
+                secondary = c.secondary, onSecondary = c.onAccent,
                 secondaryContainer = c.surfaceSecondary, onSecondaryContainer = c.textPrimary,
                 tertiary = c.accent, onTertiary = c.onAccent,
                 tertiaryContainer = c.accentContainer, onTertiaryContainer = c.textPrimary,
@@ -77,7 +77,7 @@ fun PracticeTheme(
                 titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 27.sp, letterSpacing = (-.3).sp, fontFeatureSettings = "tnum"),
                 titleMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 22.sp, fontFeatureSettings = "tnum"),
                 titleSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"),
-                labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 16.sp else 13.sp, lineHeight = if (largeControls) 22.sp else 18.sp, fontFeatureSettings = "tnum"),
+                labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 16.sp else 14.sp, lineHeight = if (largeControls) 22.sp else 20.sp, fontFeatureSettings = "tnum"),
                 labelMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = "tnum"),
                 bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum"),
                 labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 15.sp, fontFeatureSettings = "tnum"),

@@ -83,7 +83,7 @@ class ThemeRenderTest {
         compose.onNodeWithText("外观").performClick()
         compose.onNodeWithTag("theme-studio_dark").performScrollTo().assertIsSelected()
         compose.onNodeWithTag("theme-reset").performScrollTo().performClick()
-        ThemeManager(compose.activity).let { assertEquals("forest",it.current.id);it.close() }
+        ThemeManager(compose.activity).let { assertEquals("studio_dark",it.current.id);it.close() }
     }
     @Test fun themeChangeKeepsPlayingSessionAndContentSelection() {
         val player=Player(compose.activity) { ManualSink() }
