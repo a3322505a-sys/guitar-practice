@@ -36,8 +36,7 @@ class TeachingV31Test {
     @Test fun retainedFingersRequireSameStringFretAndFingerAndBarresAreExplicit() {
         assertEquals(setOf(Position(2,1),Position(4,2)),retainedFingers(Chords.named("Am"),Chords.named("C")).map { it.position }.toSet())
         assertTrue(retainedFingers(Chords.named("Em"),Chords.named("Am")).isEmpty())
-        assertTrue(deriveBarreSegments(Chords.named("F").copy(barres=emptyList())).isEmpty())
-        assertEquals(6,deriveBarreSegments(Chords.named("F")).single().fromString)
+        assertEquals(6,Chords.named("F").barres.single().fromString)
         assertNotEquals(ChordDefinition.parse("F"),ChordDefinition.parse("Fmaj7"))
         listOf("F" to "Fmaj7","Bm" to "Bm7(no5)","G" to "Gsus2").forEach { (a,b) ->
             val choices=ChordSlots.choices(Chords.named(a))

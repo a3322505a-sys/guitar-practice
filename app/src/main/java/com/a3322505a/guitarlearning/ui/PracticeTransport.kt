@@ -1,373 +1,97 @@
 package com.a3322505a.guitarlearning.ui
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import com.a3322505a.guitarlearning.audio.Phase
 
-/** Only real sessions get pause/restart controls; auditions retain their own meaning. */
-internal enum class TransportMode { IDLE, PREPARING, PLAYING, PAUSED, ENDED, ERROR, PREVIEW }
-
-internal fun transportMode(phase: Phase, hasSession: Boolean, preview: Boolean): TransportMode = when {
-    preview && phase in listOf(Phase.PREPARING, Phase.PLAYING, Phase.PAUSED) -> TransportMode.PREVIEW
-    !hasSession -> if (phase == Phase.ERROR) TransportMode.ERROR else TransportMode.IDLE
-    else -> when (phase) {
-        Phase.IDLE -> TransportMode.IDLE
-        Phase.PREPARING -> TransportMode.PREPARING
-        Phase.PLAYING -> TransportMode.PLAYING
-        Phase.PAUSED -> TransportMode.PAUSED
-        Phase.ENDED -> if (preview) TransportMode.IDLE else TransportMode.ENDED
-        Phase.ERROR -> TransportMode.ERROR
-    }
+internal fun stageTime(seconds: Double): String {
+    val value = seconds.coerceAtLeast(0.0).toInt()
+    return "%02d:%02d".format(java.util.Locale.ROOT, value / 60, value % 60)
 }
 
-/** Studio transport console supporting both bottom dock (portrait) and left deck pod (landscape/tablet). */
+/** The only four stage controls: BPM, play/pause, loop and metronome. */
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
-internal fun PracticeTransport(
-    bpm: Int,
-    meter: String,
-    hint: Hint,
-    mode: TransportMode,
-    hasSequence: Boolean,
-    onBpm: (Int) -> Unit,
-    onHint: () -> Unit,
-    onPauseResume: () -> Unit,
-    onRestart: () -> Unit,
-    onDemo: () -> Unit,
-    onFollow: () -> Unit,
-    onStop: () -> Unit,
-    availableHeight: Dp = Dp.Infinity,
-    showHintAction: Boolean = true,
-    verticalDeck: Boolean = false,
-    pausedTitle: String = "继续",
-    tempoDetail: String = "",
-    minBpm: Int = 30,
-    maxBpm: Int = 240,
-    onVolume: () -> Unit = {},
-) {
-    PracticeTheme(theme = PracticeSkin.theme) {
-        val colors = PracticeSkin.colors
-        val metrics = PracticeSkin.metrics
-        var expanded by rememberSaveable { mutableStateOf(false) }
-        var draft by remember(bpm) { mutableFloatStateOf(bpm.toFloat()) }
-        BoxWithConstraints(Modifier.fillMaxWidth().testTag("transport-bar")) {
-            val scale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-            val popupWidth = maxWidth.coerceAtMost(360.dp).coerceAtLeast(240.dp)
-            val singleRow = !verticalDeck && maxWidth >= 600.dp * scale && (availableHeight < 600.dp * scale || maxWidth >= 1000.dp)
-
-            val slowerAction: @Composable () -> Unit = {
-                TextButton(
-                    onClick = {
-                        onBpm((bpm - 5).coerceAtLeast(minBpm))
-                    },
-                    enabled = bpm > minBpm,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("tempo-slower"),
-                    shape = MaterialTheme.shapes.small,
-                    contentPadding = PaddingValues(4.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
-                ) { Text("−5", fontWeight = FontWeight.Bold, maxLines = 1) }
-            }
-
-            val tempoValue: @Composable () -> Unit = {
-                Box {
-                    TextButton(
-                        onClick = { expanded = !expanded },
-                        modifier = Modifier.heightIn(min = 48.dp).testTag("tempo-button"),
-                        shape = MaterialTheme.shapes.small,
-                        colors = ButtonDefaults.textButtonColors(contentColor = colors.primaryText),
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            "$bpm BPM ⌃",
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
-                    }
-                    if (expanded) {
-                        Popup(
-                            popupPositionProvider = TempoPopupPosition,
-                            onDismissRequest = { expanded = false },
-                            properties = PopupProperties(focusable = true),
-                        ) {
-                            Surface(
-                                shape = MaterialTheme.shapes.large,
-                                color = colors.surface,
-                                shadowElevation = 4.dp,
-                                border = BorderStroke(metrics.borderWidth, colors.primary.copy(alpha = 0.4f)),
-                                modifier = Modifier.width(popupWidth).testTag("tempo-popup"),
-                            ) {
-                                Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            "${draft.toInt()} BPM · 松手应用",
-                                            modifier = Modifier.weight(1f),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = colors.textPrimary,
-                                        )
-                                        TextButton(onClick = { expanded = false }, shape = MaterialTheme.shapes.small) { Text("收起") }
-                                    }
-                                    if (tempoDetail.isNotBlank()) Text(tempoDetail, style = MaterialTheme.typography.bodySmall)
-                                    Slider(value = draft, onValueChange = { draft = it },
-                                        onValueChangeFinished = { onBpm(draft.toInt()) },
-                                        valueRange = minBpm.toFloat()..maxBpm.toFloat(),
-                                        modifier = Modifier.testTag("tempo-slider"))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            val fasterAction: @Composable () -> Unit = {
-                TextButton(
-                    onClick = {
-                        onBpm((bpm + 5).coerceAtMost(maxBpm))
-                    },
-                    enabled = bpm < maxBpm,
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("tempo-faster"),
-                    shape = MaterialTheme.shapes.small,
-                    contentPadding = PaddingValues(4.dp),
-                    colors = ButtonDefaults.textButtonColors(contentColor = colors.textPrimary),
-                ) { Text("+5", fontWeight = FontWeight.Bold, maxLines = 1) }
-            }
-
-            val meterBadge: @Composable () -> Unit = {
-                Surface(color = colors.surfaceSecondary, shape = MaterialTheme.shapes.small,
-                    border = BorderStroke(metrics.borderWidth, colors.border)) {
-                    Box(Modifier.heightIn(min = 48.dp).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
-                        Text(meter, color = colors.textSecondary, style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold, maxLines = 1)
-                    }
-                }
-            }
-
-            // Narrow studio decks give the value its own row so speed controls stay readable at large fonts.
-            val stackedTempo = verticalDeck || maxWidth < 300.dp * scale
-            val tempoBay: @Composable (Boolean) -> Unit = { stretch ->
-                if (stackedTempo) {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Surface(modifier = Modifier.fillMaxWidth(), color = colors.surfaceSecondary,
-                            shape = MaterialTheme.shapes.small, border = BorderStroke(metrics.borderWidth, colors.border)) {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { tempoValue() }
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically) {
-                            slowerAction(); meterBadge(); fasterAction()
-                        }
-                    }
-                } else {
-                    Row(modifier = if (stretch) Modifier.fillMaxWidth() else Modifier,
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Surface(color = colors.surfaceSecondary, shape = MaterialTheme.shapes.small,
-                            border = BorderStroke(metrics.borderWidth, colors.border),
-                            modifier = if (stretch) Modifier.weight(1f) else Modifier) {
-                            Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween) {
-                                slowerAction()
-                                Box(if (stretch) Modifier.weight(1f) else Modifier, contentAlignment = Alignment.Center) { tempoValue() }
-                                fasterAction()
-                            }
-                        }
-                        meterBadge()
-                    }
-                }
-            }
-
-            val actionsFlow: @Composable (Boolean) -> Unit = { fullWidthPrimary ->
-                val primaryTitle = when (mode) {
-                    TransportMode.IDLE -> "开始跟练"
-                    TransportMode.ENDED -> "再练一次"
-                    TransportMode.PLAYING -> "暂停"
-                    TransportMode.PAUSED -> pausedTitle
-                    TransportMode.PREPARING -> "准备中…"
-                    TransportMode.PREVIEW -> "试听中"
-                    TransportMode.ERROR -> "播放失败"
-                }
-                val primaryEnabled = when (mode) {
-                    TransportMode.IDLE, TransportMode.ENDED -> hasSequence
-                    TransportMode.PLAYING, TransportMode.PAUSED -> true
-                    else -> false
-                }
-                val primaryClick: () -> Unit = when (mode) {
-                    TransportMode.IDLE -> onFollow
-                    TransportMode.ENDED -> onRestart
-                    TransportMode.PLAYING, TransportMode.PAUSED -> onPauseResume
-                    else -> ({})
-                }
-
-                if (fullWidthPrimary) {
-                    Column(Modifier.fillMaxWidth().testTag("transport"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FlowRow(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            when (mode) {
-                                TransportMode.IDLE, TransportMode.ENDED ->
-                                    TransportAction("听示范", enabled = hasSequence, modifier = Modifier.weight(1f), onClick = onDemo)
-                                TransportMode.PLAYING, TransportMode.PAUSED ->
-                                    TransportAction("本轮重来", modifier = Modifier.weight(1f), onClick = onRestart)
-                                else -> Unit
-                            }
-                            if (mode != TransportMode.IDLE) {
-                                TransportAction("结束", modifier = Modifier.weight(1f), onClick = onStop)
-                            }
-                            if (showHintAction) {
-                                TransportAction(
-                                    if (hint == Hint.HIDDEN) "恢复提示" else "撤提示",
-                                    modifier = Modifier.weight(1f),
-                                    onClick = onHint,
-                                )
-                            }
-                        }
-                        TransportAction(
-                            primaryTitle,
-                            primary = true,
-                            enabled = primaryEnabled,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = primaryClick,
-                        )
-                    }
-                } else {
-                    FlowRow(
-                        Modifier.fillMaxWidth().testTag("transport"),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        when (mode) {
-                            TransportMode.IDLE, TransportMode.ENDED ->
-                                TransportAction("听示范", enabled = hasSequence, modifier = Modifier.weight(1f, fill = !singleRow), onClick = onDemo)
-                            TransportMode.PLAYING, TransportMode.PAUSED ->
-                                TransportAction("本轮重来", modifier = Modifier.weight(1f, fill = !singleRow), onClick = onRestart)
-                            else -> Unit
-                        }
-                        if (mode != TransportMode.IDLE) {
-                            TransportAction("结束", modifier = Modifier.weight(1f, fill = !singleRow), onClick = onStop)
-                        }
-                        if (showHintAction) {
-                            TransportAction(
-                                if (hint == Hint.HIDDEN) "恢复提示" else "撤提示",
-                                modifier = Modifier.weight(1f, fill = !singleRow),
-                                onClick = onHint,
-                            )
-                        }
-                        TransportAction(
-                            primaryTitle,
-                            primary = true,
-                            enabled = primaryEnabled,
-                            modifier = Modifier.weight(1.35f, fill = !singleRow),
-                            onClick = primaryClick,
-                        )
-                    }
-                }
-            }
-
-            Surface(
-                color = colors.surface,
-                shadowElevation = metrics.shadowLevel,
-                shape = MaterialTheme.shapes.large,
-                border = BorderStroke(metrics.borderWidth, colors.border),
-            ) {
-                val containerModifier = if (verticalDeck) {
-                    Modifier.fillMaxWidth().padding(8.dp)
-                } else {
-                    Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 10.dp, vertical = 6.dp)
-                }
-                Column(containerModifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if(!singleRow) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
-                    }
-                    if (verticalDeck) {
-                        tempoBay(true)
-                        actionsFlow(true)
-                    } else if (singleRow) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            tempoBay(false)
-                            TextButton(onClick = onVolume, modifier = Modifier.sizeIn(minWidth=48.dp,minHeight=48.dp).testTag("volume-button")) { Text("音量") }
-                            Box(Modifier.weight(1f)) { actionsFlow(false) }
-                        }
-                    } else {
-                        tempoBay(true)
-                        actionsFlow(stackedTempo)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** Center over the tempo button, then keep the complete editor inside the usable window. */
-internal object TempoPopupPosition : PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset = IntOffset(
-        (anchorBounds.left + anchorBounds.width / 2 - popupContentSize.width / 2).coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0)),
-        (anchorBounds.bottom - popupContentSize.height).coerceIn(0, (windowSize.height - popupContentSize.height).coerceAtLeast(0)),
-    )
-}
-
-@Composable
-private fun TransportAction(
-    title: String,
-    primary: Boolean = false,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
+internal fun StageTransport(
+    bpm: Int, phase: Phase, enabled: Boolean, loop: Boolean, click: Boolean,
+    elapsed: Double, duration: Double, onTempo: () -> Unit, onPlay: () -> Unit,
+    onLoop: () -> Unit, onClick: () -> Unit,
 ) {
     val colors = PracticeSkin.colors
-    val metrics = PracticeSkin.metrics
-    val content: @Composable RowScope.() -> Unit = {
-        if (primary) {
-            TransportMotif(if (title == "暂停") "pause" else "play", Modifier.size(15.dp), if (enabled) colors.onPrimary else colors.textSecondary)
-            Spacer(Modifier.width(6.dp))
+    Surface(color = colors.background, modifier = Modifier.fillMaxWidth().testTag("transport-bar")) {
+        Column(Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 22.dp).testTag("playback-progress"),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stageTime(elapsed), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
+                LinearProgressIndicator(progress = { if (duration > 0) (elapsed / duration).toFloat().coerceIn(0f, 1f) else 0f },
+                    modifier = Modifier.weight(1f).height(4.dp), color = colors.primary, trackColor = colors.surfaceSelected)
+                Text(stageTime(duration), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
+            }
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val icons = maxWidth >= 600.dp
+                val largeText = LocalDensity.current.fontScale > 1.2f
+                Row(Modifier.fillMaxWidth().testTag("transport"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    @Composable fun RowScope.control(title: String, tag: String, icon: String, selected: Boolean = false,
+                        primary: Boolean = false, available: Boolean = true, action: () -> Unit) {
+                        Button(onClick = action, enabled = available, shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag(tag)
+                                .semantics { this.selected = selected; contentDescription = title },
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (primary) colors.primary else if (selected) colors.surfaceSelected else colors.surfaceHigh,
+                                contentColor = if (primary) colors.onPrimary else colors.textPrimary,
+                                disabledContainerColor = colors.surfaceHigh, disabledContentColor = colors.textSecondary)) {
+                            if (icons) {
+                                StageIcon(icon, Modifier.size(22.dp))
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            if (tag == "tempo-button" && largeText) Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("$bpm", fontWeight = FontWeight.Bold)
+                                Text("BPM", style = MaterialTheme.typography.labelMedium)
+                            } else Text(title, maxLines = 1, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    control("$bpm BPM", "tempo-button", "tempo", action = onTempo)
+                    control(if (phase == Phase.PLAYING) "暂停" else "播放", "play-button",
+                        if (phase == Phase.PLAYING) "pause" else "play", primary = true,
+                        available = enabled && phase != Phase.PREPARING, action = onPlay)
+                    control("循环", "loop-button", "loop", selected = loop, action = onLoop)
+                    control("节拍", "metronome-button", "click", selected = click, action = onClick)
+                }
+            }
         }
-        Text(title, fontWeight = if (primary) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    if (primary) {
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = modifier.heightIn(min = 48.dp),
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colors.primary,
-                contentColor = colors.onPrimary,
-                disabledContainerColor = colors.surfaceSecondary,
-                disabledContentColor = colors.textSecondary,
-            ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-            content = content,
-        )
-    } else {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = modifier.heightIn(min = 48.dp),
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = colors.surfaceSecondary, contentColor = colors.textPrimary),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-            border = BorderStroke(metrics.borderWidth, colors.border),
-            content = content,
-        )
-    }
+}
+
+@Composable
+internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, onClose: () -> Unit) {
+    var draft by remember(bpm) { mutableFloatStateOf(bpm.toFloat()) }
+    AlertDialog(onDismissRequest = onClose, modifier = Modifier.testTag("tempo-popup"),
+        title = { Text("速度 · BPM") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("${draft.toInt()} BPM", style = MaterialTheme.typography.headlineSmall)
+                Slider(draft.coerceIn(minBpm.toFloat(), maxBpm.toFloat()), { draft = it },
+                    onValueChangeFinished = { onBpm(draft.toInt()) },
+                    valueRange = minBpm.toFloat()..maxBpm.toFloat(), modifier = Modifier.testTag("tempo-slider"))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    listOf(-5, -1, 1, 5).forEach { step ->
+                        TextButton(onClick = { onBpm((bpm + step).coerceIn(minBpm, maxBpm)) },
+                            modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("tempo-step-$step")) {
+                            Text(if (step > 0) "+$step" else "$step")
+                        }
+                    }
+                }
+            }
+        }, confirmButton = { TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text("完成") } })
 }

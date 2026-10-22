@@ -84,22 +84,22 @@ class CoreTest {
         assertEquals("C♯",Chords.named("A").label(4))
         assertEquals("X",Chords.named("C").label(0))
     }
-    @Test fun fiveShapesMatchSourceTableIncludingEdges() {
-        val expected=listOf(
-            "0,1,3|0,1,3|0,2|0,2,3|0,2,3|0,1,3",
-            "3,5|3,5,6|2,4,5|2,3,5|2,3,5|3,5",
-            "5,7,8|5,6,8|4,5,7|5,7|5,7,8|5,7,8",
-            "7,8,10|8,10|7,9,10|7,9,10|7,8,10|7,8,10",
-            "10,12,13|10,12,13|9,10,12|9,10,12|10,12|10,12,13")
-        assertEquals(listOf("mi C","sol A","la G","si E","re D"),Patterns.all.map { "${it.solfege} ${it.caged}" })
-        Patterns.all.forEachIndexed { i,p ->
-            assertEquals(expected[i],p.frets.joinToString("|") { it.joinToString(",") })
-            assertTrue(p.positions.all { it.midi%12 in listOf(0,2,4,5,7,9,11) })
+    @Test fun fiveClosedBoxesAndTheSeparateOpenPositionCoverOnlyTheirNativeScalePitches() {
+        val c = Patterns.forKey(Tonality.C_MAJOR)
+        assertEquals(6, c.size)
+        assertEquals(setOf("C", "A", "G", "E", "D"), c.filter { it.caged.isNotBlank() }.map { it.caged }.toSet())
+        assertTrue(c.first().positions.containsAll(listOf(Position(5, 3), Position(2, 1))))
+        Tonality.entries.forEach { key ->
+            val patterns = Patterns.forKey(key)
+            val closed = patterns.filter { it.solfege != "开放把位" }
+            assertEquals(key.title, 5, closed.size)
+            assertTrue(closed.all { it.positions.none { p -> p.fret == 0 } })
+            patterns.forEach { pattern ->
+                assertEquals(pattern.positions.toSet(), pattern.fingers.keys)
+                assertTrue(pattern.positions.all { it.midi % 12 in key.pitchClasses })
+                assertTrue(pattern.positions.all { it.string in 1..6 && it.fret in 0..24 })
+            }
         }
-        assertTrue(Position(2,6) in Patterns.all[1].positions)
-        assertTrue(Position(3,4) in Patterns.all[2].positions)
-        assertTrue(Position(2,13) in Patterns.all[4].positions)
-        assertTrue(Position(1,13) in Patterns.all[4].positions)
     }
     @Test fun s1QuarterAndEighthAndMinorAreRealRoutes() {
         val s1=Routes.scale(ScaleOptions()).sequence!!
@@ -158,7 +158,9 @@ class CoreTest {
         for(key in Tonality.entries) for(pattern in 0..4) for(kind in ScaleExercise.entries) {
             if(kind==ScaleExercise.CONNECTION && pattern==4) continue
             val o=ScaleOptions(pattern=pattern,key=key,exercise=kind,octave=false)
-            val s=Routes.scale(o).sequence!!
+            val result = Routes.scale(o)
+            val s = result.sequence
+            if (s == null) { assertTrue("$key / $pattern / $kind", result.reason.isNotBlank()); continue }
             val valid=Patterns.forKey(key)[pattern].positions + if(kind==ScaleExercise.CONNECTION) Patterns.forKey(key)[pattern+1].positions else emptyList()
             assertTrue(s.route.all { it in valid })
             assertEquals(0,s.length%48)

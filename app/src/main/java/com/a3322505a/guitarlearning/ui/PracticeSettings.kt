@@ -7,43 +7,6 @@ import com.a3322505a.guitarlearning.immersiveStatusBar
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 
-internal data class PracticeSettingsState(
-    val page: Int,
-    val chordPhrases: Boolean,
-    val tabletControls: Boolean,
-    val scale: ScaleOptions,
-    val first: Chord,
-    val phrase: Phrase,
-    val family: Phrase,
-    val versions: List<Phrase>,
-    val catalogueGroups: Map<String, List<Phrase>>,
-    val chordGroups: Map<String, List<Chord>>,
-    val relatedTitle: String?,
-    val bpm: Int,
-    val repeats: Int,
-    val firstBar: Int,
-    val lastBar: Int,
-    val range: BarRange,
-    val wholeRange: BarRange,
-    val guitar: Boolean,
-    val click: Boolean,
-    val moreExercisesOpen: Boolean,
-    val beatsPerBar: Int,
-    val sequence: Sequence?,
-    val displayedSequence: Sequence?,
-    val scaleResult: RouteResult,
-    val sourceTempo: Boolean = false,
-    val multiplier: Double = 100.0,
-    val mainTrackId: String? = null,
-    val soloTrack: Boolean = false,
-    val unavailableReason: String = "",
-    val content: ContentPresentation = ContentPresentation(com.a3322505a.guitarlearning.assets.song.LibrarySnapshot(
-        emptyList(), catalogueGroups.values.flatten(), emptyList(), chords = chordGroups.values.flatten(),
-    )),
-    val activeSourceFilter: String = BASIC_CONTENT,
-    val module: TeachingModule = if(page==0) TeachingModule.SCALES else if(!chordPhrases) TeachingModule.CHORDS else TeachingModule.APPLICATION,
-)
-
 @Composable
 internal fun ImmersiveOverlayWindow() {
     val sheetView = LocalView.current

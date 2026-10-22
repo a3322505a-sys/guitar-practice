@@ -79,7 +79,7 @@ class SongRepositoryTest {
         val updated=repo.commit(repo.prepare(ByteArrayInputStream(revise(bytes,2,"修订二"))))
         assertEquals(2,updated.packages.single().identity.revision)
         assertEquals(oldPin,oldSession.plan.revisionPin)
-        assertEquals("M01",Phrases.named("S01").id)
+        assertEquals(Phrases.singleNote.id,Phrases.named("S01").id)
         assertEquals(45,prefs.getInt("phrase.S01.bpm",0));assertEquals(2,prefs.getInt("hint",0))
         val restarted=SongRepository(root,reader());restarted.reload()
         restarted.resolve(phrase.id)
@@ -92,7 +92,7 @@ class SongRepositoryTest {
         assertEquals(1,restarted.snapshot.packages.single().identity.revision)
         assertEquals(BarRange(1,3),restored.load(restored.selected()).range)
         restarted.disable("example.complex")
-        assertEquals("M01",restored.selected().id)
+        assertEquals(Phrases.singleNote.id,restored.selected().id)
         assertEquals(85,prefs.getInt("asset."+phrase.assetKey!!.encoded+".bpm",0))
     }
     @Test fun idempotenceConflictsCancellationAndDamagedRevisionNeverEraseValidLibrary() {
@@ -161,44 +161,24 @@ class SongRepositoryTest {
         } }.isFailure)
         assertTrue(File(root,"staging").listFiles().orEmpty().none { it.extension=="gpractice" })
     }
-    @Test fun migratedUsotsukiPreservesMusicCardsTeachingAndLegacySelectionSettings() {
-        val root=Files.createTempDirectory("usotsuki-import").toFile();val repo=SongRepository(root,reader());repo.reload()
-        val context=ApplicationProvider.getApplicationContext<Context>()
-        val prefs=context.getSharedPreferences("usotsuki-migration",0)
-        prefs.edit().clear().putString("phrase-selected","S01").putInt("phrase.S01.bpm",73)
-            .putInt("phrase.S01.repeats",8).putInt("phrase.S01.first",1).putInt("phrase.S01.last",1).commit()
+    @Test fun nativeImportKeepsMusicAndLeavesRetiredSettingsUntouched() {
+        val root=Files.createTempDirectory("native-import").toFile()
+        val repo=SongRepository(root,reader());repo.reload()
+        val prefs=ApplicationProvider.getApplicationContext<Context>().getSharedPreferences("native-import",0)
+        prefs.edit().clear().putString("phrase-selected","S01").putInt("phrase.S01.bpm",73).commit()
         val store=PhraseSettingsStore(prefs,repo::named)
-        assertEquals("M01",store.selected().id)
-        store.save(Phrases.singleNote,60,4,BarRange(0,0))
-        val input=File("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").inputStream()
-        repo.commit(repo.prepare(input))
-        val phrase=repo.resolve(store.selected().id)
-        assertNotNull(phrase.assetKey)
-        assertEquals(PhraseSettings(73,8,BarRange(1,1)),store.load(phrase))
-        assertFalse(store.tempo(phrase).first)
+        assertEquals(Phrases.singleNote.id,store.selected().id)
+        val file=File("src/main/assets/song-packages/demo-c.gpractice")
+        val source=reader().read(file.readBytes())
+        repo.commit(repo.prepare(file.inputStream()))
+        assertEquals(Phrases.singleNote.id,store.selected().id)
+        val phrase=repo.resolve(com.a3322505a.guitarlearning.music.score.PracticeKey(source.identity.packageId,"A-original").encoded)
+        assertEquals(source.score,phrase.sequence.performance.score)
+        store.select(phrase);store.save(phrase,85,8,BarRange(1,1))
+        val restarted=SongRepository(root,reader()).also { it.reload() }
+        val restored=PhraseSettingsStore(prefs,restarted::named)
+        assertEquals(phrase.id,restored.selected().id)
+        assertEquals(PhraseSettings(85,8,BarRange(1,1)),restored.load(restarted.resolve(phrase.id)))
         assertEquals(73,prefs.getInt("phrase.S01.bpm",0))
-        val old=LegacyUsotsukiFixture.phrase
-        assertEquals(old.goal,phrase.goal);assertEquals(old.sourceBpm,phrase.sourceBpm)
-        assertTrue(phrase.sequence.explanation.contains(old.sequence.explanation))
-        val plan=phrase.sequence.performance;val original=old.sequence.performance
-        fun notes(p: com.a3322505a.guitarlearning.practice.compile.PerformancePlan)=p.notes.map {
-            listOf(it.position,it.note.midi,it.start,it.event.duration,it.soundEnd,it.articulation)
-        }
-        assertEquals(notes(original),notes(plan))
-        assertEquals(original.score.measures.map { it.meter },plan.score.measures.map { it.meter })
-        val cards=repo.snapshot.chords.filter { it.group=="本地曲库 · 嘘月" }
-        assertEquals(4,cards.size)
-        cards.forEach { c ->
-            val known=com.a3322505a.guitarlearning.music.Chords.named(c.name)
-            assertEquals(known.frets,c.frets);assertEquals(known.fingers,c.fingers)
-            assertEquals(known.root,c.root);assertEquals(known.third,c.third)
-        }
-        val sampler=Sampler(SoundBank.NYLON) { File("../assets/soundfont-source/guitar-nylon/$it.pcm").readBytes() }
-        val a=Session(old.sequence,80,false,1);val b=Session(phrase.sequence,80,false,1)
-        val frames=a.frame(96.0).toInt();assertEquals(frames,b.frame(96.0).toInt())
-        assertArrayEquals(Pcm(a,sampler).block(0,frames,true,false),Pcm(b,sampler).block(0,frames,true,false))
-        val restarted=SongRepository(root,reader());restarted.reload();val restored=restarted.resolve(phrase.id)
-        assertEquals(PhraseSettings(73,8,BarRange(1,1)),PhraseSettingsStore(prefs,restarted::named).load(restored))
-        assertTrue(Phrases.all.none { it.id=="S01" || it.id=="SHA-INTRO" })
     }
 }

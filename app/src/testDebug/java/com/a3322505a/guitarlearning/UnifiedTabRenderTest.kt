@@ -33,7 +33,7 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class UnifiedTabRenderTest {
     @get:Rule val compose=createAndroidComposeRule<LegacyWorkbenchTestActivity>()
-    private fun usotsuki()=SongTestLibrary.repository.resolve("S01").sequence
+    private fun usotsuki()=LegacyUsotsukiFixture.phrase.sequence
     @Test fun suppressedTieShowsBoundaryExplanationWithoutGhostFretOrFalseRest() {
         val contract=File("../contracts/song-package/v1")
         val song=com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema {
@@ -73,39 +73,14 @@ class UnifiedTabRenderTest {
     @Test fun phoneUsotsukiAndPalmMuteUseTheSamePinkHighlightAndReadableFretMasks() {
         render(usotsuki(),6.0,"phone-usotsuki-playing")
         compose.onAllNodesWithContentDescription("let ring",substring=true).onFirst().assertIsDisplayed()
-        render(Phrases.named("PM01").sequence,12.0,"phone-pm-playing")
+        render(NotationFixtures.demonstrations.getValue("palm-mute"),12.0,"phone-pm-playing")
         compose.onNodeWithContentDescription("P.M.",substring=true).assertIsDisplayed()
-        render(Phrases.named("R02").sequence,9.0,"phone-chord-dead-rest")
-        render(Phrases.named("SL01").sequence,42.0,"phone-cross-bar-slide")
+        render(NotationFixtures.mixedStrings,9.0,"phone-chord-dead-rest")
+        render(NotationFixtures.legato(Technique.SLIDE),42.0,"phone-cross-bar-slide")
     }
     @Test @Config(qualifiers="w1280dp-h800dp-land-mdpi") fun tabletUsotsukiAndPalmMuteKeepTheSameLayoutAndHighlightContract() {
         render(usotsuki(),54.0,"tablet-usotsuki-playing")
-        render(Phrases.named("PM01").sequence,24.0,"tablet-pm-dead-note")
-    }
-    @Test fun phonePracticePageShowsUsotsukiWithItsTransportAndAllSixStrings() {
-        val player=Player(compose.activity)
-        try {
-            // Replace content before the first semantics traversal. Storage is shared safely
-            // with the initial activity repository; no nested Looper drain during Compose layout.
-            compose.activity.setContent { PracticeApp(player) }
-        compose.waitForIdle()
-        compose.waitUntil(45000) { compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithTag("config-summary").performClick()
-            compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
-            compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
-            compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("content-source-filters").performScrollToKey("local.usotsuki") }.isSuccess }
-            compose.onNodeWithTag("content-source-local.usotsuki").performClick()
-            compose.onNodeWithText("低音与高音分解").performScrollTo().performClick()
-            compose.onNodeWithText("六线谱").performClick()
-            compose.waitUntil(15000) { compose.onAllNodesWithContentDescription("let ring",substring=true).fetchSemanticsNodes().isNotEmpty() }
-            image("phone-full-practice-beforeassert").recycle()
-            compose.onNodeWithTag("tablature").assertIsDisplayed()
-            compose.onNodeWithText("听示范").assertIsDisplayed()
-            image("phone-full-practice-usotsuki").recycle()
-            compose.onNodeWithTag("compact-lesson-actions").performClick()
-            compose.onNodeWithText("倒序接龙").assertIsEnabled()
-        } finally { player.release() }
+        render(NotationFixtures.demonstrations.getValue("palm-mute"),24.0,"tablet-pm-dead-note")
     }
     @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun largeTextDenseAndHarmonicNotesKeepTheirMeasuredWidth() {
         val dense=SongTestLibrary.repository.snapshot.phrases.filter { it.assetKey?.packageId=="local.teaching-native" }.map { SongTestLibrary.repository.resolve(it.id) }[0].sequence

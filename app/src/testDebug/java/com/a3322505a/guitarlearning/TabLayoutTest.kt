@@ -18,7 +18,7 @@ class TabLayoutTest {
     private fun song(path: String)=SongReader(SongSchema { File(contract,it).readBytes() }).read(File(path).readBytes())
     private fun fixture(name: String)=song("../contracts/song-package/v1/fixtures/$name.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
     private fun rows(plan: PerformancePlan,width: Float=800f)=tabLayoutSystems(plan,plan.tabProjection(),width) { s,size -> s.length*size*.6f }
-    private fun usotsuki()=song("../scripts/archive/teaching-v31/packages/usotsuki-v1.gpractice").let { PracticeCompiler.compile(it.score,it.practices.single()) }
+    private fun usotsuki()=LegacyUsotsukiFixture.phrase.sequence.performance
 
     @Test fun truncatedTieMustAgreeWithPlaybackWithoutInventingNoteMarks() {
         val song=song("../contracts/song-package/v1/fixtures/ties.gpractice")
@@ -128,7 +128,7 @@ class TabLayoutTest {
         }
     }
     @Test fun legacyAccentShortAndDynamicHintsRemainWithoutChangingAudioGainOrDuration() {
-        val seq=Phrases.named("R02").sequence;val plan=seq.performance
+        val seq=NotationFixtures.mixedStrings;val plan=seq.performance
         val marks=rows(plan).flatMap { it.bars }.flatMap { it.marks }.map { it.label }
         assertTrue(marks.any { ">" in it });assertTrue(marks.any { "·" in it });assertTrue(marks.any { "弱" in it })
         seq.events.forEach { e -> e.positions.forEach { p ->
