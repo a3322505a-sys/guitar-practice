@@ -129,6 +129,9 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     var currentVisit by mutableIntStateOf(0); private set
     var currentTick by mutableDoubleStateOf(0.0); private set
     var effectiveBpm by mutableDoubleStateOf(60.0); private set
+    // Read-only telemetry for the stage progress display; the engine remains the sole clock.
+    val positionMillis get() = view?.api?.timePosition ?: 0.0
+    val durationMillis get() = view?.api?.endTime ?: 0.0
     override var progress by mutableStateOf(Progress()); private set
     override var session: Session? by mutableStateOf(null); private set
     override var cursor: Cursor? by mutableStateOf(null); private set

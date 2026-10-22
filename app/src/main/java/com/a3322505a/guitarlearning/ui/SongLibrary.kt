@@ -105,10 +105,15 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
         Surface(color=Color.Transparent,modifier=Modifier.fillMaxSize().testTag("management-sheet")) {
         Column(Modifier.fillMaxSize().practiceBackground().displayCutoutPadding().navigationBarsPadding().padding(12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                Text("设置与帮助",style=MaterialTheme.typography.titleLarge,color=PracticeSkin.colors.primaryText,modifier=Modifier.weight(1f))
+                Text("曲包管理与外观",style=MaterialTheme.typography.titleLarge,color=PracticeSkin.colors.primaryText,modifier=Modifier.weight(1f))
                 OutlinedButton(enabled=!committing,onClick={close()},modifier=Modifier.heightIn(min=48.dp), shape=MaterialTheme.shapes.small) { Text("完成") }
             }
-            PracticeSegments(listOf("曲包管理","帮助说明","主题 / 外观"),tab,{tab=it},Modifier.fillMaxWidth())
+            TabRow(selectedTabIndex = tab) {
+                listOf("曲包管理", "读谱帮助", "三套配色").forEachIndexed { index, title ->
+                    Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) },
+                        modifier = Modifier.heightIn(min = 48.dp))
+                }
+            }
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 if(tab==2) {
                     ThemePicker(themeManager)
@@ -165,20 +170,18 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
 @Composable
 private fun DiagramHelp(displayedSequence: Sequence?) {
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
-        Text("读指板与和弦图",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
+        Text("读横向指板",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("横向指板上方是 1 弦，下方是 6 弦；左侧数字为弦号，上方数字为品位。",style=MaterialTheme.typography.bodySmall)
-            Text("绿色为路线音位，粉色为当前音，蓝色圈为下一音。同一音位可同时是当前和下一音。",style=MaterialTheme.typography.bodySmall)
-            Text("和弦图左至右为 6→1 弦，金色为根音；O 为空弦，X 不弹。",style=MaterialTheme.typography.bodySmall)
+            Text("当前音位有外圈高亮，下一音位有预告圈；可切换实际音名与度数。点击右上角箭头收起指板，给乐谱留出更多空间。",style=MaterialTheme.typography.bodySmall)
     }
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
         Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("x 为死音，P.M. 为手掌制音；拨弦、滑音、击弦、勾弦和延音按原谱标记演奏。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
             if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：保留书面时值，按长短2:1演奏；装饰音与推弦使用标准谱面标记。",style=MaterialTheme.typography.bodySmall)
-            Text("在指板标注菜单选择“隐藏 / 盲弹”可隐藏音位与演奏提示；六线谱始终保留乐谱音符。",style=MaterialTheme.typography.bodySmall)
+            Text("六线谱上方为 1 弦、下方为 6 弦，数字为品位；0 为空弦，x 为死音。",style=MaterialTheme.typography.bodySmall)
     }
     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
-        Text("跟练与指法",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.textPrimary)
-    Text("听示范和跟练按有效弦逐根弹，每弦一拍；数字 1—4 表示手指，O 为空弦，X 弦不弹。",style=MaterialTheme.typography.bodySmall)
-    Text("no5 表示省略五音；斜杠后的音是最低音；5 表示根音与五音构成的力量和弦，双音 riff 按两根有效弦演奏。斜阳指法用变调夹3品，数字相对变调夹；基础和弦无夹。",style=MaterialTheme.typography.bodySmall)
+        Text("开始练琴", style = MaterialTheme.typography.titleMedium)
+        Text("从曲包库选择练习；同包有多个练习时，也可点击舞台顶栏的曲名切换。底部依次为 BPM、播放、循环、节拍。", style = MaterialTheme.typography.bodySmall)
     }
 }

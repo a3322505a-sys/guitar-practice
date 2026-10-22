@@ -7,27 +7,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ThemeRegistryTest {
-    @Test fun studioIsDefaultAndForestValuesAreExact() {
-        assertEquals("studio_dark", ThemeRegistry.default.id)
-        assertTrue(ThemeRegistry.default.isDark)
-        assertEquals(Color(0xFF0F1216), ThemeRegistry.default.colors.background)
-        val c = ThemeRegistry.find("forest_daylight").colors
-        assertEquals(Color(0xFFF4F7F5), c.background)
-        assertEquals(Color(0xFFE9EFEA), c.surfaceLow)
-        assertEquals(Color(0xFFDCE5DF), c.surfaceHigh)
-        assertEquals(Color(0xFFD0ECE3), c.surfaceSelected)
-        assertEquals(Color(0x80111C16), c.scrim)
-        assertEquals(Color(0xFF0D9488), c.primary)
-        assertEquals(Color(0xFFEA580C), c.secondary)
-        assertEquals(Color(0x1F000000), c.borderSubtle)
-        assertEquals(Color(0xFFEA580C), c.noteRoot)
-        assertEquals(Color(0xFF0284C7), c.noteChordTone)
-        assertEquals(Color(0xFF7C3AED), c.noteCharacteristic)
-        assertEquals(Color(0xFF64748B), c.noteScalePassing)
-        assertEquals(Color(0xFF231F1D), c.fretboardWood)
-        assertEquals(StudioWidth.Compact, studioWidth(599.dp))
-        assertEquals(StudioWidth.Medium, studioWidth(600.dp))
-        assertEquals(StudioWidth.Expanded, studioWidth(840.dp))
+    @Test fun mintIsDefaultAndRetiredIdsMapToTheirCorrespondingPalettes() {
+        assertEquals("mint_light", ThemeRegistry.default.id)
+        assertFalse(ThemeRegistry.default.isDark)
+        assertEquals(Color(0xFFEFF8F7), ThemeRegistry.default.colors.background)
+        assertEquals("mint_light", ThemeRegistry.find("forest_daylight").id)
+        assertEquals("apricot_light", ThemeRegistry.find("luthier_warm").id)
+        assertEquals("indigo_night", ThemeRegistry.find("studio_dark").id)
+        assertTrue(ThemeRegistry.find("indigo_night").isDark)
     }
 
     @Test fun everyPresetHasReadableTextAndMusicalMarkers() {
