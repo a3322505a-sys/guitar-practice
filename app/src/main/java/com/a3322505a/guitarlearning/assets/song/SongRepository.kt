@@ -14,8 +14,12 @@ import com.a3322505a.guitarlearning.music.*
 
 data class ImportCandidate(val song: SongPackage,val stagingFile: File)
 data class SongRevision(val identity: PackageIdentity,val title: String)
+/** Lightweight, ordered projection of the existing practices; no score compilation for the library. */
+data class LibraryPractice(val key: PracticeKey, val title: String, val goal: String,
+    val suggestedTempo: Int, val lesson: LessonMetadata?, val teaching: PracticeTeaching?)
 data class LibrarySnapshot(val phrases: List<Phrase>,val catalogue: List<Phrase>,val packages: List<SongRevision>,
-    val diagnostics: List<String> = emptyList(),val aliases: Map<String,String> = emptyMap(),val chords: List<Chord> = Chords.all)
+    val diagnostics: List<String> = emptyList(),val aliases: Map<String,String> = emptyMap(),val chords: List<Chord> = Chords.all,
+    val packagePractices: Map<String,List<LibraryPractice>> = emptyMap())
 
 /** The cancel request and the final publication checkpoint share one lock. */
 class ImportCancellation {
@@ -104,6 +108,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
             }
             val external=mutableListOf<Phrase>();val packages=mutableListOf<SongRevision>();val visible=mutableSetOf<String>()
             val aliases=mutableMapOf<String,String>();val chords=mutableListOf<Chord>()
+            val packagePractices=mutableMapOf<String,List<LibraryPractice>>()
             active.distinctBy { it.packageId }.forEach { e ->
                 try {
                     val bytes=file(e).inputStream().use { reader.readInput(it) }
@@ -129,11 +134,16 @@ class SongRepository(private val root: File,private val reader: SongReader,
                     metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
                     metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
                     packages+=SongRevision(e.pin,metadata.s("title"))
+                    // catalogue.json is already written in PracticeSpec.order, including non-core practices.
+                    packagePractices[e.packageId]=metadata.objects("practices").map { p ->
+                        LibraryPractice(PracticeKey(e.packageId,p.s("id")),p.s("title"),p.s("goal"),
+                            p.i("suggestedTempo",60),SongCodec.lesson(p["lesson"]),SongCodec.teaching(p["teaching"]))
+                    }
                 } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
             }
             snapshot=LibrarySnapshot(Collections.unmodifiableList(Phrases.all+external),
                 Collections.unmodifiableList(Phrases.catalogue+external.filter { it.id in visible }),packages.toList(),diagnostics.toList(),aliases.toMap(),
-                Collections.unmodifiableList(Chords.all+chords))
+                Collections.unmodifiableList(Chords.all+chords),packagePractices.toMap())
             return snapshot
         }
     }

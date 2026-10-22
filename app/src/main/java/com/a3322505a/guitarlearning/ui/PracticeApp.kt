@@ -148,7 +148,7 @@ internal fun PracticeWorkbench(
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var stageLayout by rememberSaveable { mutableStateOf(if (nativePlayer != null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY) }
     val activity = checkNotNull(LocalActivity.current)
-    var overlay by rememberSaveable(stateSaver = PracticeOverlay.saver) { mutableStateOf<PracticeOverlay>(PracticeOverlay.NONE) }
+    var overlay by rememberSaveable(stateSaver = PracticeOverlay.saver) { mutableStateOf<PracticeOverlay>(PracticeOverlay.CONTENT) }
     var workbenchDestinationId by rememberSaveable { mutableStateOf("curriculum") }
     var focusedPracticeId by rememberSaveable { mutableStateOf(preferences.getString("focused-practice", null)) }
     var returnPhraseId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -579,7 +579,7 @@ internal fun PracticeWorkbench(
                                 stageLayout = if (nativePlayer == null && requested == StageLayout.LINKED) StageLayout.TAB_ONLY else requested
                             },
                             onOpenLibrary = { workbenchDestinationId = WorkbenchDestination.Curriculum.id; overlay = PracticeOverlay.CONTENT },
-                            onOpenSettings = { overlay = PracticeOverlay.PRACTICE },
+                            onOpenSettings = { overlay = PracticeOverlay.MANAGEMENT },
                             onOpenDictionary = {
                                 workbenchDestinationId = if (page == 0 || module == TeachingModule.SCALES) WorkbenchDestination.Scales.id else WorkbenchDestination.Chords.id
                                 overlay = PracticeOverlay.CONTENT
@@ -605,7 +605,7 @@ internal fun PracticeWorkbench(
                 } else Modifier.fillMaxSize()
 
                 if (nativePlayer != null) {
-                    NativeScore(nativePlayer, frame, showNativeScore && displayedSequence != null && hasFrame,
+                    NativeScore(nativePlayer, frame, showNativeScore && displayedSequence != null && hasFrame && overlay == PracticeOverlay.NONE,
                         inputEnabled = overlay == PracticeOverlay.NONE && !volumeOpen && !tempoOpen)
                 }
                 if (showNativeScore && nativePlayer != null && (nativePlayer.loading || nativePlayer.error.isNotBlank())) {
@@ -615,41 +615,17 @@ internal fun PracticeWorkbench(
                 }
 
                 if (configuring) {
-                    Box {
-                        ContentWorkbenchSheet(
-                            state = PracticeSettingsState(
-                                page, chordPhrases, tabletControls, scale, first, phrase,
-                                repository.family(phrase), repository.versions(phrase), librarySnapshot.catalogue.groupBy { it.use }, chords.groupBy { it.group },
-                                phrase.relatedId?.let { repository.named(it).title }, bpm, repeats, firstBar, lastBar, range, wholeRange, guitar, click,
-                                moreExercisesOpen, beatsPerBar, sequence, displayedSequence, scaleResult, sourceTempo, tempoMultiplier, selectedTrackId, soloTrack,
-                                if (page == 0) scaleResult.reason else if (!libraryReady) "正在加载曲库…" else if (!chordPhrases) chordUnavailable ?: note else note,
-                                content = contentPresentation, activeSourceFilter = activeSourceFilter, module = module, focusedPracticeId = focusedPracticeId,
-                                dictionaryChord = shownChord ?: first,
-                                dictionaryScale = if (page == 1 && chordPhrases) phrase.lesson?.key?.let { key ->
-                                    scale.copy(key = Tonality.entries.first { it.root == key.tonic.pitchClass && it.mode == key.scale }, pattern = 0, pentatonic = false)
-                                } ?: scale else scale,
-                            ),
-                            contentOnly = overlay == PracticeOverlay.CONTENT,
-                            destination = WorkbenchDestination.fromId(workbenchDestinationId),
-                            onDestination = { workbenchDestinationId = it.id },
-                            onFocus = { focusedPracticeId = it; preferences.edit().putString("focused-practice", it).apply() },
-                            onClose = { overlay = PracticeOverlay.NONE },
-                            onCategory = ::category,
-                            onScale = ::scaleChange,
-                            onChord = { firstChange(it); module = TeachingModule.CHORDS; chordPhrases = false; page = 1; overlay = PracticeOverlay.NONE },
-                            onPhrase = { changed(); chordPhrases=true; page=1; module=contentPresentation.moduleOf(it); stageLayout=if(nativePlayer!=null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY; phraseChange(it); overlay = PracticeOverlay.NONE },
-                            onRange = { value -> if (value != range) { changed(); firstBar = value.first; lastBar = value.last } },
-                            onRepeats = { value -> if (value != repeats) { changed(); repeats = value; if (value > 0) finiteRepeats = value } },
-                            onSourceTempo = { value -> if (value != sourceTempo) { changed(); sourceTempo = value; phraseStore.saveTempo(phrase, value, tempoMultiplier) } },
-                            onGuitar = { guitar = it; player.guitar = it; preferences.edit().putBoolean("guitar", it).apply() },
-                            onClick = { click = it; player.click = it; preferences.edit().putBoolean("click", it).apply() },
-                            mix = mix,
-                            onMix = { mix = it; it.save(preferences) },
-                            themeManager = themeManager,
-                            onSourceFilter = { activeSourceFilter = it },
-                            onManagePackages = { overlay = PracticeOverlay.MANAGEMENT },
-                        )
-                    }
+                    PackageLibraryScreen(
+                        packages = remember(librarySnapshot) { packageCards(librarySnapshot) },
+                        ready = libraryReady, selectedPracticeId = phraseId,
+                        onPractice = { practice ->
+                            changed(); chordPhrases = true; page = 1
+                            stageLayout = if(nativePlayer != null) StageLayout.LINKED else StageLayout.FRETBOARD_ONLY
+                            phraseChange(repository.named(practice.key.encoded))
+                            overlay = PracticeOverlay.NONE
+                        },
+                        onManage = { overlay = PracticeOverlay.MANAGEMENT },
+                    )
                 }
                 if (overlay == PracticeOverlay.MANAGEMENT) {
                     SongLibrary(
@@ -660,7 +636,7 @@ internal fun PracticeWorkbench(
                             val current = librarySnapshot.phrases.firstOrNull { it.id==phraseId } ?: restored
                             phraseId = current.id; loadPhrase(current)
                         },
-                        { overlay = PracticeOverlay.NONE },
+                        { overlay = PracticeOverlay.CONTENT },
                         displayedSequence,
                         themeManager,
                     )

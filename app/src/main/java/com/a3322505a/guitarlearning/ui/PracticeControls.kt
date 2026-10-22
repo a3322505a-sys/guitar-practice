@@ -358,7 +358,7 @@ internal fun StageTopBar(
                 StageLayout.TAB_ONLY -> StageLayout.FRETBOARD_ONLY
             })
         }, modifier = Modifier.size(48.dp).testTag("dock-toggle").semantics { contentDescription = "视图模式：${stageLayout.name}，点击切换" }) { Text("▦", fontSize = 24.sp) }
-        IconButton(onClick = onOpenDictionary, modifier = Modifier.size(48.dp).testTag("quick-dictionary").semantics { contentDescription = "速查当前和弦或调式" }) { Text("词典") }
+
         IconButton(onClick = onOpenSettings, modifier = Modifier.size(48.dp).testTag("preferences-button").semantics { contentDescription = "外观与音频偏好" }) { Text("⚙", fontSize = 22.sp) }
     }
 }
