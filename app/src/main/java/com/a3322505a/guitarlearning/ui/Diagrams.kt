@@ -105,7 +105,7 @@ fun Fretboard(
         }
         return
     }
-    if (positions.isNotEmpty() && positions.all { it.fret == 0 }) {
+    if (fretWindow == null && positions.isNotEmpty() && positions.all { it.fret == 0 }) {
         OpenStringBoard(positions, key, hint, current, upcoming, enabled, onTap, capoFret, openStringMidi)
         return
     }
@@ -648,6 +648,8 @@ internal fun LinkedFretboardDock(
     loopContinues: Boolean = false,
     labelRoot: Int? = null,
     controls: @Composable () -> Unit = {},
+    labelMode: String? = null,
+    showHeader: Boolean = true,
 ) {
     val preferences=LocalContext.current.getSharedPreferences("practice-settings",0)
     var labels by rememberSaveable { mutableStateOf(preferences.getString("board-labels","fingers") ?: "fingers") }
@@ -670,12 +672,12 @@ internal fun LinkedFretboardDock(
     var window by remember(sequence) { mutableStateOf(stableFretWindow(1..7, required)) }
     LaunchedEffect(required) { window = stableFretWindow(window, required) }
     val positions = (pool + active + upcoming).distinct()
-    val noteLabels=index.labelsAt(q,next.first,labels,labelRoot,LocalBoardTeaching.current.key)
+    val noteLabels=index.labelsAt(q,next.first,labelMode ?: labels,labelRoot,LocalBoardTeaching.current.key)
     val techniques = if (cursor?.pre == true || phase == Phase.ENDED || phase == Phase.ERROR) emptyList()
         else cursor?.movingPositions?.takeIf { it.isNotEmpty() } ?: index.techniquesAt(q)
     Box(modifier) {
         Column(Modifier.fillMaxSize()) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (showHeader) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { controls() }
                 BoardLabelMenu(
                     hint = hint, onHint = onHint,

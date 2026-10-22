@@ -68,7 +68,7 @@ fun ThemePreviewCard(theme: AppThemeSpec, selected: Boolean, onSelect: () -> Uni
                         }
                     }
                     Surface(color = c.primary, contentColor = c.onPrimary, shape = RoundedCornerShape(m.cornerSmall)) {
-                        Text("开始跟练", Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("播放", Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 }
             }

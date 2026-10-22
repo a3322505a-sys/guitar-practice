@@ -7,19 +7,27 @@ import androidx.compose.ui.graphics.luminance
 /** Adding a local skin only requires registering its palette here. */
 object ThemeRegistry {
     val all: List<AppThemeSpec> = listOf(
-        studio("studio_dark", "黑金录音室", "深灰蓝 × 琥珀金 × 电光青", true,
-            0xFF0F1216, 0xFF171B21, 0xFF212730, 0xFF2A2418, 0xB3000000,
-            0xFFF59E0B, 0xFF38BDF8, 0x26FFFFFF, 0xFFF97316, 0xFF38BDF8, 0xFFA855F7, 0xFF475569, 0xFF181411),
-        studio("luthier_warm", "暖木工坊", "羊皮纸 × 玫瑰木 × 琥珀金", false,
-            0xFFF7F3EB, 0xFFEFE9DE, 0xFFE5DEC9, 0xFFF3E3C8, 0x801A1815,
-            0xFFB45309, 0xFF0369A1, 0x1F000000, 0xFFDC2626, 0xFF0284C7, 0xFF7E22CE, 0xFF64748B, 0xFF2D221B),
-        studio("forest_daylight", "森林日间", "冷灰白 × 松石绿 × 暖橙", false,
-            0xFFF4F7F5, 0xFFE9EFEA, 0xFFDCE5DF, 0xFFD0ECE3, 0x80111C16,
-            0xFF0D9488, 0xFFEA580C, 0x1F000000, 0xFFEA580C, 0xFF0284C7, 0xFF7C3AED, 0xFF64748B, 0xFF231F1D),
+        studio("mint_light", "青绿晨光", "薄荷白 × 青绿 × 暖橙", false,
+            0xFFEFF8F7, 0xFFF9FDFC, 0xFFE2F1EF, 0xFFCEEAE7, 0x80152927,
+            0xFF008C89, 0xFFD86B2E, 0x19274C49, 0xFFF07D32, 0xFF129DD1, 0xFF8666C5, 0xFF708C96, 0xFF252A2B),
+        studio("apricot_light", "暖杏木色", "奶油白 × 陶土棕 × 蜂蜜金", false,
+            0xFFFFF9F2, 0xFFFFFEFB, 0xFFFFF0E3, 0xFFF6DEC8, 0x802D211A,
+            0xFFA55335, 0xFFB46E20, 0x202D211A, 0xFFD86125, 0xFF287FA8, 0xFF9E69B1, 0xFF897965, 0xFF31231E),
+        studio("indigo_night", "靛蓝夜练", "深靛蓝 × 冰青 × 柔金", true,
+            0xFF111726, 0xFF1A2336, 0xFF222E45, 0xFF263C53, 0xB3000000,
+            0xFF64D6D3, 0xFFF2B577, 0x26FFFFFF, 0xFFFFB16C, 0xFF6EBEEB, 0xFFBD9AFF, 0xFF8493A9, 0xFF111923),
     )
 
     val default: AppThemeSpec get() = all.first()
-    fun find(id: String?): AppThemeSpec = all.firstOrNull { it.id == id } ?: default
+    fun find(id: String?): AppThemeSpec {
+        val mapped = when (id) {
+            "forest_daylight" -> "mint_light"
+            "luthier_warm" -> "apricot_light"
+            "studio_dark" -> "indigo_night"
+            else -> id
+        }
+        return all.firstOrNull { it.id == mapped } ?: default
+    }
 
     private fun studio(
         id: String, name: String, description: String, dark: Boolean,

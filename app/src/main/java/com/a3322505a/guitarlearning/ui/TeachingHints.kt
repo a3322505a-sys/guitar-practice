@@ -6,10 +6,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.unit.dp
 import com.a3322505a.guitarlearning.music.*
 
-internal data class BoardTeachingContext(val key: KeyContext? = null, val chord: Chord = Chords.named("C"), val reference: Boolean = false) {
-    val root get() = key?.tonic?.pitchClass ?: chord.root.takeIf { it >= 0 }
-    val chordTones get() = chord.positions.map { chord.midi(it)%12 }.toSet()
-    fun emphasisRoot(hint: Hint) = if(hint==Hint.CHORD_TONES) chord.root.takeIf { it >= 0 } else root
+internal data class BoardTeachingContext(val key: KeyContext? = null, val chord: Chord = Chords.named("C"), val reference: Boolean = false, val hasHarmony: Boolean = true) {
+    val root get() = key?.tonic?.pitchClass ?: chord.root.takeIf { hasHarmony && it >= 0 }
+    val chordTones get() = if (hasHarmony) chord.positions.map { chord.midi(it)%12 }.toSet() else emptySet()
+    fun emphasisRoot(hint: Hint) = if(hint==Hint.CHORD_TONES) chord.root.takeIf { hasHarmony && it >= 0 } else root
     val available get() = buildList {
         add(Hint.FULL)
         if(key != null) add(Hint.PENTATONIC)
