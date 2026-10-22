@@ -82,35 +82,6 @@ class UnifiedTabRenderTest {
         render(usotsuki(),54.0,"tablet-usotsuki-playing")
         render(NotationFixtures.demonstrations.getValue("palm-mute"),24.0,"tablet-pm-dead-note")
     }
-    @Test fun phonePracticePageShowsUsotsukiWithItsTransportAndAllSixStrings() {
-        val player=Player(compose.activity)
-        try {
-            // Replace content before the first semantics traversal. Storage is shared safely
-            // with the initial activity repository; no nested Looper drain during Compose layout.
-            compose.activity.setContent { PracticeApp(player) }
-        compose.waitForIdle()
-        compose.waitUntil(45000) { compose.onAllNodesWithTag("practice-library-ready").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithTag("config-summary").performClick()
-            compose.onNode(hasText("综合应用") and hasClickAction()).performClick()
-            compose.onNodeWithText("完成").performClick()
-            compose.onNodeWithTag("config-summary").performClick()
-            compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("content-source-filters").performScrollToKey("local.demo-c") }.isSuccess }
-            compose.onNodeWithTag("content-source-local.demo-c").performClick()
-            val content = ContentPresentation(SongTestLibrary.repository.snapshot)
-            val phrase = content.phraseSections("local.demo-c").flatMap { it.items }.first()
-            compose.onNodeWithText(content.phraseCard(phrase).title).performScrollTo().performClick()
-            compose.waitUntil(45000) {
-                Shadows.shadowOf(Looper.getMainLooper()).idle()
-                runCatching { compose.onNodeWithText("开始跟练").assertIsEnabled() }.isSuccess
-            }
-            compose.onNodeWithTag("dock-toggle").performClick()
-            image("phone-full-practice-beforeassert").recycle()
-            compose.onNodeWithTag("tablature").assertIsDisplayed()
-            compose.onNodeWithText("听示范").assertIsDisplayed()
-            image("phone-full-practice-usotsuki").recycle()
-            compose.onNodeWithText("倒序接龙").performScrollTo().assertIsEnabled()
-        } finally { player.release() }
-    }
     @Test @Config(qualifiers="w640dp-h360dp-land-mdpi") fun largeTextDenseAndHarmonicNotesKeepTheirMeasuredWidth() {
         val dense=SongTestLibrary.repository.snapshot.phrases.filter { it.assetKey?.packageId=="local.teaching-native" }.map { SongTestLibrary.repository.resolve(it.id) }[0].sequence
         render(dense,(dense.barEnd(1)-6).toDouble(),"large-text-block-following",1.4f,true)

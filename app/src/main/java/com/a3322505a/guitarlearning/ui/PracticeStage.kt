@@ -101,8 +101,8 @@ internal fun StageFretboard(
                 }
             }
             if (expanded && sequence != null) LinkedFretboardDock(sequence, cursor, phase, current, range,
-                Hint.FULL, {}, onTap, Modifier.weight(1f).fillMaxWidth(), enabled = enabled,
-                loopContinues = loopContinues, labelRoot = labelRoot, labelMode = labels, showHeader = false)
+                onTap, Modifier.weight(1f).fillMaxWidth(), enabled = enabled,
+                loopContinues = loopContinues, labelRoot = labelRoot, labelMode = labels)
         }
     }
 }

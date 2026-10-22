@@ -10,12 +10,11 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -25,7 +24,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import com.a3322505a.guitarlearning.alphatab.*
 import com.a3322505a.guitarlearning.assets.song.*
 import com.a3322505a.guitarlearning.audio.*
@@ -38,47 +36,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-
-internal val ScaleSaver = listSaver<ScaleOptions, Any>(
-    save = { listOf(it.pattern, it.key.ordinal, it.exercise.ordinal, it.firstString, it.lastString, it.octave, it.notesPerBeat, it.startDegree, it.reverse, it.pentatonic) },
-    // Removed controls use fixed defaults, so old hidden limits cannot restrict practice.
-    restore = { values ->
-        ScaleOptions(
-            pattern = (values.getOrNull(0) as? Int)?.takeIf { it in Patterns.all.indices } ?: 0,
-            key = (values.getOrNull(1) as? Int)?.let { Tonality.entries.getOrNull(it) } ?: Tonality.C_MAJOR,
-            exercise = (values.getOrNull(2) as? Int)?.let { ScaleExercise.entries.getOrNull(it) } ?: ScaleExercise.ASCEND,
-            octave = values.getOrNull(5) as? Boolean ?: true,
-            notesPerBeat = when (val rhythm = values.getOrNull(6)) {
-                is Boolean -> if (rhythm) 2 else 1
-                is Int -> rhythm.takeIf { it in 1..3 } ?: 1
-                else -> 1
-            },
-            startDegree = (values.getOrNull(7) as? Int)?.takeIf { it in 1..7 } ?: 1,
-            pentatonic = values.getOrNull(9) as? Boolean ?: false,
-        )
-    },
-)
-
-/** Visible playing information that cannot be conveyed by the colored pitch markers. */
-internal fun phraseCue(event: Event?, sequence: Sequence): String {
-    if (event == null || event.rest) return "休止 · 留拍"
-    return buildList {
-        if (sequence.capoFret > 0) add("夹${sequence.capoFret}品")
-        if (event.positions.isEmpty()) add("死音")
-        event.expressionLabel().takeIf { it.isNotBlank() }?.let(::add)
-        sequence.links.firstOrNull { it.sourceTick == event.tick }?.let {
-            add(
-                when (it.kind) {
-                    Technique.SLIDE -> "滑音"
-                    Technique.HAMMER -> "击弦"
-                    Technique.PULL -> "勾弦"
-                },
-            )
-        }
-    }.joinToString(" · ").ifBlank { "按音位弹奏" }
-}
-
-enum class StageLayout { LINKED, TAB_ONLY, FRETBOARD_ONLY }
 
 @Composable
 fun PracticeApp(player: AlphaPlayback) = PracticeWorkbench(player, player)
@@ -239,7 +196,7 @@ internal fun PracticeWorkbench(
                     PackageStageTopBar(
                         title = phrase.title,
                         subtitle = packageCard?.title?.takeUnless { it == phrase.title } ?: phrase.conditions,
-                        chord = listOf(currentChord, nextChord).filter(String::isNotBlank).joinToString(" → "),
+                        chord = listOf(currentChord, nextChord).filter(String::isNotBlank).distinct().joinToString(" → "),
                         measure = "${visit + 1}/${sequence?.barCount ?: 1} · $meterLabel",
                         practices = packageCard?.practices.orEmpty(), selectedId = phraseId,
                         expanded = practiceMenuOpen, onExpanded = { practiceMenuOpen = it },
@@ -254,7 +211,7 @@ internal fun PracticeWorkbench(
                                     expanded, { boardOverride = !expanded },
                                     if (expanded) boardHeight else 48.dp,
                                     onTap = { position -> sequence?.let {
-                                        player.audition(listOf(position), capoFret = it.capoFret, openStringMidi = it.openStringMidi)
+                                        player.audition(listOf(position), capoFret = it.capoFret, openStringMidi = it.runtimePlan?.mainTrack?.openStringMidi ?: it.openStringMidi)
                                     } }, enabled = !player.active && progress.phase != Phase.PAUSED, loopContinues = looping)
                             }
                             Box(Modifier.weight(1f).fillMaxWidth().background(PracticeSkin.colors.diagramSurface,

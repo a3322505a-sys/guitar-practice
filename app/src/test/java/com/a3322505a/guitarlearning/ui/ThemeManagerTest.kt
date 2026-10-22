@@ -25,12 +25,12 @@ class ThemeManagerTest {
 
     @After fun releaseListeners() { managers.forEach { it.close() } }
 
-    @Test fun selectionSurvivesManagerRecreationAndResetRestoresStudio() {
+    @Test fun selectionSurvivesManagerRecreationAndResetRestoresMint() {
         val first = manager()
-        first.select("luthier_warm")
-        assertEquals("luthier_warm", first.current.id)
+        first.select("apricot_light")
+        assertEquals("apricot_light", first.current.id)
         val restarted = manager()
-        assertEquals("luthier_warm", restarted.current.id)
+        assertEquals("apricot_light", restarted.current.id)
         restarted.reset()
         shadowOf(Looper.getMainLooper()).idle()
         assertEquals(ThemeRegistry.default, first.current)
@@ -40,12 +40,12 @@ class ThemeManagerTest {
     @Test fun separateActivitiesReceiveTheSamePreferenceChange() {
         val main = manager()
         val gp = manager()
-        gp.select("luthier_warm")
+        gp.select("apricot_light")
         shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("luthier_warm", main.current.id)
-        main.select("forest_daylight")
+        assertEquals("apricot_light", main.current.id)
+        main.select("mint_light")
         shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("forest_daylight", gp.current.id)
+        assertEquals("mint_light", gp.current.id)
     }
 
     @Test fun unknownStoredThemeAndUnknownSelectionUseTheDefault() {

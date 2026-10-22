@@ -57,9 +57,9 @@ internal fun PackageLibraryScreen(
                 items(packages, key = { it.id }) { pkg ->
                     val expanded = expandedId == pkg.id
                     Surface(shape = MaterialTheme.shapes.large, color = colors.surfaceHigh,
-                        modifier = Modifier.fillMaxWidth().testTag("package-${pkg.id}")) {
+                        modifier = Modifier.fillMaxWidth()) {
                         Column {
-                            Row(Modifier.fillMaxWidth().clickable(enabled = pkg.practices.isNotEmpty()) {
+                            Row(Modifier.fillMaxWidth().testTag("package-${pkg.id}").clickable(enabled = pkg.practices.isNotEmpty()) {
                                 if (pkg.practices.size == 1) onPractice(pkg.practices.single())
                                 else expandedId = if (expanded) null else pkg.id
                             }.padding(16.dp).heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically,

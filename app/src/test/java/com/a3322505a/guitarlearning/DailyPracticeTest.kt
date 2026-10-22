@@ -34,10 +34,10 @@ class DailyPracticeTest {
         }
     }
     @Test fun dailyPackListsFourModulesWithoutHidingTheOtherCardsAndVersionsChangeRealMusic() {
-        val content=ContentPresentation(SongTestLibrary.repository.snapshot)
-        val all=content.phraseSections("local.daily-practice",TeachingModule.FOUNDATIONS).flatMap { it.items }
-        assertEquals(5,all.size) // Four independent cards and the optional suite.
-        assertEquals(4,all.filter { it.title.startsWith("DP-") }.map { it.lesson!!.module }.distinct().size)
+        val all = packageCards(SongTestLibrary.repository.snapshot).single { it.id == "local.daily-practice" }.practices
+        assertEquals(SongTestLibrary.repository.snapshot.phrases.count { it.assetKey?.packageId == "local.daily-practice" }, all.size)
+        assertEquals(4, all.filter { it.key.practiceId.endsWith("-basic") && it.key.practiceId.startsWith("DP-") && "join" !in it.key.practiceId }
+            .map { it.lesson!!.module }.distinct().size)
         assertNotEquals(daily("DP-02-basic").sequence.performance.notes.map { it.note.midi },daily("DP-02-advanced").sequence.performance.notes.map { it.note.midi })
         val plan=daily("DP-03-advanced").sequence.performance
         assertEquals(setOf("advanced-lead","advanced-backing"),plan.notes.map { it.track.id }.toSet())

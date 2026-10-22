@@ -1,5 +1,7 @@
 # 当前开发入口
 
+- 当前 UI 施工为 `codex/unified-package-stage`，基于最新 V4 + 音量增强 `9d06743`，版本 `1.4.0 / 110`。当前权威要求见 [统一曲包驱动施工规范](docs/统一曲包驱动施工规范-20261022.md)。用户追加三套配色：青绿晨光（默认）、暖杏木色、靛蓝夜练。入口仅「曲包库 → 练琴舞台」，上方可折叠指板、AlphaTab 主谱面、底部 BPM/播放/循环/节拍；下述旧双工作台与词典布局不再作为当前 UI 要求。
+
 - 当前 V4 UI 重构在 `codex/v4-studio-ui`，基于 `c5e6355`，版本 `1.3.0 / 108`；四阶段与验证见 [V4 实施记录](docs/V4-UI-实施记录.md)。保留原生数据与播放契约，新增模态输入屏蔽；下述 v107 信息作为重构基线查阅。
 
 - 本轮本地开发工作区：`C:\Users\b3322\Documents\Codex\projects\guitar-practice\work\native-teaching-v106`，分支 `codex/native-teaching-v106`。执行前仍需检查实时 Git 状态与活动任务。

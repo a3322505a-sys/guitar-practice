@@ -17,16 +17,21 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class ChordSourceTest {
+    private fun encodedPackageId(id: String): String? {
+        val colon = id.indexOf(':').takeIf { it > 0 } ?: return null
+        val length = id.take(colon).toIntOrNull()?.takeIf { it > 0 } ?: return null
+        return id.substring(colon + 1).takeIf { it.length > length }?.take(length)
+    }
     @Test fun selectedPackageChordResolvesWithoutFoundationNameLookup() {
         val repository=SongTestLibrary.repository()
-        val chord=repository.reload().chords.first { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.demo-c" }
+        val chord=repository.reload().chords.first { encodedPackageId(it.id)=="local.demo-c" }
         val sequence=chordSequence(chord,chord,ChordExercise.CHECK,4)
         assertSame(chord,sequence.chordAt(sequence.sections.single()))
     }
 
     @Test fun selectedPackageChordCompilesWithoutFoundationNameLookup() {
         val repository=SongTestLibrary.repository()
-        val chord=repository.reload().chords.first { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.demo-c" }
+        val chord=repository.reload().chords.first { encodedPackageId(it.id)=="local.demo-c" }
         val sequence=chordSequence(chord,chord,ChordExercise.CHECK,4)
         assertEquals(chord.positions.map(chord::midi),sequence.performance.notes.map { it.note.midi })
     }
@@ -34,8 +39,8 @@ class ChordSourceTest {
     @Test fun allLoadedCardsKeepGripIdentityTeachingAndSoundAcrossExercises() {
         val chords=SongTestLibrary.repository().reload().chords
         assertTrue(chords.size>=21)
-        assertTrue(chords.any { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.demo-c" })
-        assertTrue(chords.any { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.demo-capo" && it.capoFret==2 })
+        assertTrue(chords.any { encodedPackageId(it.id)=="local.demo-c" })
+        assertTrue(chords.any { encodedPackageId(it.id)=="local.demo-capo" && it.capoFret==2 })
         assertEquals(chords.size,chords.map { it.id }.distinct().size)
         assertTrue(chords.any { c -> c.barres.isNotEmpty() })
         assertTrue(chords.any { c -> c.frets.any { it==null } && c.frets.any { it==0 } })
@@ -68,7 +73,7 @@ class ChordSourceTest {
     }
 
     @Test fun identicalNamesNeverReplaceDifferentLoadedGrips() {
-        val loaded=SongTestLibrary.repository().reload().chords.filter { com.a3322505a.guitarlearning.ui.encodedPackageId(it.id)=="local.demo-c" }
+        val loaded=SongTestLibrary.repository().reload().chords.filter { encodedPackageId(it.id)=="local.demo-c" }
         // Exercise a name collision with two real, independently reviewed source grips.
         val low=loaded.first().copy(name="同名测试")
         val high=loaded.first { it.frets!=loaded.first().frets }.copy(name="同名测试")
