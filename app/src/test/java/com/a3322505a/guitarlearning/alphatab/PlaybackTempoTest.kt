@@ -62,7 +62,9 @@ class PlaybackTempoTest {
                 assertEquals(2 * 60000.0 / target + 60000.0 / (target * 1.5), engine.timePosition, 1e-5)
                 engine.tickPosition = 0.0
                 samplesPlayed.trigger(44100.0) // output reports one real second heard
-                assertEquals(target * 960 / 60.0, engine.tickPosition, 1e-5)
+                // 1.8.4 snapshots truncate to whole MIDI ticks and add one tick.
+                // Floating point conversion can land on either side of that boundary.
+                assertEquals(target * 960 / 60.0, engine.tickPosition, 1.000001)
             }
             assertEquals(20, TempoControl.minimum(132.0))
             assertEquals(23, TempoControl.minimum(180.0))
