@@ -18,7 +18,7 @@ SOURCES = (
     ("shayou-v2.gpractice", "shayou-v3.gpractice"),
     ("usotsuki-v1.gpractice", "usotsuki-v1.gpractice"),
     ("your-trip-v1.gpractice", "your-trip-v2.gpractice"),
-    ("卡农_C调_清音拨片_v1.gpractice", "卡农_C调_清音拨片_v1.gpractice"),
+    ("卡农_C调_清音拨片_v1.gpractice", "canon-c-clean-pick-v1.gpractice"),
     ("Doraemon_no_Uta_r1.gpractice", "Doraemon_no_Uta_r1.gpractice"),
 )
 

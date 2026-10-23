@@ -15,6 +15,16 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class BundledSongsTest {
+    @Test fun retainedPackagesOpenThroughAndroidAssetManager() {
+        val assets = RuntimeEnvironment.getApplication().assets
+        val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
+        listOf("shayou-v3.gpractice", "usotsuki-v1.gpractice", "your-trip-v2.gpractice",
+            "canon-c-clean-pick-v1.gpractice", "Doraemon_no_Uta_r1.gpractice").forEach { name ->
+            val song = reader.read(assets.open("song-packages/$name").use { it.readBytes() })
+            assertTrue(name, song.practices.isNotEmpty())
+        }
+    }
+
     @Test fun nativePackagesCompileAndPracticeSettingsSurviveReloadDisableAndRollback() {
         val root = java.nio.file.Files.createTempDirectory("bundle-restart").toFile()
         val repo = SongTestLibrary.repository(root)
