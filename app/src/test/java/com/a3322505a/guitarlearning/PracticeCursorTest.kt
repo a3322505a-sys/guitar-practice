@@ -5,6 +5,7 @@ package com.a3322505a.guitarlearning
 import alphaTab.midi.MidiTickLookupFindBeatResultCursorMode
 import alphaTab.model.Beat
 import alphaTab.platform.IContainer
+import alphaTab.platform.Cursors
 import alphaTab.rendering.utils.*
 import com.a3322505a.guitarlearning.alphatab.PracticeCursorHandler
 import org.junit.Assert.*
@@ -71,5 +72,24 @@ class PracticeCursorTest {
         val stops = cursor.stops
         handler.stop()
         assertEquals(stops + 1, cursor.stops)
+    }
+    @Test fun compensatedFrameOwnsBothCursorsAcrossLineChangesUntilPausedOrStopped() {
+        val handler=PracticeCursorHandler {}
+        val cursor=Container(); val bar=Container()
+        handler.onAttach(Cursors(cursor.value,bar.value,cursor.value,cursor.value))
+        val first=beat(420.0,200.0); val next=beat(70.0,350.0)
+        handler.display(next,80.0)
+        handler.placeBeatCursor(cursor.value,first,420.0)
+        handler.placeBarCursor(bar.value,first)
+        handler.transitionBeatCursor(cursor.value,first,420.0,500.0,100.0,
+            MidiTickLookupFindBeatResultCursorMode.ToNextBext)
+        assertEquals(listOf(74.0,350.0,12.0,90.0),cursor.bounds)
+        assertEquals(listOf(30.0,350.0,300.0,90.0),bar.bounds)
+        assertTrue(cursor.transitions.isEmpty())
+        handler.releaseDisplay()
+        handler.placeBeatCursor(cursor.value,first,420.0)
+        assertEquals(listOf(414.0,200.0,12.0,90.0),cursor.bounds)
+        handler.onDetach(Cursors(cursor.value,bar.value,cursor.value,cursor.value))
+        assertFalse(handler.displaying)
     }
 }

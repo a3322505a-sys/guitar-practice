@@ -111,6 +111,27 @@ class UnifiedStageRenderTest {
         compose.onNodeWithTag("back-to-library").assertContentDescriptionEquals("返回曲包库")
         capture("phone-360-large-text")
     }
+    @Test fun cursorOffsetCanBeEditedDuringPlaybackWithoutInvalidatingTheSession() {
+        start(); selectDaily()
+        compose.onNodeWithTag("play-button").performClick()
+        val session=compose.runOnIdle { player.session }
+        compose.onNodeWithTag("tempo-button").performClick()
+        compose.onNodeWithTag("cursor-offset-plus").performScrollTo().performClick()
+        compose.onNodeWithTag("cursor-offset-value").assertTextEquals("+10 ms")
+        compose.onNodeWithTag("cursor-offset-minus").performClick()
+        compose.onNodeWithTag("cursor-offset-minus").performClick()
+        compose.onNodeWithTag("cursor-offset-value").assertTextEquals("-10 ms")
+        compose.runOnIdle {
+            assertSame(session,player.session)
+            assertEquals(Phase.PLAYING,player.progress.phase)
+            val prefs=compose.activity.getSharedPreferences("practice-settings",0)
+            assertEquals(-10,CursorSyncSettings(prefs).load())
+        }
+        compose.onNodeWithTag("cursor-offset-reset").performScrollTo().performClick()
+        compose.onNodeWithTag("cursor-offset-value").assertTextEquals("0 ms")
+        compose.onNodeWithText("完成").performClick()
+        assertFourControls()
+    }
     @Test @Config(qualifiers = "w412dp-h892dp-mdpi")
     fun portrait412KeepsTheBoardAboveTheActualScoreSlot() {
         start(); selectDaily(); assertFourControls(); capture("phone-412-mint")

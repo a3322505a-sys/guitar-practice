@@ -32,6 +32,7 @@ class ThemeRegistryTest {
                 c.primaryText to c.primaryContainer,
                 c.primaryText to c.diagramSurface,
                 c.onPrimary to c.primary,
+                c.toggleActiveContent to c.toggleActiveBackground,
                 c.onAccent to c.accent,
                 c.onFretboardNoteNormal to c.fretboardNoteNormal,
                 c.onFretboardNoteActive to c.fretboardNoteActive,
@@ -43,6 +44,13 @@ class ThemeRegistryTest {
                 assertTrue("${theme.id}: contrast ${contrast(foreground, background)}", contrast(foreground, background) >= 4.5f)
             }
         }
+    }
+
+    @Test fun enabledTransportSwitchesStandOutFromDisabledBackgroundsInEveryTheme() {
+        ThemeRegistry.all.forEach { theme ->
+            assertTrue(theme.id, contrast(theme.colors.toggleActiveBackground, theme.colors.surfaceHigh) >= 2.5f)
+        }
+        assertEquals(3, ThemeRegistry.all.map { it.colors.toggleActiveBackground }.distinct().size)
     }
 
     @Test fun visualGeometryIsSharedAndInvalidIdsFallBack() {

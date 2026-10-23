@@ -70,8 +70,8 @@ internal fun PracticeWorkbench(
     var boardOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var bpm by rememberSaveable { mutableIntStateOf(60) }
     var looping by rememberSaveable { mutableStateOf(false) }
-    var sourceTempo by rememberSaveable { mutableStateOf(true) }
-    var tempoPercent by rememberSaveable { mutableDoubleStateOf(100.0) }
+    val cursorSettings = remember { CursorSyncSettings(preferences) }
+    var cursorOffsetMs by remember { mutableIntStateOf(cursorSettings.load()) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var preparationError by remember { mutableStateOf("") }
     val mix = remember { PlaybackMix.load(preferences) }
@@ -105,23 +105,28 @@ internal fun PracticeWorkbench(
     LaunchedEffect(sequence) {
         if (sequence != null) {
             val saved = store.load(phrase)
-            bpm = saved.bpm.coerceIn(30, 180)
+            bpm = store.targetBpm(phrase)
             looping = saved.repeats == 0
-            val tempo = store.tempo(phrase)
-            sourceTempo = tempo.first || sequence.runtimePlan?.tempos?.size?.let { it > 1 } == true
-            tempoPercent = tempo.second
             settingsSequence = sequence
         }
         nativePlayer?.prepareSequence(sequence)
     }
-    LaunchedEffect(sequence, settingsSequence, bpm, repeats, sourceTempo, tempoPercent) {
-        nativePlayer?.configurePractice(sequence, bpm, repeats, range, sourceTempo, tempoPercent / 100.0)
+    val referenceBpm = sequence?.let { TempoControl.sourceBpm(it) } ?: 60.0
+    val minBpm = TempoControl.minimum(referenceBpm)
+    val maxBpm = TempoControl.maximum(referenceBpm)
+    val targetBpm = bpm.coerceIn(minBpm, maxBpm)
+    val speed = TempoControl.ratio(targetBpm, referenceBpm)
+    LaunchedEffect(sequence, settingsSequence, targetBpm, repeats, speed) {
+        nativePlayer?.configurePractice(sequence, targetBpm, repeats, range, true, speed)
         if (sequence != null && sequence === settingsSequence) {
-            store.save(phrase, bpm, repeats, range)
-            store.saveTempo(phrase, sourceTempo, tempoPercent)
+            store.save(phrase, targetBpm, repeats, range)
+            store.saveTargetBpm(phrase, targetBpm)
         }
     }
-    SideEffect { player.guitar = true; player.click = click; player.setMix(mix) }
+    SideEffect {
+        player.guitar = true; player.click = click; player.setMix(mix)
+        nativePlayer?.cursorOffsetMs = cursorOffsetMs
+    }
     val activity = LocalActivity.current
     LaunchedEffect(activity) { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
 
@@ -141,21 +146,18 @@ internal fun PracticeWorkbench(
     val visit = (cursor?.bar ?: nativePlayer?.focus?.visit ?: 0).coerceIn(0, (sequence?.barCount ?: 1) - 1)
     val quarter = cursor?.localTick?.div(sequence?.ticksPerQuarter ?: QUARTER)
         ?: sequence?.performance?.visits?.getOrNull(visit)?.start?.value() ?: 0.0
-    val sourceBpm = sequence?.let { TempoControl.sourceBpmAt(it, quarter) } ?: 60.0
-    val visibleBpm = if (sourceTempo) (sourceBpm * tempoPercent / 100.0).roundToInt() else bpm
     fun setBpm(value: Int) {
-        if (value != visibleBpm) {
+        val next = value.coerceIn(minBpm, maxBpm)
+        if (next != targetBpm) {
             player.invalidate()
-            if (sourceTempo) tempoPercent = TempoControl.ratio(value, sourceBpm) * 100.0
-            else bpm = value.coerceIn(30, 180)
+            bpm = next
         }
     }
     fun play() {
         when {
             player.active -> player.pause()
             progress.phase == Phase.PAUSED && session != null -> player.resume()
-            else -> sequence?.let { player.start(it, bpm, true, repeats, range, sourceTempo,
-                if (sourceTempo) tempoPercent / 100.0 else 1.0) }
+            else -> sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) }
         }
     }
     val packageCard = packages.firstOrNull { it.id == phrase.assetKey?.packageId }
@@ -175,7 +177,7 @@ internal fun PracticeWorkbench(
     } else emptyList()
     val timingScale = if (session != null) {
         if (session.sourceTempo) session.tempoMultiplier else 1.0
-    } else if (sourceTempo) tempoPercent / 100.0 else bpm / sourceBpm
+    } else speed
     val nativeDuration = if (nativePlayer?.ready == true) nativePlayer.durationMillis else 0.0
     val duration = (nativeDuration / timingScale.coerceAtLeast(.01) / 1000.0).coerceAtLeast(0.0)
     val elapsed = if (progress.phase == Phase.ENDED) duration else if (cursor?.pre == true) 0.0
@@ -219,7 +221,7 @@ internal fun PracticeWorkbench(
                                 .onGloballyPositioned { scoreBounds = it.boundsInRoot() })
                         }
                     }
-                    StageTransport(visibleBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),
+                    StageTransport(targetBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),
                         looping, click, elapsed, duration, { tempoOpen = true }, ::play,
                         { player.invalidate(); looping = !looping },
                         { click = !click; preferences.edit().putBoolean("click", click).apply() })
@@ -250,10 +252,12 @@ internal fun PracticeWorkbench(
                         player.invalidate(); phraseId = updated.phrases.firstOrNull()?.id.orEmpty()
                     }
                 }, { managementOpen = false }, sequence, themeManager)
-                if (tempoOpen) BpmSheet(visibleBpm,
-                    if (sourceTempo) (sourceBpm * .25).roundToInt().coerceAtLeast(1) else 30,
-                    if (sourceTempo) (sourceBpm * 2).roundToInt() else 180,
-                    ::setBpm, { tempoOpen = false })
+                if (tempoOpen) BpmSheet(targetBpm, minBpm, maxBpm, ::setBpm, { tempoOpen = false },
+                    cursorOffsetMs, { value ->
+                        cursorOffsetMs = value.coerceIn(-500, 500)
+                        cursorSettings.save(cursorOffsetMs)
+                        nativePlayer?.cursorOffsetMs = cursorOffsetMs
+                    })
             }
         }
     }

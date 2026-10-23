@@ -60,6 +60,8 @@ data class ThemeTokens(
     val noteInkDark: Color = Color.Black,
     val fretboardWire: Color = Color(0xFFBCC6CC),
     val fretboardInlay: Color = Color(0xFF64748B),
+    val toggleActiveBackground: Color = primary,
+    val toggleActiveContent: Color = onPrimary,
 )
 
 @Immutable
