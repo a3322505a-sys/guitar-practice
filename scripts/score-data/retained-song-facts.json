@@ -2,7 +2,7 @@
   "packages": [
     {
       "sourceFile": "shayou-v2.gpractice",
-      "outputFile": "shayou-v3.gpractice",
+      "outputFile": "shayou-v4.gpractice",
       "packageId": "local.shayou",
       "originalRevision": 2,
       "originalScoreHash": "488c5e6c792b2c3c9802b0bf360005f1f2cbb10cb855623661747ab84df2d5dd",
@@ -42,7 +42,7 @@
     },
     {
       "sourceFile": "your-trip-v1.gpractice",
-      "outputFile": "your-trip-v2.gpractice",
+      "outputFile": "your-trip-v3.gpractice",
       "packageId": "local.yourtrip",
       "originalRevision": 1,
       "originalScoreHash": "ffadba8f6f1fd7f2eb79b87dd5fc1486af37276381a4dd860711fea277b022d0",
