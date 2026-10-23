@@ -20,7 +20,9 @@ class BundledSongsTest {
         val repo = SongTestLibrary.repository(root)
         val library = repo.reload()
         assertTrue(library.diagnostics.toString(), library.diagnostics.isEmpty())
-        assertEquals(setOf("local.teaching-native", "local.daily-practice", "local.demo-c", "local.demo-capo", "local.demo-rock"), library.packages.map { it.identity.packageId }.toSet())
+        assertEquals(setOf("local.teaching-native", "local.daily-practice", "local.demo-c", "local.demo-capo", "local.demo-rock",
+            "local.shayou", "local.usotsuki", "local.yourtrip", "user.canon-c.clean-pick", "local.user.doraemon-no-uta"),
+            library.packages.map { it.identity.packageId }.toSet())
         assertFalse(library.aliases.keys.any { it.startsWith("SB-") || it.startsWith("K265-") })
         val selected = repo.resolve(PracticeKey("local.daily-practice", "DP-03-basic").encoded)
         val prefs = RuntimeEnvironment.getApplication().getSharedPreferences("bundle-settings", Context.MODE_PRIVATE)

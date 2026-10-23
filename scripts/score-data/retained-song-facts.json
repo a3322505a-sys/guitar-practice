@@ -1,0 +1,113 @@
+{
+  "packages": [
+    {
+      "sourceFile": "shayou-v2.gpractice",
+      "outputFile": "shayou-v3.gpractice",
+      "packageId": "local.shayou",
+      "originalRevision": 2,
+      "originalScoreHash": "488c5e6c792b2c3c9802b0bf360005f1f2cbb10cb855623661747ab84df2d5dd",
+      "originalPracticeHashes": {
+        "SHA-INTRO": "11855fe8d9e08d65f62918603a38e900ed091e3fcfaeb540e06705e0dc797a21",
+        "SHA-RIFF": "1003d851f9ea4dfe6e24d01acacacb3da2897fd379e07de3173fe24775001f1d",
+        "SHA-VERSE": "3f9c5bc264d20bb47370cd82e9f6e77feed6b439b335366db6e81602e0278eb1",
+        "SHA-PRE": "c3a9054f1741ddc516635aa99f91beee3a4024c83d6b3fc829bfc9d8bc5074f2",
+        "SHA-CHORUS": "50aa32f1de756a6e8cefbbfe2ddaa8551f749dbf3ff84b27a9591b1bb990ceca"
+      },
+      "originalPayloadHashes": {
+        "manifest.json": "9b3af3d188ab9e0a9f4854d81d204aa27032f89d7aeabfb52a2ecf4fa855ca58",
+        "score.json": "488c5e6c792b2c3c9802b0bf360005f1f2cbb10cb855623661747ab84df2d5dd",
+        "practices.json": "b5199381dae03af5bc8346cb19640597d45b5984ebbf633fa5eabcb1d8d19695",
+        "provenance.json": "50eae1c5be94276c17b5900ca5d388fc53677800e4c653f0b055190bc49dc4c2",
+        "review.json": "d5348e020073fe1e838711e60686ca4685c132dd824d31a126a47637145022c7"
+      },
+      "originalContainerHash": "322ef14bfcfac06b9113eea23a04ae35c596c9b28c4190e998399acc84427a56"
+    },
+    {
+      "sourceFile": "usotsuki-v1.gpractice",
+      "outputFile": "usotsuki-v1.gpractice",
+      "packageId": "local.usotsuki",
+      "originalRevision": 1,
+      "originalScoreHash": "7e6cd866767ebac625cd42262ce5d1ebc4afb90e6efd23408416466f05329b4b",
+      "originalPracticeHashes": {
+        "bass-treble": "b939fde48f2343c78ac3149fe6da15114d5e12bdef0a0ef4c959901a414d2d7c"
+      },
+      "originalPayloadHashes": {
+        "manifest.json": "045fb4834ce3b34815443ad95975dc0e896004bf4a044a97baa12322ed6be975",
+        "score.json": "7e6cd866767ebac625cd42262ce5d1ebc4afb90e6efd23408416466f05329b4b",
+        "practices.json": "5468b1e21f9d3ee39967db8378167e520ac8b40d91d3a9c263485348a9cc19d3",
+        "provenance.json": "df9314e49591e24b27c1194c394fa27f2baddb9e76913341e320fdb199db2c8e",
+        "review.json": "a186288cb499df36e2ddb3df8231e74f00aa2b930f2f139141af18ec02ba0146"
+      },
+      "originalContainerHash": "f615d365b53ab9e8e5b5de8c7322511a62202a0b61cf8b21da15f55527a0c90a"
+    },
+    {
+      "sourceFile": "your-trip-v1.gpractice",
+      "outputFile": "your-trip-v2.gpractice",
+      "packageId": "local.yourtrip",
+      "originalRevision": 1,
+      "originalScoreHash": "ffadba8f6f1fd7f2eb79b87dd5fc1486af37276381a4dd860711fea277b022d0",
+      "originalPracticeHashes": {
+        "YT-GROOVE": "480430c477846bc6ac4b671d9e89c3fccda10b83cb783511e9d75b6d00ab5119",
+        "YT-ARPEGGIO": "74124e6c3852edede20ef26f54319b129c1cfffb212c1831f26d252837218afc",
+        "YT-LEGATO": "badc9976507629623b8b8f2f881a926fb7b8a05e4fcb4027b56fc2edb5a614f2",
+        "YT-RIFF": "630547bb11d7f5f81d53e8199904876ef8041319b8f49e45cce4297352c544d2",
+        "YT-RING": "d80bb94da4b43e09d5773bd50a29c431af9c77d75eccfd36ef164828ea319240",
+        "YT-END": "31bb0a51bd1de4d3cf27e22eb2de26c0050bcd9d7494b5f1f8eecd8d8274585e"
+      },
+      "originalPayloadHashes": {
+        "manifest.json": "543d033ac8ad577b754afb94fbdcf39d751bca06c5ff6d134db2b4be5d48f9e4",
+        "score.json": "66f2423f018add77791fc0f91fd84a676ba214a1b5ed6e0a0cdbbc300dcde873",
+        "practices.json": "9337e32a4b69a66a29a6efd5202459d66332bab88f61bb762ed25087f8f89378",
+        "provenance.json": "b61694c57bad6102aa83fd1574d7b2ab01ced8981b597f77cfc03c505ec5ae8f",
+        "review.json": "7155a8c51c9762fb82f7d1e73c66e3a69406e61592ba5f4780a454ee5db03dd1"
+      },
+      "originalContainerHash": "3f02c9e33d529ceacf930a7d2637642bbac53d670e00e7254e43455d3a4e1238"
+    },
+    {
+      "sourceFile": "卡农_C调_清音拨片_v1.gpractice",
+      "outputFile": "卡农_C调_清音拨片_v1.gpractice",
+      "packageId": "user.canon-c.clean-pick",
+      "originalRevision": 1,
+      "originalScoreHash": "cda98bd40ebbeffe363f45645f18d64e161b026d01bcde869222547f37fa4027",
+      "originalPracticeHashes": {
+        "complete": "207be4e1729db44d49089af0e2ec22eabb42f5352ecbda70b8405e08cfa60862",
+        "arpeggio": "e94498ae54eab4e40325cc915a909222083eb95208817f30843f428ed16a5dbc",
+        "melody": "ace954db163655821219df1b1786efa28f5aa22213230f791048e4629758527c",
+        "melody-ending": "fae4129386051637e60da59831d0742edf709261022478e022bd933fb099ba15",
+        "ending": "8f51e0b93ab146b3d0407a93a2fc4b58de4fed0141e7bbc19688dc21a7155c53"
+      },
+      "originalPayloadHashes": {
+        "manifest.json": "6bd2e0d534905a04cb260a8eac749eb370e75db3b04fcbb7df51e9b95e9b5c96",
+        "score.json": "cda98bd40ebbeffe363f45645f18d64e161b026d01bcde869222547f37fa4027",
+        "practices.json": "308e70771de5df3131e7f88375ddbe1d5b24977f6a6f539fcce08cd3575593da",
+        "provenance.json": "706786dc7ccd1197825eabfa306e0963b9855dc10c3fd986f06cf14d1cca6326",
+        "review.json": "04b0c4e950ec2a79955f249ba0b269518041d3cc7feefb34f9a8f51290badf55"
+      },
+      "originalContainerHash": "94713cc6c1c8337a865301335d5fe6131448d0d6b62b39132ae908bef28c05ad"
+    },
+    {
+      "sourceFile": "Doraemon_no_Uta_r1.gpractice",
+      "outputFile": "Doraemon_no_Uta_r1.gpractice",
+      "packageId": "local.user.doraemon-no-uta",
+      "originalRevision": 1,
+      "originalScoreHash": "214b90290e3ae5fcab227c9e5fa613040373839500bf22336156264e9b350d8c",
+      "originalPracticeHashes": {
+        "doraemon-full": "089a5d00281eb582ca6e70a1644ffad7ee04ec214dc1543a01ccb9733da046d7",
+        "doraemon-intro-motif": "e2160d113e2f765e53efe36c517e050effcbe1b7c5b505932fff7ccfb2f5e035",
+        "doraemon-intro-sequence": "6bab628ef2e0c81c95ad246104b70ef67a43e812ad46fe5e80814dae2ad8fd12",
+        "doraemon-intro": "e95287b000afe6080a3be0bd36ff1c45f3b562ab0c51090f21db409cab5c6caa",
+        "doraemon-verse-a": "1e3f01f33b41f351d8a70b3ead6385c0882e5972dfcec88327981f9e138d35bc",
+        "doraemon-verse-b": "a083516250f3ca5ef6e6e2e28062ff5033955737ce3e582c8dda337fcf623c8e",
+        "doraemon-outro": "c4bbee0a3b68efa0da373f603dbd36c5cda73531f76d0ee63a51897b4ce4848b"
+      },
+      "originalPayloadHashes": {
+        "manifest.json": "577ca30a5562156f31ff0a9c5b58a82565ce3a978ebf7b543dab8202997094a6",
+        "score.json": "214b90290e3ae5fcab227c9e5fa613040373839500bf22336156264e9b350d8c",
+        "practices.json": "ac97fe66b1e0a84aed51ef2939f39d2c29a38d01cd4a89b6b22ccfd1a992021c",
+        "provenance.json": "5848d1dee8b5a944cf30659ce12bb3da9c724f7a700c172e6115326efbc5f446",
+        "review.json": "5310eadd7d03f6f9f7a4979bc7cc83c73802aeb4bfbca201ceceeac2a017e0e8"
+      },
+      "originalContainerHash": "40d0a48869202a4f5661eb6c45cf1a675f4c499e1eed0234cc59f0dc6fcbd1f4"
+    }
+  ]
+}
