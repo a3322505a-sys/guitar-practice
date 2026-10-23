@@ -10,6 +10,28 @@ import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class PhraseSettingsTest {
+    @Test fun integerTargetsAndGlobalCursorOffsetSurviveNewStoresAndKeepSeparateScopes() {
+        val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("v111-settings-test",Context.MODE_PRIVATE)
+        prefs.edit().clear().commit()
+        val store=PhraseSettingsStore(prefs)
+        val phrase=SongTestLibrary.sourceMozart[0].copy(assetKey=com.a3322505a.guitarlearning.music.score.PracticeKey("test.tempo","one"))
+        val reference=TempoControl.sourceBpm(phrase.sequence)
+        store.saveTempo(phrase,true,75.0)
+        val migrated=kotlin.math.round(reference*.75).toInt().coerceIn(TempoControl.minimum(reference),TempoControl.maximum(reference))
+        assertEquals(migrated,store.targetBpm(phrase))
+        store.saveTargetBpm(phrase,20)
+        assertEquals(20,PhraseSettingsStore(prefs).targetBpm(phrase))
+        val offset=CursorSyncSettings(prefs)
+        assertEquals(0,offset.load())
+        offset.save(-170)
+        assertEquals(-170,CursorSyncSettings(prefs).load())
+        store.saveTargetBpm(phrase,21)
+        assertEquals(-170,CursorSyncSettings(prefs).load())
+        offset.save(900)
+        assertEquals(500,CursorSyncSettings(prefs).load())
+        offset.save(0)
+        assertEquals(0,CursorSyncSettings(prefs).load())
+    }
     @Test fun eachPhraseRestoresItsOwnSettingsAndInvalidValuesFallBackWithoutClearingOthers() {
         val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("kernel-test",Context.MODE_PRIVATE)
         prefs.edit().clear().commit()

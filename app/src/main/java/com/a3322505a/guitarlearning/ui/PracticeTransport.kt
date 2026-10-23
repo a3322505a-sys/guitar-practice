@@ -1,6 +1,8 @@
 package com.a3322505a.guitarlearning.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +15,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.a3322505a.guitarlearning.audio.Phase
+import com.a3322505a.guitarlearning.practice.TempoControl
+import kotlin.math.roundToInt
 
 internal fun stageTime(seconds: Double): String {
     val value = seconds.coerceAtLeast(0.0).toInt()
@@ -48,8 +52,8 @@ internal fun StageTransport(
                                 .semantics { this.selected = selected; contentDescription = title },
                             contentPadding = PaddingValues(horizontal = 3.dp, vertical = 8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (primary) colors.primary else if (selected) colors.surfaceSelected else colors.surfaceHigh,
-                                contentColor = if (primary) colors.onPrimary else colors.textPrimary,
+                                containerColor = if (primary) colors.primary else if (selected) colors.toggleActiveBackground else colors.surfaceHigh,
+                                contentColor = if (primary) colors.onPrimary else if (selected) colors.toggleActiveContent else colors.textPrimary,
                                 disabledContainerColor = colors.surfaceHigh, disabledContentColor = colors.textSecondary)) {
                             if (icons) {
                                 StageIcon(icon, Modifier.size(22.dp))
@@ -74,15 +78,16 @@ internal fun StageTransport(
 }
 
 @Composable
-internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, onClose: () -> Unit) {
-    var draft by remember(bpm) { mutableFloatStateOf(bpm.toFloat()) }
+internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, onClose: () -> Unit,
+    cursorOffsetMs: Int = 0, onCursorOffset: (Int) -> Unit = {}) {
+    var draft by remember(bpm) { mutableIntStateOf(bpm) }
     AlertDialog(onDismissRequest = onClose, modifier = Modifier.testTag("tempo-popup"),
         title = { Text("速度 · BPM") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("${draft.toInt()} BPM", style = MaterialTheme.typography.headlineSmall)
-                Slider(draft.coerceIn(minBpm.toFloat(), maxBpm.toFloat()), { draft = it },
-                    onValueChangeFinished = { onBpm(draft.toInt()) },
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("$draft BPM", style = MaterialTheme.typography.headlineSmall)
+                Slider(draft.coerceIn(minBpm, maxBpm).toFloat(), { draft = it.roundToInt() },
+                    onValueChangeFinished = { onBpm(draft) }, enabled = maxBpm > minBpm,
                     valueRange = minBpm.toFloat()..maxBpm.toFloat(), modifier = Modifier.testTag("tempo-slider"))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     listOf(-5, -1, 1, 5).forEach { step ->
@@ -92,6 +97,24 @@ internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, 
                         }
                     }
                 }
+                if (minBpm > TempoControl.TARGET_MIN_BPM) Text(
+                    "此曲引擎最低 $minBpm BPM（最低倍率 12.5%）", style = MaterialTheme.typography.bodySmall)
+                HorizontalDivider()
+                Text("光标同步微调", style = MaterialTheme.typography.titleMedium)
+                Text("正值延后，负值提前；仅调整光标显示。", style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly) {
+                    TextButton(onClick = { onCursorOffset((cursorOffsetMs - 10).coerceAtLeast(-500)) },
+                        enabled = cursorOffsetMs > -500,
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("cursor-offset-minus")) { Text("−") }
+                    Text("${if (cursorOffsetMs > 0) "+" else ""}$cursorOffsetMs ms",
+                        modifier = Modifier.testTag("cursor-offset-value"), style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { onCursorOffset((cursorOffsetMs + 10).coerceAtMost(500)) },
+                        enabled = cursorOffsetMs < 500,
+                        modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).testTag("cursor-offset-plus")) { Text("+") }
+                }
+                TextButton(onClick = { onCursorOffset(0) },
+                    modifier = Modifier.heightIn(min = 48.dp).testTag("cursor-offset-reset")) { Text("恢复默认值") }
             }
         }, confirmButton = { TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text("完成") } })
 }

@@ -4,6 +4,19 @@ import android.content.SharedPreferences
 
 data class PhraseSettings(val bpm: Int,val repeats: Int,val range: BarRange,val rangeReset: Boolean = false)
 class PhraseSettingsStore(private val prefs: SharedPreferences,private val resolve: (String)->Phrase = Phrases::practiceNamed) {
+    /** New stage speeds persist as integers. Read the former ratio once when migrating. */
+    fun targetBpm(phrase: Phrase): Int {
+        val reference = TempoControl.sourceBpm(phrase.sequence)
+        val saved = runCatching { prefs.getInt(assetPrefix(phrase)+"targetBpm", 0) }.getOrDefault(0)
+        val old = tempo(phrase)
+        val migrated = if (old.first || phrase.sequence.runtimePlan?.tempos?.size?.let { it > 1 } == true)
+            kotlin.math.round(reference * old.second / 100).toInt() else load(phrase).bpm
+        return (if (saved > 0) saved else migrated).coerceIn(TempoControl.minimum(reference), TempoControl.maximum(reference))
+    }
+    fun saveTargetBpm(phrase: Phrase, bpm: Int) {
+        TempoControl.ratio(bpm, TempoControl.sourceBpm(phrase.sequence))
+        prefs.edit().putInt(assetPrefix(phrase)+"targetBpm", bpm).apply()
+    }
     fun tempo(phrase: Phrase): Pair<Boolean,Double> {
         if(phrase.assetKey==null) return false to 100.0
         val prefix=assetPrefix(phrase)
@@ -36,7 +49,10 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         return PhraseSettings(bpm,repeats,if(!saved.valid(phrase.sequence)) whole else saved)
     }
     fun save(phrase: Phrase,bpm: Int,repeats: Int,range: BarRange) {
-        require(bpm in 30..180 && repeats in listOf(0,1,4,8) && range.valid(phrase.sequence))
+        val bpmRange = if (phrase.assetKey == null) 30..180 else TempoControl.sourceBpm(phrase.sequence).let {
+            TempoControl.minimum(it)..TempoControl.maximum(it)
+        }
+        require(bpm in bpmRange && repeats in listOf(0,1,4,8) && range.valid(phrase.sequence))
         if(phrase.assetKey!=null) {
             val prefix="asset."+phrase.assetKey.encoded+"."
             val plan=phrase.sequence.performance
@@ -58,7 +74,8 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
     private fun loadAsset(phrase: Phrase): PhraseSettings {
         val prefix=assetPrefix(phrase)
         fun number(key: String,default: Int)=runCatching { prefs.getInt(prefix+key,default) }.getOrDefault(default)
-        val bpm=number("bpm",phrase.suggestedBpm).takeIf { it in 30..180 } ?: phrase.suggestedBpm
+        val maxBpm = maxOf(180, TempoControl.maximum(TempoControl.sourceBpm(phrase.sequence)))
+        val bpm=number("bpm",phrase.suggestedBpm).takeIf { it in 20..maxBpm } ?: phrase.suggestedBpm
         val repeats=number("repeats",4).takeIf { it in listOf(0,1,4,8) } ?: 4
         val whole=BarRange(0,phrase.sequence.barCount-1)
         if(phrase.unprepared) return PhraseSettings(bpm,repeats,whole)

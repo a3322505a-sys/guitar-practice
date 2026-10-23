@@ -62,6 +62,12 @@ object ThemeRegistry {
             notationActive = raised, notationSecondary = muted, diagramSurface = surface, diagramGrid = muted,
             primaryText = readablePrimary(main, ink, listOf(page, surface, raised, selection)),
             fretboardNoteStroke = chordColor,
+            toggleActiveBackground = Color(when (id) {
+                "mint_light" -> 0xFF006D69
+                "apricot_light" -> 0xFF88432C
+                else -> 0xFF007F8D
+            }),
+            toggleActiveContent = Color.White,
         ), isDark = dark)
     }
 

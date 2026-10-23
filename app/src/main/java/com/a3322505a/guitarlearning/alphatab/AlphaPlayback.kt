@@ -12,6 +12,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import androidx.compose.runtime.*
 import com.a3322505a.guitarlearning.audio.*
@@ -30,6 +31,57 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         .setOnAudioFocusChangeListener { if (it < 0) pause() }.build()
     private var view: AlphaTabView? = null
     private val scoreCursor = PracticeCursorHandler { view?.api?.scrollToCursor() }
+    private var cursorTempoMap: CursorTempoMap? = null
+    private var displayClock: CursorDisplayClock? = null
+    private val cursorFrame = object : Runnable {
+        override fun run() {
+            if (closed || displayClock == null || progress.phase != Phase.PLAYING || countIn) return
+            renderDisplayCursor()
+            main.postDelayed(this, 16)
+        }
+    }
+    var cursorOffsetMs: Int = 0
+        set(value) {
+            val next = value.coerceIn(-500, 500)
+            if (field == next) return
+            field = next
+            // A visual redraw only: no stop, seek, settings update, MIDI load or view reattach.
+            renderDisplayCursor()
+        }
+
+    private fun stopDisplayCursor() {
+        main.removeCallbacks(cursorFrame)
+        displayClock = null
+        scoreCursor.releaseDisplay()
+    }
+    private fun sampleDisplayCursor(tick: Double, heardAt: Long, speed: Double) {
+        val api = view?.api ?: return
+        val map = cursorTempoMap ?: return
+        if (displayClock == null) {
+            displayClock = CursorDisplayClock(map, api.playbackRange?.startTick ?: 0.0,
+                api.playbackRange?.endTick ?: api.endTick)
+        }
+        displayClock?.sample(tick, heardAt, speed)
+        main.removeCallbacks(cursorFrame)
+        cursorFrame.run()
+    }
+    private fun renderDisplayCursor() {
+        if (progress.phase != Phase.PLAYING || countIn) return
+        val api = view?.api ?: return
+        val tick = displayClock?.tickAt(SystemClock.uptimeMillis(), cursorOffsetMs, api.isLooping) ?: return
+        val track = selectedTrack ?: return
+        val lookup = api.tickCache?.findBeat(alphaTab.core.ecmaScript.Set(alphaTab.collections.DoubleList(track.index)), tick) ?: return
+        val boundsLookup = api.renderer.boundsLookup ?: return
+        val bounds = boundsLookup.findBeat(lookup.beat) ?: return
+        var endX = bounds.realBounds.x + bounds.realBounds.w
+        if (lookup.cursorMode == alphaTab.midi.MidiTickLookupFindBeatResultCursorMode.ToNextBext) {
+            lookup.nextBeat?.beat?.let(boundsLookup::findBeat)?.takeIf {
+                it.barBounds.masterBarBounds.staffSystemBounds === bounds.barBounds.masterBarBounds.staffSystemBounds
+            }?.let { endX = it.onNotesX }
+        }
+        val fraction = if (lookup.tickDuration > 0) ((tick - lookup.start) / lookup.tickDuration).coerceIn(0.0, 1.0) else 0.0
+        scoreCursor.display(bounds, bounds.onNotesX + (endX - bounds.onNotesX) * fraction)
+    }
     private var generation = 0
     private var callbackEpoch = 0
     private var closed = false
@@ -189,13 +241,15 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (current != null && api.score === current) {
                 AlphaScoreAdapter.adaptMidi(current, midi)
                 val projected = EngineProjection.fromMidi(current, midi, api.tickCache!!.masterBars.toList())
-                ui { if (score === current) projection = projected }
+                val displayMap = CursorTempoMap(midi)
+                ui { if (score === current) { projection = projected; cursorTempoMap = displayMap } }
             }
         }
         api.playerReady.on { ui { onReady() } }
         // 1.8.4 Android's loadedMidiInfo getter recurses when midiLoaded's initial
         // subscription value is evaluated. playerReady is emitted after each MIDI load.
         api.playerStateChanged.on { event -> ui {
+            if (event.state == PlayerState.Paused) stopDisplayCursor()
             if (!auditioning && progress.phase !in listOf(Phase.IDLE, Phase.ENDED, Phase.ERROR)) {
                 progress = progress.copy(phase = if (event.state == PlayerState.Playing) Phase.PLAYING else Phase.PAUSED)
                 // 1.8.4 snaps a paused beat to its first written occurrence. Keep the
@@ -205,7 +259,9 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             Log.i("AlphaPractice","state=${event.state} audition=$auditioning")
             if (auditioning && event.state == PlayerState.Paused) { auditioning = false; audio.abandonAudioFocusRequest(focusRequest) }
         } }
-        api.playerPositionChanged.on { event -> ui {
+        api.playerPositionChanged.on { event ->
+            val heardAt = SystemClock.uptimeMillis()
+            ui {
             if (auditioning || beginning || progress.phase !in listOf(Phase.PLAYING, Phase.PAUSED)) return@ui
             if (event.isSeek && progress.phase == Phase.PAUSED && pausedTick?.let {
                 kotlin.math.abs(event.currentTick - it) > 1e-6
@@ -214,6 +270,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (!event.isSeek && progress.phase == Phase.PLAYING) pausedTick = null
             countIn = false
             scoreCursor.follow()
+            if (progress.phase == Phase.PLAYING) sampleDisplayCursor(event.currentTick, heardAt, event.modifiedTempo / event.originalTempo)
             if (focus!=null && progress.phase==Phase.PAUSED) return@ui
             currentTick = event.currentTick; effectiveBpm = event.modifiedTempo
             currentVisit = projection?.visitAt(currentTick) ?: 0
@@ -228,6 +285,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (rounds > 0 && round >= rounds) {
                 round = 0; applyMix()
                 positions = emptyList(); cursor = null
+                stopDisplayCursor()
                 scoreCursor.stop()
                 progress = Progress(Phase.ENDED, progress.tick, "本次练习结束")
                 audio.abandonAudioFocusRequest(focusRequest)
@@ -273,7 +331,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         score = value
         modelLoads++; Log.i("AlphaPractice","modelLoad=$modelLoads")
         selectedTrack = value.tracks.firstOrNull { it.index.toInt() == trackIndex } ?: value.tracks.first()
-        projection = null; ready = false; loading = false; error = ""; rendered = false
+        projection = null; cursorTempoMap = null; ready = false; loading = false; error = ""; rendered = false
         currentTick = 0.0; currentVisit = 0; positions = emptyList()
         render(value)
     }
@@ -339,7 +397,8 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             rejectStart("选段起点含上一小节延音，请把起点前移")
             return
         }
-        require(repeats >= 0 && speed in 0.25..2.0)
+        require(repeats >= 0 && speed in TempoControl.ENGINE_MIN_SPEED..TempoControl.MAX_SPEED)
+        stopDisplayCursor()
         focus=null; focusNoteIds=emptySet()
         api.stop(); callbackEpoch++; auditioning=false; pausedTick=null; round = 0; rounds = repeats; fromVisit = first; toVisit = last
         countIn = pre; beginning = true; positions = emptyList()
@@ -348,6 +407,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             val visits = checkNotNull(projection).visits
             api.playbackRange = PlaybackRange().apply { startTick = visits[first].start; endTick = visits[last].end }
             api.playbackSpeed = speed
+            check(kotlin.math.abs(api.playbackSpeed - speed) < 1e-9) { "播放器未接受目标速度" }
             api.countInVolume = if (pre) clickGain else 0.0
             api.isLooping = repeats == 0 || repeats > 1
             applyMix(); currentTick = visits[entryVisit].start; currentVisit = entryVisit
@@ -390,6 +450,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         }
         if (!active) return
         if(progress.phase==Phase.PREPARING) { stop();return }
+        stopDisplayCursor()
         pendingStart = null; beginning = false
         pausedTick = view?.api?.tickPosition ?: currentTick
         view?.api?.pause(); progress = progress.copy(phase = Phase.PAUSED)
@@ -423,6 +484,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     }
     override fun invalidate() { stop(); progress = Progress(message = "设置已改变，下一次播放从头开始") }
     override fun stop() {
+        stopDisplayCursor()
         round=0; applyMix()
         callbackEpoch++
         pendingStart = null; beginning = false; auditioning = false
@@ -440,13 +502,15 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         auditioning = true
         view?.api?.playBeat(beat)
     }
-    fun setSpeed(multiplier: Double) { view?.api?.playbackSpeed = multiplier.coerceIn(0.25, 2.0) }
+    fun setSpeed(multiplier: Double) { view?.api?.playbackSpeed = multiplier.coerceIn(TempoControl.ENGINE_MIN_SPEED, TempoControl.MAX_SPEED) }
     private fun rejectStart(message: String) {
+        stopDisplayCursor()
         focus=null; focusNoteIds=emptySet(); countIn=false
         positions=emptyList(); cursor=null; scoreCursor.stop()
         progress=Progress(Phase.ERROR,message=message)
     }
     private fun fail(failure: Throwable) {
+        stopDisplayCursor()
         pendingStart = null; beginning = false; ready = false; loading = false
         countIn = false; pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()
         error = failure.message ?: "引擎加载失败"
