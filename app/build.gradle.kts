@@ -25,6 +25,14 @@ android {
             isDebuggable = false
             matchingFallbacks += "release"
         }
+        create("standalone") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".standalone"
+            versionNameSuffix = "-standalone"
+            manifestPlaceholders["appLabel"] = "吉他练习·新版"
+            isDebuggable = false
+            matchingFallbacks += "release"
+        }
         create("p0") {
             initWith(getByName("release"))
             isDebuggable = true
