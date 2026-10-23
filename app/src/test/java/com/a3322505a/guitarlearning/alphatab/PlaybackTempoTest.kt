@@ -2,8 +2,8 @@
 
 package com.a3322505a.guitarlearning.alphatab
 
-import alphaTab.EventEmitter
-import alphaTab.EventEmitterOfT
+import alphaTab.IEventEmitter
+import alphaTab.IEventEmitterOfT
 import alphaTab.midi.*
 import alphaTab.synth.AlphaSynth
 import alphaTab.synth.ISynthOutput
@@ -14,9 +14,21 @@ import java.lang.reflect.Proxy
 
 /** Exercise the shipped 1.8.4 synth, not a duplicate rate formula. No device audio output. */
 class PlaybackTempoTest {
-    private val ready = EventEmitter()
-    private val sampleRequest = EventEmitter()
-    private val samplesPlayed = EventEmitterOfT<Double>()
+    private class Signal : IEventEmitter {
+        private val listeners=mutableListOf<() -> Unit>()
+        override fun on(value: () -> Unit): () -> Unit { listeners+=value; return { off(value) } }
+        override fun off(value: () -> Unit) { listeners-=value }
+        fun trigger() { listeners.toList().forEach { it() } }
+    }
+    private class SignalOfT<T> : IEventEmitterOfT<T> {
+        private val listeners=mutableListOf<(T) -> Unit>()
+        override fun on(value: (T) -> Unit): () -> Unit { listeners+=value; return { off(value) } }
+        override fun off(value: (T) -> Unit) { listeners-=value }
+        fun trigger(value: T) { listeners.toList().forEach { it(value) } }
+    }
+    private val ready = Signal()
+    private val sampleRequest = Signal()
+    private val samplesPlayed = SignalOfT<Double>()
     private fun synth(): AlphaSynth {
         val output = Proxy.newProxyInstance(ISynthOutput::class.java.classLoader, arrayOf(ISynthOutput::class.java)) { _, method, _ ->
             when (method.name) {
