@@ -1,0 +1,327 @@
+{
+  "sourceFile": "花に亡霊-主音吉他-6卡18版本-v1.gpractice",
+  "sourceContainerHash": "6a42204db4cd95092977d34337a1aacecbd6cab9a06a670c882bc5696ce54c52",
+  "outputFile": "hana-bourei-lead-v2.gpractice",
+  "packageId": "personal.hana-bourei-lead",
+  "originalPracticeCount": 18,
+  "preservedPayloadHashes": {
+    "score.json": "484ce681c8dc42aac235744a5bb614f8558cdc1e741b5c7081009fd280279408",
+    "provenance.json": "09abc4c474d09ad5ccce31e447dea81c3237c1de9fe0eb2068a4a2aa0c695081"
+  },
+  "originalUniquePracticedNotes": 513,
+  "originalPracticedEventIdsHash": "e0f4e145d4f7d4ba2d77fdba6bace0566d3f8cf212fc21977cf3b781a81de79f",
+  "retainedPractices": {
+    "prechorus-regular": {
+      "originalBodyHash": "60f2460e7deac89b483ec1efd74f3c308cba6ce449f9313dcdd0530d3db21580",
+      "title": "预副歌 · 常规扫弦",
+      "notes": 36
+    },
+    "prechorus-muted-fill": {
+      "originalBodyHash": "5973b2a4e363badaa98838daa9ee9f6e871d4cc4638e2063e620ef08ad4ab659",
+      "title": "预副歌 · 闷音加花",
+      "notes": 48
+    },
+    "chorus-complete": {
+      "originalBodyHash": "39b2d1db87f0f10d29c7b18e3c4ded8c9029298b958f6e0996c1fca78a347bee",
+      "title": "副歌 · 完整",
+      "notes": 60
+    },
+    "chorus-final": {
+      "originalBodyHash": "e112e15fa4546029252e1595e95b203223df791c389663ba10b565812dae3fc1",
+      "title": "副歌 · 末段双音引入",
+      "notes": 39
+    },
+    "interlude-riff-complete": {
+      "originalBodyHash": "8937528604c5f81c3f13efbac689dc8289522a910405b95808b6f32e4871116a",
+      "title": "间奏 riff · 完整",
+      "notes": 82
+    },
+    "harmonics-complete": {
+      "originalBodyHash": "977f4597079e83bdd227dafcacac44ba88dfa75aeae6470e7266380cf7d53e0c",
+      "title": "泛音桥段 · 完整",
+      "notes": 26
+    },
+    "solo-complete": {
+      "originalBodyHash": "813b21effae5a16e07db240489b8bae7ef9134d8f0dae12126afa81d0f18ba5d",
+      "title": "间奏 Solo · 完整",
+      "notes": 131
+    },
+    "outro-riff-complete": {
+      "originalBodyHash": "7823376f0c83baf109ad5b408d26928d5af861ae398412dfbc197a6c197a8313",
+      "title": "尾奏 riff · 完整变奏",
+      "notes": 91
+    }
+  },
+  "removedPractices": {
+    "chorus-first": {
+      "retainedIn": "chorus-complete",
+      "events": 32,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m16"
+            },
+            "end": {
+              "measureId": "m19",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "chorus-second": {
+      "retainedIn": "chorus-complete",
+      "events": 31,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m20"
+            },
+            "end": {
+              "measureId": "m23",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "interlude-riff-first": {
+      "retainedIn": "interlude-riff-complete",
+      "events": 48,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m24"
+            },
+            "end": {
+              "measureId": "m27",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "interlude-riff-second": {
+      "retainedIn": "interlude-riff-complete",
+      "events": 44,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m28"
+            },
+            "end": {
+              "measureId": "m32",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "solo-phrase1": {
+      "retainedIn": "solo-complete",
+      "events": 31,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m54"
+            },
+            "end": {
+              "measureId": "m55",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "solo-phrase2": {
+      "retainedIn": "solo-complete",
+      "events": 25,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m56"
+            },
+            "end": {
+              "measureId": "m57",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "solo-phrase3": {
+      "retainedIn": "solo-complete",
+      "events": 35,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m58"
+            },
+            "end": {
+              "measureId": "m59",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "solo-phrase4": {
+      "retainedIn": "solo-complete",
+      "events": 35,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m60"
+            },
+            "end": {
+              "measureId": "m63",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "outro-riff-first": {
+      "retainedIn": "outro-riff-complete",
+      "events": 43,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m78"
+            },
+            "end": {
+              "measureId": "m80",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    },
+    "outro-riff-second": {
+      "retainedIn": "outro-riff-complete",
+      "events": 57,
+      "route": {
+        "mainTrackId": "lead",
+        "mixTrackIds": [
+          "lead"
+        ],
+        "segments": [
+          {
+            "start": {
+              "measureId": "m81"
+            },
+            "end": {
+              "measureId": "m86",
+              "offset": {
+                "n": 4,
+                "d": 1
+              }
+            },
+            "formPolicy": "written"
+          }
+        ],
+        "suggestedTempo": 90,
+        "tempoMode": "source"
+      }
+    }
+  }
+}

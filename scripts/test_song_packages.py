@@ -128,7 +128,7 @@ class PackageTests(unittest.TestCase):
         import importlib.util
         spec=importlib.util.spec_from_file_location("bundled_audit",CONTRACT.parents[2]/"scripts/verify-bundled-songs.py")
         audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
-        self.assertEqual(10,len(audit.audit()))
+        self.assertEqual(11,len(audit.audit()))
     def test_native_teaching_completeness_and_real_demo_prerequisites(self):
         import importlib.util
         spec=importlib.util.spec_from_file_location('native',CONTRACT.parents[2]/'scripts/audit-native-teaching.py')
