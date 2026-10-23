@@ -11,16 +11,31 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.io.File
+import kotlin.math.log2
+import kotlin.math.roundToInt
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class BundledSongsTest {
+    @Test fun retainedPackagesOpenThroughAndroidAssetManager() {
+        val assets = RuntimeEnvironment.getApplication().assets
+        val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
+        listOf("shayou-v4.gpractice", "usotsuki-v1.gpractice", "your-trip-v3.gpractice",
+            "canon-c-clean-pick-v1.gpractice", "Doraemon_no_Uta_r1.gpractice", "hana-bourei-lead-v2.gpractice").forEach { name ->
+            val song = reader.read(assets.open("song-packages/$name").use { it.readBytes() })
+            assertTrue(name, song.practices.isNotEmpty())
+        }
+    }
+
     @Test fun nativePackagesCompileAndPracticeSettingsSurviveReloadDisableAndRollback() {
         val root = java.nio.file.Files.createTempDirectory("bundle-restart").toFile()
         val repo = SongTestLibrary.repository(root)
         val library = repo.reload()
         assertTrue(library.diagnostics.toString(), library.diagnostics.isEmpty())
-        assertEquals(setOf("local.teaching-native", "local.daily-practice", "local.demo-c", "local.demo-capo", "local.demo-rock"), library.packages.map { it.identity.packageId }.toSet())
+        assertEquals(setOf("local.teaching-native", "local.daily-practice", "local.demo-c", "local.demo-capo", "local.demo-rock",
+            "local.shayou", "local.usotsuki", "local.yourtrip", "user.canon-c.clean-pick", "local.user.doraemon-no-uta",
+            "personal.hana-bourei-lead"),
+            library.packages.map { it.identity.packageId }.toSet())
         assertFalse(library.aliases.keys.any { it.startsWith("SB-") || it.startsWith("K265-") })
         val selected = repo.resolve(PracticeKey("local.daily-practice", "DP-03-basic").encoded)
         val prefs = RuntimeEnvironment.getApplication().getSharedPreferences("bundle-settings", Context.MODE_PRIVATE)
@@ -51,7 +66,11 @@ class BundledSongsTest {
                 assertEquals(practice.id, plan.practice.id)
                 assertEquals(source.score, plan.score)
                 assertTrue(phrase.id, plan.notes.isNotEmpty())
-                plan.notes.forEach { note -> assertEquals(note.track.midi(note.note.string, note.note.fret), note.note.midi) }
+                plan.notes.forEach { note ->
+                    val fundamental = note.track.midi(note.note.string, note.note.fret)
+                    val harmonicOffset = note.note.harmonic?.let { (12 * log2(it.partial.toDouble())).roundToInt() } ?: 0
+                    assertEquals(fundamental + harmonicOffset, note.note.midi)
+                }
                 count++
             }
         }
