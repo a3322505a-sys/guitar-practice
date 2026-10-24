@@ -30,7 +30,7 @@ internal class NativeSynthFixture(score: Score) : AutoCloseable {
             "getSampleRequest" -> request
             "getSamplesPlayed" -> played
             "open" -> { ready.trigger(); null }
-            "addSamples" -> { pending.add((args!![0] as Float32Array).data.toFloatArray()); null }
+            "addSamples" -> { pending.add((args!![0] as Float32Array).data.toList().toFloatArray()); null }
             "resetSamples" -> { pending.clear(); null }
             else -> null
         }

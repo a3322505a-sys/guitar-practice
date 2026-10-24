@@ -28,14 +28,12 @@ import kotlin.math.roundToInt
 @Config(sdk = [28], qualifiers = "w360dp-h780dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class UnifiedStageRenderTest {
-    @get:Rule val compose = createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    @get:Rule val compose = createAndroidComposeRule<UiTestActivity>()
     private val player = RecordingPlayback()
     private fun start(fontScale: Float = 1f) {
         compose.activity.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
-                PracticeWorkbench(player, null) { sequence, cursor, modifier ->
-                    if (sequence != null) Tablature(sequence, Hint.FULL, null, cursor, player.active, modifier)
-                }
+                PracticeWorkbench(player, null)
             }
         }
         compose.waitUntil(45000) {

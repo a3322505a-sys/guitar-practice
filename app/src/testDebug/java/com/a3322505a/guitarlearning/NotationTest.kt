@@ -1,82 +1,55 @@
+@file:OptIn(kotlin.contracts.ExperimentalContracts::class, ExperimentalUnsignedTypes::class)
 package com.a3322505a.guitarlearning
-
-import com.a3322505a.guitarlearning.music.*
+import alphaTab.midi.*
+import alphaTab.model.*
+import com.a3322505a.guitarlearning.alphatab.*
+import com.a3322505a.guitarlearning.assets.song.*
+import com.a3322505a.guitarlearning.music.Position
 import com.a3322505a.guitarlearning.practice.*
-import com.a3322505a.guitarlearning.practice.compile.tabProjection
-import com.a3322505a.guitarlearning.ui.tabLayoutSystems
+import com.a3322505a.guitarlearning.practice.compile.*
 import org.junit.Assert.*
 import org.junit.Test
-
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.io.File
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk=[28])
 class NotationTest {
-    @Test fun scaleTripletsKeepExplicitTailRestsAndCursorEventIdentity() {
-        listOf(ScaleOptions(exercise=ScaleExercise.THIRDS),ScaleOptions(exercise=ScaleExercise.ROOTS),ScaleOptions(pattern=1,octave=false)).forEach { o ->
-            val seq=Routes.scale(o.copy(notesPerBeat=3)).sequence!!
-            val bars=seq.tabBars()
-            val segments=bars.flatMap { it.segments }
-            assertTrue(bars.all { it.segments.sumOf { s -> s.value.ticks }==48 })
-            assertEquals(seq.tuplets,segments.filter { s -> s.tuplet?.tick==s.tick }.map { it.tuplet })
-            seq.tuplets.forEach { group ->
-                val members=segments.filter { it.tuplet==group }
-                assertEquals(3,members.size)
-                assertTrue(members.all { it.value==RhythmValue.TRIPLET_EIGHTH })
-                assertEquals(seq.events.filter { it.tick in group.tick until group.end }.map { it.rest },members.map { it.rest })
-            }
-            val session=Session(seq,60,true,2)
-            for(tick in 0 until seq.length) {
-                val cursor=session.cursor((48+tick).toDouble())
-                val segment=segments.single { tick>=it.tick && tick<it.end }
-                assertEquals(seq.eventAt(cursor.localTick)!!.id,segment.eventId)
-                assertEquals(seq.eventAt(cursor.localTick)!!.positions,segment.positions)
-            }
-        }
+    @Test fun tripletTailRestsAndNativeBeatIdsPreserveExactWrittenTime() {
+        val seq=NotationFixtures.triplets
+        val score=NativeContent.score(seq)
+        val voice=score.tracks.first().staves.first().bars.first().voices.first()
+        assertEquals(1920.0,voice.beats.sumOf { it.playbackDuration },1e-6)
+        assertEquals(seq.events.count { it.rest },voice.beats.count { it.isRest })
+        assertEquals(seq.events.map { it.tick*80.0 },voice.beats.map { it.displayStart })
     }
-    @Test fun samePitchKeepsItsStringAndChordGrouping() {
-        val a=Position(2,0); val b=Position(3,4)
-        assertEquals(59,a.midi); assertEquals(a.midi,b.midi)
-        val seq=Sequence(listOf(Event(0,12,listOf(a)),Event(12,12,listOf(b)),Event(24,24,Chords.named("C").positions,"C",true)),48,"")
-        val s=seq.tabBars().single().segments
-        assertEquals(listOf(a),s[0].positions); assertEquals(listOf(b),s[1].positions)
-        assertEquals(Chords.named("C").positions,s[2].positions)
-        assertEquals(24,s[2].eventId); assertTrue(s[2].strum)
-        assertEquals(RhythmValue.HALF,s[2].value)
+    @Test fun samePitchOnDifferentStringsAndChordTonesRetainTheirNativePositions() {
+        val seq=Sequence(listOf(Event(0,12,listOf(Position(2,0))),Event(12,12,listOf(Position(3,4))),
+            Event(24,24,listOf(Position(5,3),Position(3,0),Position(1,0)),strum=true)),48,"same pitch")
+        val score=NativeContent.score(seq)
+        val beats=score.tracks.first().staves.first().bars.first().voices.first().beats.toList()
+        assertEquals(59.0,beats[0].notes.first().realValue,0.0)
+        assertEquals(59.0,beats[1].notes.first().realValue,0.0)
+        assertNotEquals(beats[0].notes.first().string,beats[1].notes.first().string)
+        assertEquals(3,beats[2].notes.length.toInt())
     }
-    @Test fun offBeatAndAcrossBarSustainHasTiesAndNoNewOnsets() {
-        val note=Position(5,3)
-        val seq=Sequence(listOf(Event(0,12,emptyList()),Event(12,72,listOf(note),"C",true),Event(84,12,emptyList())),96,"")
-        val segments=seq.tabBars().flatMap { it.segments }
-        assertEquals(listOf(12,24,48,72),segments.filter { !it.rest }.map { it.tick })
-        assertEquals(listOf(RhythmValue.QUARTER,RhythmValue.HALF,RhythmValue.HALF,RhythmValue.QUARTER),segments.filter { !it.rest }.map { it.value })
-        assertEquals(1,segments.count { it.strum })
-        assertTrue(segments.filter { !it.rest }.all { it.eventId==12 && it.positions==listOf(note) })
-        assertFalse(segments[1].tieIn); assertTrue(segments[1].tieOut)
-        assertTrue(segments[2].tieIn); assertTrue(segments[3].tieIn)
-        assertFalse(segments[4].tieOut)
-        assertTrue(segments.first().rest); assertTrue(segments.last().rest)
+    @Test fun crossBarSustainHasOneMidiAttackAndNativeTieDestinations() {
+        val seq=Sequence(listOf(Event(0,12,emptyList()),Event(12,72,listOf(Position(5,3))),Event(84,12,emptyList())),96,"tie")
+        val score=NativeContent.score(seq)
+        val notes=score.tracks.first().staves.first().bars.flatMap { it.voices.toList() }.flatMap { it.beats.toList() }.flatMap { it.notes.toList() }
+        assertTrue(notes.any { it.isTieDestination })
+        val midi=EngineProjection.generate(score).first
+        assertEquals(1,midi.events.filterIsInstance<NoteOnEvent>().size)
+        assertEquals(960.0,midi.events.filterIsInstance<NoteOnEvent>().single().tick,0.0)
     }
-    @Test fun allExistingPracticesHaveExactNotationTimeAndNoImplicitMute() {
-        val sequences=ScaleExercise.entries.mapNotNull { Routes.scale(ScaleOptions(exercise=it,octave=false,notesPerBeat=2)).sequence } +
-            ChordExercise.entries.flatMap { kind -> listOf(1,2,4,8).map { chordSequence(Chords.named("C"),Chords.named("Dm"),kind,it) } }
+    @Test fun currentScaleAndChordPracticesHaveCompleteNativeBars() {
+        val sequences=ScaleExercise.entries.mapNotNull { Routes.scale(ScaleOptions(exercise=it,notesPerBeat=3)).sequence }+
+            ChordExercise.entries.map { chordSequence(com.a3322505a.guitarlearning.music.Chords.named("C"),com.a3322505a.guitarlearning.music.Chords.named("Dm"),it,4) }
         sequences.forEach { seq ->
-            val bars=seq.tabBars()
-            bars.forEach { assertEquals(48,it.segments.sumOf { s -> s.value.ticks }) }
-            for(tick in 0 until seq.length) {
-                val event=seq.eventAt(tick.toDouble())!!
-                val segment=bars[tick/48].segments.single { tick>=it.tick && tick<it.end }
-                assertEquals(event.id,segment.eventId); assertEquals(event.positions,segment.positions)
-            }
+            val score=NativeContent.score(seq)
+            assertEquals(seq.barCount,score.masterBars.length.toInt())
+            assertEquals(seq.length*80.0,EngineProjection.generate(score).second.visits.last().end,1e-6)
         }
-    }
-    @Test fun layoutUsesReadableDynamicSystemsAndCursorKeepsLoopPosition() {
-        val plan=Routes.scale(ScaleOptions(exercise=ScaleExercise.THREE,notesPerBeat=2)).sequence!!.performance
-        fun rows(width: Float)=tabLayoutSystems(plan,plan.tabProjection(),width) { s,size -> s.length*size*.6f }
-        assertTrue(rows(360f).all { it.bars.size==1 })
-        assertTrue(rows(1200f).any { it.bars.size>1 })
-        val session=Session(Routes.scale(ScaleOptions()).sequence!!,60,true,4)
-        assertTrue(session.cursor(30.0).pre)
-        val c=session.cursor(306.0)
-        assertEquals(1,c.loop); assertEquals(1,c.bar); assertEquals(1,c.beat)
-        assertEquals(66.0,c.localTick,0.0)
-        assertEquals(3,session.cursor(672.0).loop)
-        assertEquals(1,session.cursor(672.0).bar)
     }
 }

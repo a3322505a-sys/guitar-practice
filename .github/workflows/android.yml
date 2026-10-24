@@ -15,8 +15,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: python -m pip install -r scripts/song_package/requirements.txt
       - run: python scripts/test_song_assets.py && python scripts/test_song_packages.py
-      - run: chmod +x gradlew && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug :app:assembleDebug testCompareUnitTest lintCompare assembleCompare assembleRelease lintStandalone assembleStandalone :app:compileDebugUnitTestKotlin :app:compileP0Kotlin
+      - run: chmod +x gradlew && ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug :app:assembleDebug testCompareUnitTest lintCompare assembleCompare assembleRelease lintStandalone assembleStandalone :app:compileDebugUnitTestKotlin
       - run: python scripts/audit-native-teaching.py
+      - run: |
+          python scripts/audit-runtime-isolation.py --apk app/build/outputs/apk/release/app-release-unsigned.apk --debug-apk app/build/outputs/apk/debug/app-debug.apk
+          python scripts/audit-runtime-isolation.py --apk app/build/outputs/apk/standalone/app-standalone-unsigned.apk
+          python scripts/audit-runtime-isolation.py --apk app/build/outputs/apk/compare/app-compare-unsigned.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: app/build/reports/
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-apk

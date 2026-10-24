@@ -45,7 +45,6 @@ fun PracticeApp(player: AlphaPlayback) = PracticeWorkbench(player, player)
 internal fun PracticeWorkbench(
     player: PracticePlayback,
     nativePlayer: AlphaPlayback?,
-    fallbackScore: (@Composable (Sequence?, Cursor?, Modifier) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val themeManager = remember { ThemeManager(context) }
@@ -240,7 +239,6 @@ internal fun PracticeWorkbench(
                     NativeScore(nativePlayer, frame, hasFrame && sequence != null && !libraryVisible,
                         inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen)
                 }
-                if (nativePlayer == null) fallbackScore?.invoke(sequence, cursor, frame)
                 val error = preparationError.ifBlank { nativePlayer?.error.orEmpty() }
                     .ifBlank { progress.message.takeIf { progress.phase == Phase.ERROR }.orEmpty() }
                 if (!libraryVisible && (sequence == null || nativePlayer?.loading == true || error.isNotBlank())) {

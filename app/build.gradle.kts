@@ -33,17 +33,11 @@ android {
             isDebuggable = false
             matchingFallbacks += "release"
         }
-        create("p0") {
-            initWith(getByName("release"))
-            isDebuggable = true
-            matchingFallbacks += "release"
-        }
+
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
-    sourceSets.getByName("debug").assets.srcDir(rootProject.file("assets/soundfont-source"))
-    sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {

@@ -1,6 +1,5 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.Phrases as Phrases
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -29,7 +28,7 @@ import java.io.File
 @Config(sdk = [28], qualifiers = "w1024dp-h768dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class TeachingDiagramRenderTest {
-    @get:Rule val compose = createAndroidComposeRule<LegacyWorkbenchTestActivity>()
+    @get:Rule val compose = createAndroidComposeRule<UiTestActivity>()
     private fun capture(name: String) = compose.runOnIdle {
         val view = compose.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

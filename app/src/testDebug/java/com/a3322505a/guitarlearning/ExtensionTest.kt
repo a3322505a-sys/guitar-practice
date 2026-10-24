@@ -1,10 +1,8 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.practice.Phrases as Phrases
 
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
-import com.a3322505a.guitarlearning.audio.*
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
@@ -57,14 +55,6 @@ class ExtensionTest {
         rejects(listOf(phrase.copy(conditions="变调夹 2 品")),"fixture-single: unsupported")
         assertTrue(phrase.sequence.sections.isEmpty())
         assertEquals(listOf(48,50,52,48),phrase.sequence.events.flatMap { it.positions }.map { it.midi })
-        assertEquals(4,phrase.sequence.tabBars().single().segments.size)
-    }
-    @Test fun singleNotesProduceSoundAndTerminateWithoutHarmony() {
-        val sampler=Sampler(SoundBank.NYLON) { root -> File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
-        val sequence=Phrases.singleNote.sequence
-        val session=Session(sequence,60,false,1)
-        val pcm=Pcm(session,sampler)
-        assertTrue(pcm.block(0,4096,true,false).any { it!=0.toShort() })
-        assertTrue(pcm.block(session.frame(sequence.length.toDouble()),4096,true,false).all { it==0.toShort() })
+        assertEquals(4,phrase.sequence.performance.events.size)
     }
 }
