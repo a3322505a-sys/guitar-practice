@@ -126,6 +126,12 @@ internal fun StageIcon(kind: String, modifier: Modifier = Modifier) {
                     moveTo(w*.22f,h*.7f); cubicTo(w*.38f,h*.98f,w*.88f,h*.85f,w*.82f,h*.43f) }, color, style = Stroke(2.dp.toPx()))
                 line(.78f,.3f,.52f,.3f); line(.78f,.3f,.78f,.08f); line(.22f,.7f,.48f,.7f); line(.22f,.7f,.22f,.92f)
             }
+            "restart" -> {
+                drawPath(Path().apply { moveTo(w*.2f,h*.35f)
+                    cubicTo(w*.38f,h*.02f,w*.92f,h*.2f,w*.8f,h*.65f)
+                    cubicTo(w*.7f,h*.98f,w*.28f,h*.95f,w*.18f,h*.68f) }, color, style = Stroke(2.dp.toPx()))
+                line(.2f,.35f,.2f,.08f); line(.2f,.35f,.47f,.35f)
+            }
             "click" -> {
                 drawPath(Path().apply { moveTo(w*.22f,h*.86f); lineTo(w*.42f,h*.12f); lineTo(w*.58f,h*.12f); lineTo(w*.78f,h*.86f); close() }, color, style = Stroke(2.dp.toPx()))
                 line(.46f,.66f,.78f,.27f)
