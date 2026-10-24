@@ -232,7 +232,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         if (this.mix != mix) { this.mix = mix; applyMix() }
     }
     private val clickGain get() = AlphaTone.CLICK * mix.metronome
-    private val countInGain get() = clickGain * 0.7
 
     fun attach(nativeView: AlphaTabView, acceptTap: () -> Boolean = { false }) {
         check(view == null || view === nativeView)
@@ -256,6 +255,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                     beats.forEach { event ->
                         val ordinal = event.metronomeNumerator.toInt() + 1
                         if (ordinal in 1..entryBeatTotal && ordinal > entryBeatNumber) {
+                            if (entryBeatNumber == 0) Log.i("AlphaPractice", "count-in nativeBeat=$ordinal total=$entryBeatTotal")
                             entryBeatNumber = ordinal
                             entryLight = if (ordinal == entryBeatTotal) 2 else 1
                         }
@@ -314,10 +314,12 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (countIn) {
                 // First main playback position: the actual musical entry.
                 entryLight = if (event.currentTick < entryGreenEndTick) 3 else 0
+                countIn = false
+                applyMix()
+                Log.i("AlphaPractice", "music-entry tick=${event.currentTick} click=$click")
             } else if (entryLight == 3 && event.currentTick >= entryGreenEndTick) {
                 entryLight = 0
             }
-            countIn = false
             scoreCursor.follow()
             if (progress.phase == Phase.PLAYING) sampleDisplayCursor(event.currentTick, heardAt, event.modifiedTempo / event.originalTempo)
             if (focus!=null && progress.phase==Phase.PAUSED) return@ui
@@ -396,7 +398,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         stop(); selectedTrack = track; rendered = false
         view?.tracks = listOf(track); applyMix()
     }
-    private fun applyMix() {
+    private fun applyMix(countInOnPlay: Boolean = countIn) {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
             api.changeTrackMute(alphaTab.collections.List(track), !guitar || solo && track !== selectedTrack)
@@ -409,8 +411,17 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         }
         if (!guitar) positions = emptyList()
         api.masterVolume = AlphaTone.MASTER
-        api.metronomeVolume = if (click) clickGain else 0.0
-        api.countInVolume = if (countIn) countInGain else 0.0
+        // 1.8.4's metronome setter also changes the active synth channel. While
+        // counting in, defer formal-click changes until the native music entry.
+        if (!countIn || beginning || !countInOnPlay) {
+            // play() also reapplies this channel on resume. Keep the remaining
+            // native preparation audible; music-entry restores the formal mix.
+            api.metronomeVolume = if (countIn && !countInOnPlay) AlphaTone.CLICK
+                else if (click) clickGain else 0.0
+        }
+        // Preparation has no mute control. Stored formal-click gain (even an
+        // explicit zero) and the stage click switch apply only to written music.
+        api.countInVolume = if (countInOnPlay) AlphaTone.CLICK else 0.0
     }
     private fun onReady() {
         val api = view?.api ?: return
@@ -432,7 +443,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     fun startGp(first: Int, last: Int, repeats: Int, pre: Boolean, multiplier: Double) {
         session = null; startVisits(first, last, repeats, pre, true, 60, multiplier)
     }
-    private fun startVisits(first: Int, last: Int, repeats: Int, pre: Boolean, sourceTempo: Boolean, bpm: Int, speed: Double, entryVisit: Int = first, forceCountIn: Boolean = false) {
+    private fun startVisits(first: Int, last: Int, repeats: Int, pre: Boolean, sourceTempo: Boolean, bpm: Int, speed: Double, entryVisit: Int = first) {
         val model = score ?: return
         val api = view?.api ?: return
         if (!ready || first < 0 || last < first || last >= (projection?.visits?.size ?: 0)) {
@@ -460,7 +471,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             api.playbackRange = PlaybackRange().apply { startTick = visits[first].start; endTick = visits[last].end }
             api.playbackSpeed = speed
             check(kotlin.math.abs(api.playbackSpeed - speed) < 1e-9) { "播放器未接受目标速度" }
-            api.countInVolume = if (pre) countInGain else 0.0
             api.isLooping = repeats == 0 || repeats > 1
             applyMix(); currentTick = visits[entryVisit].start; currentVisit = entryVisit
             val trackLookup = alphaTab.core.ecmaScript.Set<Double>(
@@ -476,8 +486,9 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             entryGreenEndTick = currentTick + 960.0 * 4.0 / bar.timeSignatureDenominator
             if (audio.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 progress = progress.copy(phase = Phase.PLAYING); beginning = false
-                Log.i("AlphaPractice","play first=$first entry=$entryVisit last=$last repeats=$repeats speed=$speed pre=$pre")
-                if(!api.play()) fail(IllegalStateException("引擎尚未能开始播放，请重试"))
+                val started = api.play()
+                Log.i("AlphaPractice","play first=$first entry=$entryVisit last=$last repeats=$repeats speed=$speed pre=$pre countInVolume=${api.countInVolume} metronomeVolume=${api.metronomeVolume} ready=${api.isReadyForPlayback} accepted=$started")
+                if(!started) fail(IllegalStateException("引擎尚未能开始播放，请重试"))
             } else fail(IllegalStateException("当前音频被其他应用占用，请稍后重试"))
         }
         ready = false
@@ -514,24 +525,28 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     }
     override fun resume() {
         if (progress.phase != Phase.PAUSED || !ready) return
-        if (countIn) { restart(); return }
         if(focus!=null) {
             val selected=focus!!
             val c=focusContext ?: return
             session=Session(c.sequence,c.bpm,true,c.repeats,range=c.range,sourceTempo=c.sourceTempo,tempoMultiplier=c.multiplier)
-            startVisits(c.range.first,c.range.last,c.repeats,true,c.sourceTempo,c.bpm,c.multiplier,selected.visit,true)
+            startVisits(c.range.first,c.range.last,c.repeats,true,c.sourceTempo,c.bpm,c.multiplier,selected.visit)
             return
         }
         if(auditioning) { view?.api?.stop(); auditioning=false }
         if (audio.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             // The SDK starts a new count-in on every play() when this is nonzero.
             // Continue at its paused position without replaying the preparation bar.
-            view?.api?.countInVolume = 0.0
-            Log.i("AlphaPractice","resume ordinary tick=$pausedTick countIn=0")
-            countIn = false; scoreCursor.follow()
-            pausedTick?.let { view?.api?.tickPosition = it }
+            applyMix(countInOnPlay = false)
+            // During preparation the SDK retains its count-in sequencer. Do not
+            // seek it to a written-music tick or start another preparation bar.
+            if (!countIn) {
+                scoreCursor.follow()
+                pausedTick?.let { view?.api?.tickPosition = it }
+            }
             progress = progress.copy(phase = Phase.PLAYING)
-            if(view?.api?.play()!=true) fail(IllegalStateException("引擎尚未能继续播放"))
+            val started = view?.api?.play() == true
+            Log.i("AlphaPractice","resume tick=$pausedTick preparing=$countIn accepted=$started")
+            if(!started) fail(IllegalStateException("引擎尚未能继续播放"))
         }
     }
     override fun restart() {
@@ -545,7 +560,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         round=0; countIn=false; applyMix()
         callbackEpoch++
         pendingStart = null; beginning = false; auditioning = false
-        countIn = false; pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()
+        pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()
         entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         view?.api?.stop(); positions = emptyList(); cursor = null; session = null
         currentTick=0.0; currentVisit=0

@@ -7,10 +7,12 @@ data class PlaybackMix(val music: Double = 1.0, val metronome: Double = 1.0) {
     init { require(music in 0.0..1.0 && metronome in 0.0..1.0) }
     companion object {
         fun load(prefs: SharedPreferences): PlaybackMix {
-            fun gain(key: String, old: String) = if (prefs.contains(key))
+            fun gain(key: String) = if (prefs.contains(key))
                 prefs.getFloat(key, 1f).toDouble().coerceIn(0.0, 1.0)
-            else if (prefs.getBoolean(old, true)) 1.0 else 0.0
-            return PlaybackMix(gain("music-volume", "guitar"), gain("metronome-volume", "click"))
+            else 1.0
+            // Old on/off switches never represented an independent mix level.
+            // In particular, click=false must not persist a zero count-in gain.
+            return PlaybackMix(gain("music-volume"), gain("metronome-volume"))
         }
     }
     fun save(prefs: SharedPreferences) {

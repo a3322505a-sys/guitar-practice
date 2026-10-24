@@ -88,10 +88,13 @@ class TeachingV31Test {
         assertEquals(Q(8),join.length)
         assertEquals(listOf(BarRange(0,1)),PracticeExtensions.backwardRanges(teaching("FB-1").sequence,BarRange(0,1)))
     }
-    @Test fun globalGainsRestoreOldMutesAndRemainIndependentIncludingZero() {
+    @Test fun globalGainsDoNotConvertOldSwitchesToVolumeAndPreserveExplicitZero() {
         val prefs=RuntimeEnvironment.getApplication().getSharedPreferences("v31-mix-test",0)
         prefs.edit().clear().putBoolean("guitar",false).commit()
-        assertEquals(PlaybackMix(0.0,1.0),PlaybackMix.load(prefs))
+        prefs.edit().putBoolean("click",false).commit()
+        assertEquals(PlaybackMix(1.0,1.0),PlaybackMix.load(prefs))
+        prefs.edit().putBoolean("click",true).commit()
+        assertEquals(PlaybackMix(1.0,1.0),PlaybackMix.load(prefs))
         PlaybackMix(.37,0.0).save(prefs)
         assertEquals(.37,PlaybackMix.load(prefs).music,1e-6)
         assertEquals(0.0,PlaybackMix.load(prefs).metronome,0.0)
