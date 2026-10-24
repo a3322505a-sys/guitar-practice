@@ -35,25 +35,57 @@ internal class CursorTempoMap(midi: MidiFile) {
 /** Extrapolates only the visual clock between heard-position callbacks.
  * Positive offset delays display. Unwrapped time preserves that delay across a loop. */
 internal class CursorDisplayClock(private val map: CursorTempoMap, firstTick: Double, lastTick: Double) {
+    private val first = firstTick
+    private val last = lastTick
     private val start = map.millisAt(firstTick)
     private val end = map.millisAt(lastTick)
-    private var sampleTime = start
-    private var sampleWall = 0L
-    private var speed = 1.0
+    private val length = end - start
+    private var hasSample = false
+    private var anchorTime = start
+    private var anchorWall = 0L
+    private var playbackSpeed = 1.0
+    private var displayRate = 1.0
     private var cycle = 0
-    private var lastTick: Double? = null
+    private var lastObservedTick: Double? = null
 
     fun sample(tick: Double, wallMillis: Long, playbackSpeed: Double) {
-        if (lastTick?.let { tick + 1e-5 < it } == true) cycle++
-        lastTick = tick
-        sampleTime = map.millisAt(tick) + cycle * (end - start)
-        sampleWall = wallMillis
-        speed = playbackSpeed
+        if (hasSample && wallMillis < anchorWall) return // stale cross-thread callback
+        val previous = lastObservedTick
+        if (previous != null && tick + 1e-5 < previous) {
+            val range = last - first
+            // A small backwards position update is jitter, not a whole new loop.
+            // Only a transition from the range's end half to its start half can wrap.
+            val wrapped = range > 0 && previous > first + range * .6 &&
+                tick < first + range * .4 && previous - tick > range * .5
+            if (!wrapped) return
+            cycle++
+        }
+        lastObservedTick = tick
+        val observedTime = map.millisAt(tick) + cycle * length
+        val actualSpeed = playbackSpeed.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
+        if (!hasSample) {
+            hasSample = true
+            anchorTime = observedTime
+            displayRate = actualSpeed
+        } else {
+            // Preserve position continuity when a new SDK sample arrives. Previously
+            // replacing the anchor with every sample caused a visible sawtooth.
+            val elapsed = (wallMillis - anchorWall).coerceAtLeast(0L)
+            val predictedTime = anchorTime + elapsed * displayRate
+            anchorTime = predictedTime
+            // Gently converge to the synth position by adjusting velocity, never
+            // jumping the cursor backwards to the newest (possibly delayed) sample.
+            val correction = ((observedTime - predictedTime) / 1000.0).coerceIn(-.06, .06)
+            displayRate = actualSpeed * (1.0 + correction)
+        }
+        anchorWall = wallMillis
+        this.playbackSpeed = actualSpeed
     }
+
     fun tickAt(wallMillis: Long, offsetMs: Int, canLoopAhead: Boolean): Double {
-        val length = end - start
         if (length <= 0) return map.tickAt(start)
-        val absolute = (sampleTime + ((wallMillis - sampleWall).coerceAtLeast(0) - offsetMs) * speed)
+        val elapsed = (wallMillis - anchorWall).coerceAtLeast(0L)
+        val absolute = (anchorTime + elapsed * displayRate - offsetMs * playbackSpeed)
             .coerceAtLeast(start)
         val ceiling = end + cycle * length
         val bounded = if (canLoopAhead) absolute else absolute.coerceAtMost(ceiling - 1e-7)

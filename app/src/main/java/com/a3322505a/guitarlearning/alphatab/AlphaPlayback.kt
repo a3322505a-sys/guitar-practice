@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.view.Choreographer
 import androidx.compose.runtime.*
 import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.Position
@@ -33,11 +34,18 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private val scoreCursor = PracticeCursorHandler { view?.api?.scrollToCursor() }
     private var cursorTempoMap: CursorTempoMap? = null
     private var displayClock: CursorDisplayClock? = null
-    private val cursorFrame = object : Runnable {
-        override fun run() {
-            if (closed || displayClock == null || progress.phase != Phase.PLAYING || countIn) return
+    // Exactly one frame callback owns cursor placement. Player position callbacks only
+    // update the observed clock; never cancel/restart the animation between screen frames.
+    private var cursorFrameScheduled = false
+    private val cursorFrame = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!cursorFrameScheduled) return
+            if (closed || displayClock == null || progress.phase != Phase.PLAYING || countIn) {
+                cursorFrameScheduled = false
+                return
+            }
             renderDisplayCursor()
-            main.postDelayed(this, 16)
+            Choreographer.getInstance().postFrameCallback(this)
         }
     }
     var cursorOffsetMs: Int = 0
@@ -45,12 +53,14 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             val next = value.coerceIn(-500, 500)
             if (field == next) return
             field = next
-            // A visual redraw only: no stop, seek, settings update, MIDI load or view reattach.
-            renderDisplayCursor()
+            // The next display frame applies the visual offset. Never seek/restart audio.
         }
 
     private fun stopDisplayCursor() {
-        main.removeCallbacks(cursorFrame)
+        if (cursorFrameScheduled) {
+            cursorFrameScheduled = false
+            Choreographer.getInstance().removeFrameCallback(cursorFrame)
+        }
         displayClock = null
         scoreCursor.releaseDisplay()
     }
@@ -62,8 +72,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                 api.playbackRange?.endTick ?: api.endTick)
         }
         displayClock?.sample(tick, heardAt, speed)
-        main.removeCallbacks(cursorFrame)
-        cursorFrame.run()
+        if (!cursorFrameScheduled) {
+            cursorFrameScheduled = true
+            Choreographer.getInstance().postFrameCallback(cursorFrame)
+        }
     }
     private fun renderDisplayCursor() {
         if (progress.phase != Phase.PLAYING || countIn) return

@@ -42,11 +42,14 @@ internal class PracticeCursorHandler(private val scrollToStart: () -> Unit) : IC
     override fun onDetach(cursors: Cursors) { stop(); beatContainer = null; barContainer = null }
 
     fun display(bounds: BeatBounds, x: Double) {
+        // Cancel any pending SDK transition once on takeover, not on every frame.
+        // While displaying, the SDK handler methods below do not mutate cursor position.
+        if (!displaying) beatContainer?.stopAnimation()
         displaying = true
         holding = false
         val bar = bounds.barBounds.masterBarBounds.visualBounds
         barContainer?.setBounds(bar.x, bar.y, bar.w, bar.h)
-        beatContainer?.let { it.stopAnimation(); it.setBounds(x - width / 2, bar.y, width, bar.h) }
+        beatContainer?.setBounds(x - width / 2, bar.y, width, bar.h)
     }
 
     fun releaseDisplay() { displaying = false; beatContainer?.stopAnimation() }
