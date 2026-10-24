@@ -42,7 +42,7 @@ class TabLayoutTest {
     }
     @Test fun notationCleanupChangesNeitherNativeMidiAttacksNorDurations() {
         val score=NativeContent.score(NotationFixtures.mixedStrings)
-        fun facts()=EngineProjection.generate(score).first.events.map { Triple(it.type,it.tick,it.toString()) }
+        fun facts()=EngineProjection.generate(score).first.events.toList().map { Triple(it.type,it.tick,when(it) { is NoteOnEvent -> it.noteKey; is NoteOffEvent -> it.noteKey; else -> 0.0 }) }
         val before=facts()
         AlphaNotation.prepare(score)
         assertEquals(before,facts())

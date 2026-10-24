@@ -22,7 +22,7 @@ class NotationTest {
         val voice=score.tracks.first().staves.first().bars.first().voices.first()
         assertEquals(1920.0,voice.beats.sumOf { it.playbackDuration },1e-6)
         assertEquals(seq.events.count { it.rest },voice.beats.count { it.isRest })
-        assertEquals(seq.events.map { it.tick*80.0 },voice.beats.map { it.displayStart })
+        assertEquals(seq.events.map { it.tick*80.0 },voice.beats.toList().map { it.displayStart })
     }
     @Test fun samePitchOnDifferentStringsAndChordTonesRetainTheirNativePositions() {
         val seq=Sequence(listOf(Event(0,12,listOf(Position(2,0))),Event(12,12,listOf(Position(3,4))),

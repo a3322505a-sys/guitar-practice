@@ -2,8 +2,8 @@
 
 package com.a3322505a.guitarlearning.alphatab
 
-import alphaTab.EventEmitter
-import alphaTab.EventEmitterOfT
+import alphaTab.IEventEmitter
+import alphaTab.IEventEmitterOfT
 import alphaTab.core.ecmaScript.Float32Array
 import alphaTab.core.ecmaScript.Uint8Array
 import alphaTab.midi.MidiEventType
@@ -16,9 +16,21 @@ import java.lang.reflect.Proxy
 
 /** Shipped synth + shipped font; the test output consumes real PCM synchronously. */
 internal class NativeSynthFixture(score: Score) : AutoCloseable {
-    private val ready = EventEmitter()
-    private val request = EventEmitter()
-    private val played = EventEmitterOfT<Double>()
+    private class Signal : IEventEmitter {
+        private val listeners = mutableListOf<() -> Unit>()
+        override fun on(value: () -> Unit): () -> Unit { listeners += value; return { off(value) } }
+        override fun off(value: () -> Unit) { listeners -= value }
+        fun trigger() = listeners.toList().forEach { it() }
+    }
+    private class ValueSignal<T> : IEventEmitterOfT<T> {
+        private val listeners = mutableListOf<(T) -> Unit>()
+        override fun on(value: (T) -> Unit): () -> Unit { listeners += value; return { off(value) } }
+        override fun off(value: (T) -> Unit) { listeners -= value }
+        fun trigger(value: T) = listeners.toList().forEach { it(value) }
+    }
+    private val ready = Signal()
+    private val request = Signal()
+    private val played = ValueSignal<Double>()
     private val pending = ArrayDeque<FloatArray>()
     val heard = ArrayList<Float>()
     var frames = 0L; private set

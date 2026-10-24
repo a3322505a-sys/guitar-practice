@@ -26,6 +26,6 @@ class AudioComparisonTest {
         assertTrue(muted.all { kotlin.math.abs(it)<1e-7f })
         assertTrue(click.any { kotlin.math.abs(it)>.0001f })
         val audition=AlphaScoreAdapter.audition(seq,score.tracks.first())
-        assertEquals(setOf(48.0,55.0),audition.notes.map { it.realValue }.toSet())
+        assertEquals(setOf(48.0,55.0),audition.notes.toList().map { it.realValue }.toSet())
     }
 }

@@ -42,4 +42,3 @@ class PracticeModel(application: Application) : AndroidViewModel(application) {
     val player = AlphaPlayback(application)
     override fun onCleared() { player.release() }
 }
-
