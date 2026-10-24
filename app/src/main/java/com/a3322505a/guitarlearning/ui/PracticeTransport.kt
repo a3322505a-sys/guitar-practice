@@ -28,7 +28,7 @@ internal fun stageTime(seconds: Double): String {
 internal fun StageTransport(
     bpm: Int, phase: Phase, enabled: Boolean, loop: Boolean, click: Boolean,
     elapsed: Double, duration: Double, onTempo: () -> Unit, onPlay: () -> Unit,
-    onLoop: () -> Unit, onClick: () -> Unit,
+    onLoop: () -> Unit, onClick: () -> Unit, onRestart: () -> Unit,
 ) {
     val colors = PracticeSkin.colors
     Surface(color = colors.background, modifier = Modifier.fillMaxWidth().testTag("transport-bar")) {
@@ -40,6 +40,10 @@ internal fun StageTransport(
                 LinearProgressIndicator(progress = { if (duration > 0) (elapsed / duration).toFloat().coerceIn(0f, 1f) else 0f },
                     modifier = Modifier.weight(1f).height(4.dp), color = colors.primary, trackColor = colors.surfaceSelected)
                 Text(stageTime(duration), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
+                IconButton(onClick = onRestart, enabled = enabled && phase != Phase.PREPARING,
+                    modifier = Modifier.size(48.dp).testTag("restart-button").semantics { contentDescription = "重新开始" }) {
+                    StageIcon("restart", Modifier.size(22.dp))
+                }
             }
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val icons = maxWidth >= 600.dp

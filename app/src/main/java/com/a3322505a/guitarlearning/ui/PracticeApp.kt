@@ -224,7 +224,9 @@ internal fun PracticeWorkbench(
                     StageTransport(targetBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),
                         looping, click, elapsed, duration, { tempoOpen = true }, ::play,
                         { player.invalidate(); looping = !looping },
-                        { click = !click; preferences.edit().putBoolean("click", click).apply() })
+                        { click = !click; preferences.edit().putBoolean("click", click).apply() },
+                        { if (session != null) player.restart()
+                            else sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) } })
                 }
                 val bounds = scoreBounds
                 val hasFrame = bounds != null && bounds.width > 0 && bounds.height > 0
