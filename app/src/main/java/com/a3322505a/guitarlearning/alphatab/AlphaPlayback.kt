@@ -4,6 +4,8 @@ package com.a3322505a.guitarlearning.alphatab
 
 import alphaTab.AlphaTabView
 import alphaTab.model.*
+import alphaTab.midi.AlphaTabMetronomeEvent
+import alphaTab.midi.MidiEventType
 import alphaTab.synth.PlaybackRange
 import alphaTab.synth.PlayerState
 import android.content.Context
@@ -110,7 +112,13 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private var auditioning = false
     private var pausedTick: Double? = null
     private var startSpeed = 1.0
-    private val entryBeat = EntryBeat184()
+    // Observational-only cues from alphaTab's public played-MIDI event stream.
+    // 0 = dark, 1 = red, 2 = amber (last preparation beat),
+    // 3 = green (first written beat). No separate clock or audio modification.
+    var entryLight by mutableIntStateOf(0); private set
+    var entryBeatNumber by mutableIntStateOf(0); private set
+    var entryBeatTotal by mutableIntStateOf(0); private set
+    private var entryGreenEndTick = 0.0
     private data class FocusContext(val sequence: Sequence, val bpm: Int, val repeats: Int, val range: BarRange,
         val sourceTempo: Boolean, val multiplier: Double)
     private var focusContext: FocusContext? = null
@@ -162,6 +170,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         if(active) pause()
         callbackEpoch++
         pendingStart=null; beginning=false; countIn=false
+        entryLight=0; entryBeatNumber=0; entryBeatTotal=0
         if(auditioning) view?.api?.stop()
         auditioning=false
         round=0
@@ -208,7 +217,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         set(value) {
             if(field==value) return
             field = value
-            entryBeat.click = value
+            applyMix()
         }
     var solo = false
         set(value) { field = value; applyMix() }
@@ -233,6 +242,23 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         nativeView.settings = AlphaScoreAdapter.settings()
         val api = nativeView.api
         api.customCursorHandler = scoreCursor
+        // AlphaTab 1.8.4 official API emits these after their audio buffers
+        // have played, including during the native count-in.
+        api.midiEventsPlayedFilter = alphaTab.collections.List<MidiEventType>(MidiEventType.AlphaTabMetronome)
+        api.midiEventsPlayed.on { played ->
+            val beats = played.events.toList().filterIsInstance<AlphaTabMetronomeEvent>()
+            if (beats.isNotEmpty()) ui {
+                if (countIn && progress.phase == Phase.PLAYING) {
+                    beats.forEach { event ->
+                        val ordinal = event.metronomeNumerator.toInt() + 1
+                        if (ordinal in 1..entryBeatTotal && ordinal > entryBeatNumber) {
+                            entryBeatNumber = ordinal
+                            entryLight = if (ordinal == entryBeatTotal) 2 else 1
+                        }
+                    }
+                }
+            }
+        }
         fun ui(action: () -> Unit) {
             val epoch=callbackEpoch
             main.post { if (!closed && view === nativeView && epoch==callbackEpoch) action() }
@@ -263,7 +289,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         // 1.8.4 Android's loadedMidiInfo getter recurses when midiLoaded's initial
         // subscription value is evaluated. playerReady is emitted after each MIDI load.
         api.playerStateChanged.on { event -> ui {
-            if (event.state == PlayerState.Paused) stopDisplayCursor()
+            if (event.state == PlayerState.Paused) {
+                stopDisplayCursor()
+                if (!beginning) entryLight = 0
+            }
             if (!auditioning && !beginning && progress.phase !in listOf(Phase.IDLE, Phase.ENDED, Phase.ERROR)) {
                 progress = progress.copy(phase = if (event.state == PlayerState.Playing) Phase.PLAYING else Phase.PAUSED)
                 // 1.8.4 snaps a paused beat to its first written occurrence. Keep the
@@ -282,6 +311,12 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             } == true) return@ui
             if (event.isSeek && progress.phase == Phase.PLAYING) return@ui
             if (!event.isSeek && progress.phase == Phase.PLAYING) pausedTick = null
+            if (countIn) {
+                // First main playback position: the actual musical entry.
+                entryLight = if (event.currentTick < entryGreenEndTick) 3 else 0
+            } else if (entryLight == 3 && event.currentTick >= entryGreenEndTick) {
+                entryLight = 0
+            }
             countIn = false
             scoreCursor.follow()
             if (progress.phase == Phase.PLAYING) sampleDisplayCursor(event.currentTick, heardAt, event.modifiedTempo / event.originalTempo)
@@ -299,6 +334,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (rounds > 0 && round >= rounds) {
                 round = 0; applyMix()
                 positions = emptyList(); cursor = null
+                entryLight = 0
                 stopDisplayCursor()
                 scoreCursor.stop()
                 progress = Progress(Phase.ENDED, progress.tick, "本次练习结束")
@@ -373,7 +409,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         }
         if (!guitar) positions = emptyList()
         api.masterVolume = AlphaTone.MASTER
-        api.metronomeVolume = clickGain * EntryBeat184.FORMAL_GAIN
+        api.metronomeVolume = if (click) clickGain else 0.0
         api.countInVolume = if (countIn) countInGain else 0.0
     }
     private fun onReady() {
@@ -417,6 +453,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         callbackEpoch++; api.stop(); auditioning=false; pausedTick=null; round = 0; rounds = repeats; fromVisit = first; toVisit = last
         startSpeed = speed
         countIn = pre; beginning = true; positions = emptyList()
+        entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         progress = Progress(Phase.PREPARING, message = "准备声音…")
         pendingStart = {
             val visits = checkNotNull(projection).visits
@@ -434,19 +471,14 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             // count-in holds the selected beat, including a later bar/repeated visit.
             api.tickPosition = currentTick
             updateCursor()
-            val epoch = callbackEpoch
             val bar = visits[entryVisit].masterBar
-            entryBeat.prepare(checkNotNull(api.player), currentTick, bar.timeSignatureNumerator.toInt(), bar.timeSignatureDenominator.toInt()) { failure ->
-                main.post {
-                    if (closed || epoch != callbackEpoch || view?.api !== api) return@post
-                    if (failure != null) { fail(failure); return@post }
-                    if (audio.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                        progress = progress.copy(phase = Phase.PLAYING); beginning = false
-                        Log.i("AlphaPractice","play first=$first entry=$entryVisit last=$last repeats=$repeats speed=$speed pre=$pre")
-                        if(!api.play()) fail(IllegalStateException("引擎尚未能开始播放，请重试"))
-                    } else fail(IllegalStateException("当前音频被其他应用占用，请稍后重试"))
-                }
-            }
+            entryBeatTotal = if (pre) bar.timeSignatureNumerator.toInt().coerceAtLeast(1) else 0
+            entryGreenEndTick = currentTick + 960.0 * 4.0 / bar.timeSignatureDenominator
+            if (audio.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                progress = progress.copy(phase = Phase.PLAYING); beginning = false
+                Log.i("AlphaPractice","play first=$first entry=$entryVisit last=$last repeats=$repeats speed=$speed pre=$pre")
+                if(!api.play()) fail(IllegalStateException("引擎尚未能开始播放，请重试"))
+            } else fail(IllegalStateException("当前音频被其他应用占用，请稍后重试"))
         }
         ready = false
         AlphaNotation.withPlaybackTempo(model, sourceTempo, bpm) { api.loadMidiForScore() }
@@ -514,6 +546,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         callbackEpoch++
         pendingStart = null; beginning = false; auditioning = false
         countIn = false; pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()
+        entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         view?.api?.stop(); positions = emptyList(); cursor = null; session = null
         currentTick=0.0; currentVisit=0
         progress = Progress(); audio.abandonAudioFocusRequest(focusRequest)
@@ -531,6 +564,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private fun rejectStart(message: String) {
         stopDisplayCursor()
         focus=null; focusNoteIds=emptySet(); countIn=false
+        entryLight=0; entryBeatNumber=0; entryBeatTotal=0
         positions=emptyList(); cursor=null; scoreCursor.stop()
         progress=Progress(Phase.ERROR,message=message)
     }
@@ -538,6 +572,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         stopDisplayCursor()
         pendingStart = null; beginning = false; ready = false; loading = false
         countIn = false; pausedTick = null; focus=null; focusNoteIds=emptySet(); scoreCursor.stop()
+        entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         error = failure.message ?: "引擎加载失败"
         Log.e("AlphaPractice",error,failure)
         progress = Progress(Phase.ERROR, message = error); positions = emptyList(); cursor = null
