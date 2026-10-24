@@ -53,7 +53,6 @@ class AlphaMigrationTest {
             } }
         } }
         Chords.all.forEach { audit(chordSequence(it, it, ChordExercise.CHECK, 4)) }
-        Phrases.all.forEach { audit(it.sequence) }
     }
     @Test fun everyInstalledPackagePracticeRemainsUsableWithoutOriginalGp() {
         val repository = SongTestLibrary.repository()

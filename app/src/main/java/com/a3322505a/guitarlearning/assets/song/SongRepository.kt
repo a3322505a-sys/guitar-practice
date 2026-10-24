@@ -44,7 +44,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         private val storageLocks=java.util.concurrent.ConcurrentHashMap<String,Any>()
         private val stagingName=Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.gpractice")
     }
-    @Volatile var snapshot=LibrarySnapshot(Phrases.all,Phrases.catalogue,emptyList())
+    @Volatile var snapshot=LibrarySnapshot(emptyList(),emptyList(),emptyList())
         private set
     private val storageLock=storageLocks.computeIfAbsent(root.canonicalPath) { Any() }
     private val index=AtomicFile(File(root,"active-index.json"))
@@ -141,8 +141,8 @@ class SongRepository(private val root: File,private val reader: SongReader,
                     }
                 } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
             }
-            snapshot=LibrarySnapshot(Collections.unmodifiableList(Phrases.all+external),
-                Collections.unmodifiableList(Phrases.catalogue+external.filter { it.id in visible }),packages.toList(),diagnostics.toList(),aliases.toMap(),
+            snapshot=LibrarySnapshot(Collections.unmodifiableList(external),
+                Collections.unmodifiableList(external.filter { it.id in visible }),packages.toList(),diagnostics.toList(),aliases.toMap(),
                 Collections.unmodifiableList(Chords.all+chords),packagePractices.toMap())
             return snapshot
         }
@@ -249,7 +249,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
     fun named(id: String): Phrase {
         var target=id;val seen=mutableSetOf<String>()
         while(target in snapshot.aliases && seen.add(target)) target=snapshot.aliases.getValue(target)
-        val descriptor=snapshot.phrases.firstOrNull { it.id==target } ?: return Phrases.practiceNamed(target)
+        val descriptor=snapshot.phrases.firstOrNull { it.id==target } ?: return unavailablePhrase(target)
         val digest=descriptor.assetKey?.let { key -> snapshot.packages.firstOrNull { it.identity.packageId==key.packageId }?.identity?.digest }
         return prepared[descriptor.id+"@"+digest] ?: descriptor
     }
@@ -257,8 +257,8 @@ class SongRepository(private val root: File,private val reader: SongReader,
     @Synchronized fun resolve(id: String,cancel: ()->Unit = {}): Phrase {
         synchronized(storageLock) {
             val descriptor=named(id)
+            val key=descriptor.assetKey ?: throw MusicError(Diagnostic("MISSING_PRACTICE","/practice", "曲目不存在或曲包已停用，请重新选择"))
             if(!descriptor.unprepared) return descriptor
-            val key=descriptor.assetKey!!
             val entry=active.first { it.packageId==key.packageId }
             val song=reader.read(reader.readInput(file(entry).inputStream(),cancel),cancel=cancel)
             val practice=song.practices.first { it.id==key.practiceId }
@@ -272,7 +272,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         }
     }
     fun family(phrase: Phrase): Phrase {
-        if(phrase.assetKey==null) return Phrases.family(phrase)
+        if(phrase.assetKey==null) return phrase
         var current=phrase;val seen=mutableSetOf<String>()
         while(seen.add(current.id)) {
             val target=current.familyKey?.takeIf { it!=current.id } ?: current.relatedId ?: return current
@@ -281,7 +281,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         return phrase
     }
     fun versions(phrase: Phrase): List<Phrase> {
-        if(phrase.assetKey==null) return Phrases.versions(phrase)
+        if(phrase.assetKey==null) return emptyList()
         val base=family(phrase)
         return listOf(base)+snapshot.phrases.filter { it.assetKey?.packageId==base.assetKey?.packageId && it.id!=base.id && family(it).id==base.id }
     }

@@ -239,7 +239,9 @@ internal fun PracticeWorkbench(
                     NativeScore(nativePlayer, frame, hasFrame && sequence != null && !libraryVisible,
                         inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen)
                 }
-                val error = preparationError.ifBlank { nativePlayer?.error.orEmpty() }
+                val error = preparationError.ifBlank {
+                    if (ready && revision == null) "曲目不存在或曲包已停用，请从曲包库重新选择" else nativePlayer?.error.orEmpty()
+                }
                     .ifBlank { progress.message.takeIf { progress.phase == Phase.ERROR }.orEmpty() }
                 if (!libraryVisible && (sequence == null || nativePlayer?.loading == true || error.isNotBlank())) {
                     Box(frame.background(PracticeSkin.colors.diagramSurface), contentAlignment = Alignment.Center) {

@@ -102,16 +102,11 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private var sequence: Sequence? = null
     private var pendingStart: (() -> Unit)? = null
     private var round by mutableIntStateOf(0)
-    val roundNumber get() = round + 1
-    val countingIn get() = countIn
     private var rounds = 1
-    private var fromVisit = 0
-    private var toVisit = 0
     private var countIn = false
     private var beginning = false
     private var auditioning = false
     private var pausedTick: Double? = null
-    private var startSpeed = 1.0
     // Observational-only cues from alphaTab's public played-MIDI event stream.
     // 0 = dark, 1 = red, 2 = amber (last preparation beat),
     // 3 = green (first written beat). No separate clock or audio modification.
@@ -124,9 +119,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private var focusContext: FocusContext? = null
     private var focusIndex: PracticeFocusIndex? = null
     var focus: PracticeFocus? by mutableStateOf(null); private set
-    val fromMeasure get() = focus != null
     private var focusNoteIds: Set<String> = emptySet()
-    private var cursorNotes: List<PlanNote> = emptyList()
     private var cursorIntervals: IntervalIndex<PlanNote>? = null
     var renderStarts = 0; private set
     var modelLoads = 0; private set
@@ -138,15 +131,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         sourceTempo: Boolean, multiplier: Double) {
         if(value==null) { focusContext=null; return }
         focusContext=FocusContext(value,bpm,repeats,range,sourceTempo,multiplier)
-    }
-    fun canStep(direction: Int): Boolean {
-        val c=focusContext ?: return false
-        return ready && !loading && focusIndex?.step(focus?.at?.value() ?: currentTick/960,direction,c.range)!=null
-    }
-    fun step(direction: Int) {
-        require(direction==-1 || direction==1)
-        val c=focusContext ?: return
-        focusIndex?.step(focus?.at?.value() ?: currentTick/960,direction,c.range)?.let(::selectFocus)
     }
     private fun selectBeat(beat: Beat) {
         val c=focusContext ?: return
@@ -185,14 +169,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         updateCursor()
         audio.abandonAudioFocusRequest(focusRequest)
     }
-    fun auditionFocus() {
-        val selected=focus ?: focusIndex?.let { i -> focusContext?.let {
-            i.at(if(session==null) i.plan.visits[it.range.first].start.value() else currentTick/960,it.range)
-        } } ?: return
-        if(selected.rest) return
-        val c=focusContext ?: return
-        audition(selected.positions,capoFret=c.sequence.capoFret,openStringMidi=c.sequence.openStringMidi)
-    }
     var score: Score? by mutableStateOf(null); private set
     var selectedTrack: Track? by mutableStateOf(null); private set
     var projection: EngineProjection? by mutableStateOf(null); private set
@@ -219,14 +195,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             field = value
             applyMix()
         }
-    var solo = false
-        set(value) { field = value; applyMix() }
-    var leadFade = false
-        set(value) { if(field!=value) { field=value; applyMix() } }
-    var leadLevel = 1.0
-        set(value) { require(value in 0.0..1.0); if(field!=value) { field=value; applyMix() } }
-    var backingLevel = 1.0
-        set(value) { require(value in 0.0..1.0); if(field!=value) { field=value; applyMix() } }
     private var mix = PlaybackMix()
     override fun setMix(mix: PlaybackMix) {
         if (this.mix != mix) { this.mix = mix; applyMix() }
@@ -331,10 +299,9 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         api.playerFinished.on { ui {
             if (progress.phase != Phase.PLAYING) return@ui
             round++
-            applyMix()
             Log.i("AlphaPractice","finished round=$round requested=$rounds")
             if (rounds > 0 && round >= rounds) {
-                round = 0; applyMix()
+                round = 0
                 positions = emptyList(); cursor = null
                 entryLight = 0
                 stopDisplayCursor()
@@ -346,7 +313,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                 api.isLooping = rounds == 0 || round < rounds - 1
             }
         } }
-        score?.let { render(it) }
+        if (score != null) render()
     }
 
     fun detach(nativeView: AlphaTabView) {
@@ -368,14 +335,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                 main.post { if (!closed && request == generation) { focusIndex=index; setModel(converted,
                     value.performance.score.tracks.filter { it.id in value.performance.practice.mixTrackIds }
                         .indexOfFirst { it.id == value.performance.practice.mainTrackId });
-                    cursorNotes=index.plan.notes.filter { it.track.id==index.plan.practice.mainTrackId };
+                    val cursorNotes=index.plan.notes.filter { it.track.id==index.plan.practice.mainTrackId };
                     cursorIntervals=IntervalIndex(cursorNotes,{ it.start.value() },{ maxOf(it.soundEnd,it.event.end).value() }) } }
             } catch (failure: Exception) { main.post { if (request == generation && !closed) fail(failure) } }
         }
-    }
-
-    fun loadScore(value: Score, trackIndex: Int) {
-        generation++; stop(); sequence = null; setModel(value, trackIndex)
     }
 
     private fun setModel(value: Score, trackIndex: Int) {
@@ -385,29 +348,19 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         selectedTrack = value.tracks.firstOrNull { it.index.toInt() == trackIndex } ?: value.tracks.first()
         projection = null; cursorTempoMap = null; ready = false; loading = false; error = ""; rendered = false
         currentTick = 0.0; currentVisit = 0; positions = emptyList()
-        render(value)
+        render()
     }
-    private fun render(value: Score) {
+    private fun render() {
         view?.let { native ->
             native.tracks = listOf(checkNotNull(selectedTrack))
             applyMix()
         }
     }
-    fun selectTrack(track: Track) {
-        require(track.score === score)
-        stop(); selectedTrack = track; rendered = false
-        view?.tracks = listOf(track); applyMix()
-    }
     private fun applyMix(countInOnPlay: Boolean = countIn) {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
-            api.changeTrackMute(alphaTab.collections.List(track), !guitar || solo && track !== selectedTrack)
-            val seq=sequence
-            val independent=seq?.let(PracticeExtensions::canFade)==true
-            val sourceId=seq?.performance?.let { plan -> plan.score.tracks.filter { it.id in plan.practice.mixTrackIds }.getOrNull(track.index.toInt())?.id }
-            val gain=if(!independent) 1.0 else if(sourceId in seq!!.performance.practice.lesson!!.leadTrackIds)
-                if(leadFade) PracticeExtensions.leadGain(round) else leadLevel else backingLevel
-            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music,gain))
+            api.changeTrackMute(alphaTab.collections.List(track), !guitar)
+            api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music))
         }
         if (!guitar) positions = emptyList()
         api.masterVolume = AlphaTone.MASTER
@@ -440,9 +393,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         startVisits(range.first, range.last, if (follow) repeats else 1, follow, sourceTempo, bpm, multiplier)
     }
 
-    fun startGp(first: Int, last: Int, repeats: Int, pre: Boolean, multiplier: Double) {
-        session = null; startVisits(first, last, repeats, pre, true, 60, multiplier)
-    }
     private fun startVisits(first: Int, last: Int, repeats: Int, pre: Boolean, sourceTempo: Boolean, bpm: Int, speed: Double, entryVisit: Int = first) {
         val model = score ?: return
         val api = view?.api ?: return
@@ -461,8 +411,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         require(repeats >= 0 && speed in TempoControl.ENGINE_MIN_SPEED..TempoControl.MAX_SPEED)
         stopDisplayCursor()
         focus=null; focusNoteIds=emptySet()
-        callbackEpoch++; api.stop(); auditioning=false; pausedTick=null; round = 0; rounds = repeats; fromVisit = first; toVisit = last
-        startSpeed = speed
+        callbackEpoch++; api.stop(); auditioning=false; pausedTick=null; round = 0; rounds = repeats
         countIn = pre; beginning = true; positions = emptyList()
         entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         progress = Progress(Phase.PREPARING, message = "准备声音…")
@@ -552,7 +501,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     override fun restart() {
         val saved = session
         if (saved != null) start(saved.sequence, saved.bpm, true, saved.repeats, saved.range, saved.sourceTempo, saved.tempoMultiplier)
-        else if (score != null) startGp(fromVisit, toVisit, rounds, true, startSpeed)
     }
     override fun invalidate() { stop(); progress = Progress(message = "设置已改变，下一次播放从头开始") }
     override fun stop() {
@@ -575,7 +523,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         auditioning = true
         view?.api?.playBeat(beat)
     }
-    fun setSpeed(multiplier: Double) { view?.api?.playbackSpeed = multiplier.coerceIn(TempoControl.ENGINE_MIN_SPEED, TempoControl.MAX_SPEED) }
     private fun rejectStart(message: String) {
         stopDisplayCursor()
         focus=null; focusNoteIds=emptySet(); countIn=false

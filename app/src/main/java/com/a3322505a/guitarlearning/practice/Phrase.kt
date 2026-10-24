@@ -16,16 +16,10 @@ data class Phrase(
     val lesson: com.a3322505a.guitarlearning.music.LessonMetadata? = null,
 )
 
-object Phrases {
-    val singleNote by lazy { NativeIntro.phrase() }
-    // SongRepository loads the native, reviewed assets. This fallback is only startup/error content.
-    val all: List<Phrase> = emptyList()
-    val catalogue=all
-    fun practiceNamed(id: String)=named(id)
-    fun family(phrase: Phrase)=phrase
-    fun versions(phrase: Phrase): List<Phrase> = emptyList()
-    fun named(id: String)=all.firstOrNull { it.id==id } ?: singleNote
-}
+/** A missing selection is metadata only; it can never compile or play another song. */
+internal fun unavailablePhrase(id: String) = Phrase(id, if(id.isBlank()) "尚未选择曲目" else "曲目不可用",
+    "曲包库", "", "本地曲包", 60, "", "", "请从曲包库选择练习",
+    Sequence(emptyList(), BAR, "曲目不存在或曲包已停用", catalogueOnly = true), unprepared = true)
 
 /** Content registration is the boundary: no new player or notation path per phrase. */
 fun validatePhrases(phrases: List<Phrase>) {

@@ -3,7 +3,7 @@ package com.a3322505a.guitarlearning.practice
 import android.content.SharedPreferences
 
 data class PhraseSettings(val bpm: Int,val repeats: Int,val range: BarRange,val rangeReset: Boolean = false)
-class PhraseSettingsStore(private val prefs: SharedPreferences,private val resolve: (String)->Phrase = Phrases::practiceNamed) {
+class PhraseSettingsStore(private val prefs: SharedPreferences,private val resolve: (String)->Phrase = ::unavailablePhrase) {
     /** New stage speeds persist as integers. Read the former ratio once when migrating. */
     fun targetBpm(phrase: Phrase): Int {
         val reference = TempoControl.sourceBpm(phrase.sequence)
@@ -33,7 +33,7 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
     fun selected(): Phrase {
         val initial=com.a3322505a.guitarlearning.music.score.PracticeKey("local.teaching-native","FB-1").encoded
         val requested=runCatching { prefs.getString("phrase-selected",initial) }.getOrNull() ?: initial
-        return resolve(requested).takeIf { it.assetKey!=null } ?: resolve(initial)
+        return resolve(requested)
     }
     fun select(phrase: Phrase) { prefs.edit().remove("phrase-pending-import").putString("phrase-selected",phrase.id).apply() }
     fun load(phrase: Phrase,fallbackBpm: Int=60,fallbackRepeats: Int=4): PhraseSettings {

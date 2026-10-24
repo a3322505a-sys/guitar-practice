@@ -1,9 +1,6 @@
 package com.a3322505a.guitarlearning
 
 import android.os.Bundle
-import android.os.Build
-import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,12 +43,3 @@ class PracticeModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() { player.release() }
 }
 
-/** Maximum display bounds stay large even when an OEM has letterboxed the current window. */
-internal fun practiceOrientation(activity: Activity, tab: Boolean): Int {
-    val smallestWidth = if(Build.VERSION.SDK_INT >= 30) {
-        val bounds=activity.windowManager.maximumWindowMetrics.bounds
-        minOf(bounds.width(),bounds.height()) / activity.resources.displayMetrics.density
-    } else activity.resources.configuration.smallestScreenWidthDp.toFloat()
-    return if(smallestWidth>=600 || activity.isInMultiWindowMode) ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        else if(tab) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-}

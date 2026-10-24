@@ -42,6 +42,8 @@ class PhraseSettingsTest {
         prefs.edit().putInt("phrase.${a.id}.bpm",999).putString("phrase.${a.id}.repeats","wrong type").putInt("phrase.${a.id}.last",100).putString("phrase-selected","unknown").commit()
         assertEquals(PhraseSettings(60,4,BarRange(0,7)),store.load(a))
         assertEquals(91,store.load(b).bpm)
-        assertEquals("startup",store.selected().id)
+        assertEquals("unknown",store.selected().id)
+        assertTrue(store.selected().unprepared)
+        assertTrue(store.selected().sequence.catalogueOnly)
     }
 }
