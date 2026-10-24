@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -29,6 +32,7 @@ internal fun StageTransport(
     bpm: Int, phase: Phase, enabled: Boolean, loop: Boolean, click: Boolean,
     elapsed: Double, duration: Double, onTempo: () -> Unit, onPlay: () -> Unit,
     onLoop: () -> Unit, onClick: () -> Unit, onRestart: () -> Unit,
+    entryLight: Int = 0, entryBeat: Int = 0, entryBeatTotal: Int = 0,
 ) {
     val colors = PracticeSkin.colors
     Surface(color = colors.background, modifier = Modifier.fillMaxWidth().testTag("transport-bar")) {
@@ -36,6 +40,30 @@ internal fun StageTransport(
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 22.dp).testTag("playback-progress"),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Compact audio-following traffic light; always reserves the same
+                // width, never overlays the score or controls audio playback.
+                val cueText = when (entryLight) {
+                    1 -> "预备拍 ${entryBeat}/${entryBeatTotal}"
+                    2 -> "预备拍最后一拍 ${entryBeat}/${entryBeatTotal}"
+                    3 -> "正式第一拍"
+                    else -> "入拍提示待机"
+                }
+                Row(
+                    modifier = Modifier.testTag("entry-signal")
+                        .semantics { contentDescription = cueText },
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        Triple(1, Color(0xFFDC5751), "entry-light-red"),
+                        Triple(2, Color(0xFFE3B341), "entry-light-amber"),
+                        Triple(3, Color(0xFF3EAE76), "entry-light-green")
+                    ).forEach { (light, tint, tag) ->
+                        Box(Modifier.size(12.dp)
+                            .background(tint.copy(alpha = if (entryLight == light) 1f else .18f), CircleShape)
+                            .testTag(tag))
+                    }
+                }
                 Text(stageTime(elapsed), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
                 LinearProgressIndicator(progress = { if (duration > 0) (elapsed / duration).toFloat().coerceIn(0f, 1f) else 0f },
                     modifier = Modifier.weight(1f).height(4.dp), color = colors.primary, trackColor = colors.surfaceSelected)
