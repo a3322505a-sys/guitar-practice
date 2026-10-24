@@ -1,3 +1,5 @@
+- v113 视觉入拍修复在 `codex/v113-visual-count-in`，基于 v112 的 `8cd249c`。已撤销 `EntryBeat184` 内部反射和首拍 MIDI 音强注入，恢复 AlphaTab 1.8.4 原生预备拍与普通节拍；只用公开 `midiEventsPlayed` 事件 + 原生播放位置驱动进度条红/黄/绿提示。保留光标修复与 ↺ 重新开始按钮。版本 `1.4.3 / 113`，独立 standalone 签名/包名延续原约定。见 [v113 修复记录](docs/V4-视觉入拍提示-v113.md)。
+
 # 当前开发入口
 
 - 预备拍/首拍强音/进度条右侧重新开始补丁在 `codex/count-in-restart-20261024`，基于光标修复 `69762ce`，版本 `1.4.2 / 112`。见 [v112 实施记录](docs/V4-预备拍与重新开始-v112.md)。首拍适配固定 alphaTab 1.8.4；更新引擎须运行真实 worker 与 PCM 回归。交付独立安装的 standalone 变体，沿用 v111 standalone 专用签名。
