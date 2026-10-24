@@ -85,6 +85,7 @@ class NativeCountInTest {
             test.engine.countInVolume = 0.0
             assertTrue(test.engine.play()); test.until { entered }
             assertEquals(listOf(1,2,3,4),beats)
+            assertEquals("Preparation ticks must not seek the written music",0.0,test.engine.tickPosition,1.0)
             assertTrue(test.heard.drop(heardBefore).any { abs(it) > .0001f })
             test.engine.metronomeVolume = 0.0
             test.engine.pause(); val tick = test.engine.tickPosition
@@ -95,6 +96,38 @@ class NativeCountInTest {
             test.engine.countInVolume = AlphaTone.CLICK
             assertTrue(test.engine.play()); test.until { entered }
             assertEquals(listOf(1,2,3,4),beats)
+        }
+    }
+    @Test fun laterSelectedBarAndNativeLoopsNeverAddAnotherPreparationBar() {
+        for (formalClick in listOf(0.0, AlphaTone.CLICK)) {
+            val score=score(3,4)
+            val selected=EngineProjection.generate(score).second.visits[1]
+            NativeSynthFixture(score).use { test ->
+                val beats=mutableListOf<Int>()
+                val boundaries=mutableListOf<Long>()
+                var entryFrame: Long?=null
+                var entryTick: Double?=null
+                test.engine.playbackRange=alphaTab.synth.PlaybackRange().apply {
+                    startTick=selected.start; endTick=selected.end
+                }
+                test.engine.positionChanged.on { event ->
+                    if(test.engine.state==alphaTab.synth.PlayerState.Playing && entryFrame==null) {
+                        entryFrame=test.frames; entryTick=event.currentTick
+                    }
+                }
+                test.engine.midiEventsPlayed.on { batch -> if(entryFrame==null)
+                    batch.events.filterIsInstance<AlphaTabMetronomeEvent>().forEach { beats+=it.metronomeNumerator.toInt()+1 } }
+                test.engine.finished.on { boundaries+=test.frames }
+                test.engine.metronomeVolume=formalClick
+                test.engine.countInVolume=AlphaTone.CLICK
+                test.engine.isLooping=true
+                assertTrue(test.engine.play())
+                test.until { boundaries.size>=2 }
+                assertEquals(listOf(1,2,3),beats)
+                assertEquals(selected.start,entryTick!!,1.0)
+                assertEquals(1500.0,(boundaries[0]-entryFrame!!)*1000.0/44100,50.0)
+                assertEquals(1500.0,(boundaries[1]-boundaries[0])*1000.0/44100,50.0)
+            }
         }
     }
 }

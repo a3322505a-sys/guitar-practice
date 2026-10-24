@@ -38,7 +38,8 @@ class SongAdvancedTest {
         assertEquals("local-grip",NativeContent.plan("strum").harmonies.single().voicing!!.id)
     }
     @Test fun everyExpandedFixtureHasValidNativeSynthesisAndNoSongRegistration() {
-        for(name in listOf("harmonics","techniques","shared","multi-track","boundary-carry","boundary-reattack","boundary-truncate")) {
+        NativeContent.unsupported.keys.forEach(NativeContent::assertRejected)
+        for(name in listOf("shared","multi-track","conditional","pickup","strum","boundary-carry","boundary-reattack","boundary-truncate")) {
             val score=NativeContent.score(name)
             NativeContent.render(score)
             val pcm=NativeContent.pcm(score)

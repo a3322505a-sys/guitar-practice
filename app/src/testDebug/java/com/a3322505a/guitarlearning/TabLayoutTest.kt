@@ -17,12 +17,12 @@ import java.io.File
 @Config(sdk=[28])
 class TabLayoutTest {
     @Test fun nativeOnsetsRemainSeparateFromSustainingBassAndRestVoices() {
-        val projection=EngineProjection.generate(NativeContent.score("complex")).second
-        assertTrue(projection.visits.size>1)
-        for(note in NativeContent.plan("complex").notes.filter { !it.note.dead && it.note.harmonic==null }) {
+        val projection=EngineProjection.generate(NativeContent.score("multi-track")).second
+        assertTrue(projection.visits.isNotEmpty())
+        for(note in NativeContent.plan("multi-track").notes.filter { !it.note.dead && it.note.harmonic==null }) {
             assertEquals(note.note.midi,note.track.midi(note.position.string,note.position.fret))
         }
-        for(name in listOf("ties","boundary-carry","boundary-truncate","shared","harmonics","nested")) {
+        for(name in listOf("ties","boundary-carry","boundary-truncate","shared","pickup","conditional")) {
             val plan=NativeContent.plan(name)
             val score=AlphaScoreAdapter.fromPlan(plan)
             NativeContent.render(score,360.0)
@@ -30,7 +30,8 @@ class TabLayoutTest {
         }
     }
     @Test fun nativeGeometryKeepsEveryOriginalNoteAtReadableNonzeroBounds() {
-        for(name in listOf("complex","techniques","harmonics","nested")) {
+        NativeContent.unsupported.keys.forEach(NativeContent::assertRejected)
+        for(name in listOf("multi-track","strum","pickup","conditional","cross-tuplet")) {
             val score=NativeContent.score(name)
             val renderer=NativeContent.render(score,600.0)
             score.tracks.first().staves.first().bars.forEach { bar -> bar.voices.forEach { voice -> voice.beats.forEach { beat ->

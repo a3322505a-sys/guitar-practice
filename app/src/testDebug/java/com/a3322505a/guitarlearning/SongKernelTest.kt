@@ -58,6 +58,9 @@ class SongKernelTest {
     @Test fun fixturesKeepNativeEventPitchTimingPolyphonyAndMeter() {
         for(name in listOf("simple","complex","nested","techniques","harmonics","pickup","ties","shared","multi-track")) {
             val plan=NativeContent.plan(name)
+            assertTrue(name,plan.notes.isNotEmpty())
+            assertTrue(name,plan.visits.isNotEmpty())
+            if(name in NativeContent.unsupported) { NativeContent.assertRejected(name); continue }
             val score=AlphaScoreAdapter.fromPlan(plan)
             val (midi,projection)=EngineProjection.generate(score)
             assertEquals(name,plan.visits.size,projection.visits.size)

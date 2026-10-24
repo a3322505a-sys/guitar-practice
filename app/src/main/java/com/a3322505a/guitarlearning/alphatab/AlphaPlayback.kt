@@ -265,7 +265,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                 progress = progress.copy(phase = if (event.state == PlayerState.Playing) Phase.PLAYING else Phase.PAUSED)
                 // 1.8.4 snaps a paused beat to its first written occurrence. Keep the
                 // heard tick instead, especially on a later repeat visit in a GP file.
-                if (event.state == PlayerState.Paused && !event.stopped) pausedTick?.let { api.tickPosition = it }
+                if (event.state == PlayerState.Paused && !event.stopped && !countIn) pausedTick?.let { api.tickPosition = it }
             }
             Log.i("AlphaPractice","state=${event.state} audition=$auditioning")
             if (auditioning && event.state == PlayerState.Paused) { auditioning = false; audio.abandonAudioFocusRequest(focusRequest) }
@@ -277,9 +277,13 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             if (event.isSeek && progress.phase == Phase.PAUSED && pausedTick?.let {
                 kotlin.math.abs(event.currentTick - it) > 1e-6
             } == true) return@ui
-            if (event.isSeek && progress.phase == Phase.PLAYING) return@ui
+            // The native preparation-to-music transition is a seek event. Initial
+            // setup seeks precede native beats; they must not end preparation.
+            val nativeEntry = countIn && progress.phase == Phase.PLAYING && (!event.isSeek || entryBeatNumber > 0)
+            if (event.isSeek && progress.phase == Phase.PLAYING && !nativeEntry) return@ui
+            if (countIn && !nativeEntry) return@ui
             if (!event.isSeek && progress.phase == Phase.PLAYING) pausedTick = null
-            if (countIn) {
+            if (nativeEntry) {
                 // First main playback position: the actual musical entry.
                 entryLight = if (event.currentTick < entryGreenEndTick) 3 else 0
                 countIn = false

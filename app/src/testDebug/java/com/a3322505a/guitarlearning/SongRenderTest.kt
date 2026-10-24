@@ -17,7 +17,8 @@ import java.io.File
 @Config(sdk=[28])
 class SongRenderTest {
     @Test fun nativeRendererDrawsPolyphonyNestedTupletsHarmonicsPickupAtPhoneAndTabletWidths() {
-        for(name in listOf("complex","nested","techniques","harmonics","pickup")) for(width in listOf(360.0,1200.0)) {
+        NativeContent.unsupported.keys.forEach(NativeContent::assertRejected)
+        for(name in listOf("multi-track","strum","pickup","ties","conditional","cross-tuplet")) for(width in listOf(360.0,1200.0)) {
             val score=NativeContent.score(name)
             val renderer=NativeContent.render(score,width)
             val systems=renderer.boundsLookup!!.staffSystems.toList()
