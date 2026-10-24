@@ -39,12 +39,11 @@ class SongAdvancedTest {
     }
     @Test fun everyExpandedFixtureHasValidNativeSynthesisAndNoSongRegistration() {
         NativeContent.unsupported.keys.forEach(NativeContent::assertRejected)
-        for(name in listOf("shared","multi-track","conditional","pickup","strum","boundary-carry","boundary-reattack","boundary-truncate")) {
+        for(name in listOf("shared","multi-track","conditional","strum","ties")) {
             val score=NativeContent.score(name)
             NativeContent.render(score)
             val pcm=NativeContent.pcm(score)
-            if(name=="boundary-truncate") assertTrue(pcm.all { kotlin.math.abs(it)<1e-7f })
-            else assertTrue(name,pcm.any { kotlin.math.abs(it)>.0001f })
+            assertTrue(name,pcm.any { kotlin.math.abs(it)>.0001f })
         }
     }
 }

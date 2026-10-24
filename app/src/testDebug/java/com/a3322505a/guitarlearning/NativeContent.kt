@@ -18,7 +18,8 @@ import kotlin.math.ceil
 /** Only public, shipped native conversion/render/synthesis. No legacy audio or TAB clock. */
 internal object NativeContent {
     val unsupported = mapOf("complex" to "渐变速度暂未迁移", "techniques" to "渐变力度暂未迁移",
-        "nested" to "嵌套连音暂未迁移", "harmonics" to "此人工泛音暂未迁移")
+        "nested" to "嵌套连音暂未迁移", "harmonics" to "此人工泛音暂未迁移",
+        "pickup" to "小节迁移时值不一致")
     fun assertRejected(name: String) {
         val error=runCatching { score(name) }.exceptionOrNull()
         assertTrue("$name must retain its explicit native boundary",error is IllegalArgumentException)

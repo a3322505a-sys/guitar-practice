@@ -1,5 +1,8 @@
 name: Android core
 on: [push, pull_request]
+concurrency:
+  group: android-core-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -25,16 +28,20 @@ jobs:
         if: always()
         with:
           name: verification-reports
+          retention-days: 7
           path: app/build/reports/
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-apk
+          retention-days: 7
           path: app/build/outputs/apk/release/*.apk
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-compare-apk
+          retention-days: 7
           path: app/build/outputs/apk/compare/*.apk
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-standalone-apk
+          retention-days: 7
           path: app/build/outputs/apk/standalone/*.apk
