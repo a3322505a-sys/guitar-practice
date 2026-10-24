@@ -242,6 +242,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         nativeView.settings = AlphaScoreAdapter.settings()
         val api = nativeView.api
         api.customCursorHandler = scoreCursor
+        fun ui(action: () -> Unit) {
+            val epoch=callbackEpoch
+            main.post { if (!closed && view === nativeView && epoch==callbackEpoch) action() }
+        }
         // AlphaTab 1.8.4 official API emits these after their audio buffers
         // have played, including during the native count-in.
         api.midiEventsPlayedFilter = alphaTab.collections.List<MidiEventType>(MidiEventType.AlphaTabMetronome)
@@ -258,10 +262,6 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                     }
                 }
             }
-        }
-        fun ui(action: () -> Unit) {
-            val epoch=callbackEpoch
-            main.post { if (!closed && view === nativeView && epoch==callbackEpoch) action() }
         }
         api.error.on { failure -> ui { fail(failure) } }
         api.renderStarted.on { ui { renderStarts++; Log.i("AlphaPractice","renderStarted=$renderStarts") } }
