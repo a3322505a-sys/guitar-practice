@@ -226,7 +226,9 @@ internal fun PracticeWorkbench(
                         { player.invalidate(); looping = !looping },
                         { click = !click; preferences.edit().putBoolean("click", click).apply() },
                         { if (session != null) player.restart()
-                            else sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) } })
+                            else sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) } },
+                        nativePlayer?.entryLight ?: 0, nativePlayer?.entryBeatNumber ?: 0,
+                        nativePlayer?.entryBeatTotal ?: 0)
                 }
                 val bounds = scoreBounds
                 val hasFrame = bounds != null && bounds.width > 0 && bounds.height > 0
