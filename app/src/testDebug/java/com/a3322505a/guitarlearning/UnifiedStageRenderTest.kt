@@ -67,6 +67,18 @@ class UnifiedStageRenderTest {
         assertEquals(1, bounds.map { it.top }.distinct().size)
         bounds.zipWithNext().forEach { (a, b) -> assertTrue(a.right <= b.left) }
     }
+    @Test fun missingSavedPracticeRemainsUnavailableAndDoesNotSelectAnotherSong() {
+        val prefs=compose.activity.getSharedPreferences("practice-settings",0)
+        val missing="removed-package-practice"
+        prefs.edit().clear().putString("phrase-selected",missing).commit()
+        start()
+        compose.onNodeWithTag("practice-title").assertTextContains("曲目不可用",substring=true)
+        compose.onNodeWithTag("play-button").assertIsNotEnabled()
+        compose.runOnIdle {
+            assertEquals(missing,prefs.getString("phrase-selected",null))
+            assertNull(player.session)
+        }
+    }
     @Test fun packageSelectionTitleMenuAndBackUseTheSamePracticeIdentities() {
         start(); selectDaily()
         compose.onNodeWithTag("package-library").assertDoesNotExist()

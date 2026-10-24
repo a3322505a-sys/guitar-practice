@@ -10,10 +10,10 @@
 
 | 功能 | 入口 |
 | --- | --- |
-| 曲包库、练琴舞台与弹窗协调 | ui/PracticeApp.kt、SongLibrary.kt、StageTransport.kt |
+| 曲包库、练琴舞台与弹窗协调 | ui/PracticeApp.kt、SongLibrary.kt、PracticeStage.kt、PracticeTransport.kt |
 | 唯一谱面宿主、播放、平滑光标 | alphatab/NativeScore.kt、AlphaPlayback.kt、CursorDisplayClock.kt |
 | 曲包事务、校验、按需准备 | assets/song/SongRepository.kt、SongReader.kt、music/score/、practice/compile/ |
-| 指板与教学图示 | ui/Diagrams.kt、LinkedBoardIndex.kt |
+| 指板与教学图示 | ui/Diagrams.kt、TeachingHints.kt |
 | 主题与持久化偏好 | ui/ThemeManager.kt、ThemeRegistry.kt、practice/PhraseSettings.kt |
 | 词典与教材数据 | music/Dictionary.kt、TeachingVoicings.kt、NativeScalePatterns.kt |
 

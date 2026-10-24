@@ -85,9 +85,7 @@ internal fun PracticeWorkbench(
 
     LaunchedEffect(repository) {
         snapshot = withContext(Dispatchers.IO) { repository.reload() }
-        val selected = store.selected()
-        phraseId = selected.id.takeIf { id -> snapshot.phrases.any { it.id == id } }
-            ?: snapshot.phrases.firstOrNull()?.id.orEmpty()
+        phraseId = store.selected().id
         ready = true
     }
     LaunchedEffect(ready, phraseId, revision) {
@@ -253,7 +251,7 @@ internal fun PracticeWorkbench(
                 if (managementOpen) SongLibrary(repository, { updated ->
                     snapshot = updated
                     if (updated.phrases.none { it.id == phraseId }) {
-                        player.invalidate(); phraseId = updated.phrases.firstOrNull()?.id.orEmpty()
+                        player.invalidate()
                     }
                 }, { managementOpen = false }, sequence, themeManager)
                 if (tempoOpen) BpmSheet(targetBpm, minBpm, maxBpm, ::setBpm, { tempoOpen = false },
