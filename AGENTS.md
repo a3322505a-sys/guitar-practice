@@ -1,21 +1,15 @@
-- v113 视觉入拍修复在 `codex/v113-visual-count-in`，基于 v112 的 `8cd249c`。已撤销 `EntryBeat184` 内部反射和首拍 MIDI 音强注入，恢复 AlphaTab 1.8.4 原生预备拍与普通节拍；只用公开 `midiEventsPlayed` 事件 + 原生播放位置驱动进度条红/黄/绿提示。保留光标修复与 ↺ 重新开始按钮。版本 `1.4.3 / 113`，独立 standalone 签名/包名延续原约定。见 [v113 修复记录](docs/V4-视觉入拍提示-v113.md)。
+# 当前开发入口：V114
 
-# 当前开发入口
-
-- 预备拍/首拍强音/进度条右侧重新开始补丁在 `codex/count-in-restart-20261024`，基于光标修复 `69762ce`，版本 `1.4.2 / 112`。见 [v112 实施记录](docs/V4-预备拍与重新开始-v112.md)。首拍适配固定 alphaTab 1.8.4；更新引擎须运行真实 worker 与 PCM 回归。交付独立安装的 standalone 变体，沿用 v111 standalone 专用签名。
-
-- V4 练琴参数补丁在 `codex/v4-playback-controls`，基于 `ee6140a`，版本 `1.4.1 / 111`；光标显示微调、整数目标 BPM、主题开关填色见 [v111 补丁记录](docs/V4-练琴界面补丁-v111.md)。单一 AlphaTabView 挂载点及曲包数据/协议保持。
-
-- 当前 UI 施工为 `codex/unified-package-stage`，基于最新 V4 + 音量增强 `9d06743`，版本 `1.4.0 / 110`。当前权威要求见 [统一曲包驱动施工规范](docs/统一曲包驱动施工规范-20261022.md)。用户追加三套配色：青绿晨光（默认）、暖杏木色、靛蓝夜练。入口仅「曲包库 → 练琴舞台」，上方可折叠指板、AlphaTab 主谱面、底部 BPM/播放/循环/节拍；下述旧双工作台与词典布局不再作为当前 UI 要求。
-
-- 当前 V4 UI 重构在 `codex/v4-studio-ui`，基于 `c5e6355`，版本 `1.3.0 / 108`；四阶段与验证见 [V4 实施记录](docs/V4-UI-实施记录.md)。保留原生数据与播放契约，新增模态输入屏蔽；下述 v107 信息作为重构基线查阅。
-
-- 本轮本地开发工作区：`C:\Users\b3322\Documents\Codex\projects\guitar-practice\work\native-teaching-v106`，分支 `codex/native-teaching-v106`。执行前仍需检查实时 Git 状态与活动任务。
-- `guitar-practice` 根工作树保留 v82 未提交修改；`001` 是历史工程并仍提供本机工具链，均不作为当前 App 的修改基线。不要覆盖、重置或删除这些保留内容。
-- 当前从 v106 `03431ea` 继续落实用户 02.md，版本 `1.2.0 / 107`；需求、实现与当前验证见 [V107 记录](docs/V3.1-v107-实施记录.md)。v106 从 V105 `5afd5f8` 原生重制。v106 曾授权废除此前旧数据兼容；v107 保留 v106 原生 ID、曲库存储根与设置关联，不恢复或再次删除已替换的旧兼容链。v106 范围见 [原生数据记录](docs/原生教学数据-v106.md)，历史需求见 [教学体系 V3.1](docs/教学体系-V3.1.md)，V105 历史验收见 [实施记录](docs/教学体系-V3.1-实施记录.md)；历史教学 UI 的 P1–P8 不是本轮阶段编号。
-- 音乐语义入口为 `music/Theory.kt`、`LessonMetadata.kt` 与 `music/score/`；曲包使用 1.1 可选教学能力和单一 `SongCodec`/`PracticeCompiler`。`Tonality/Chord/Sequence` 是当前 UI 和确定性练习生成的适配，不应再注册旧 Kotlin 歌曲表。
-- 内置和弦、四模块课程与三个示范曲包的编写入口为 `scripts/build-teaching-v31.py`，生成 `TeachingVoicings.kt`、`NativeScalePatterns.kt` 与五个原生曲包；每日套曲的逐音编写源是 `song_package/daily_practice.py`，完整理论/封闭配法和位置查询在 `music/Dictionary.kt`；修改后重建并用独立审计器校验。旧 SevenBlocks/Kernel、转换器和旧 ID 映射已删除，不再恢复或追加。
-- UI 协调入口是 `MainActivity` → `ui/PracticeApp.kt`。保留单一 alphaTab 播放/谱面路径、当前原生曲包 ID、主题设置、包名、长期签名和用户数据；不为整理而修改业务逻辑。
-- 未提交或不包含在当前基线中的工作按 [整理记录](docs/工作区整理-1.0.0.md) 保留。长期 compare 配置已按本轮交付要求带入；v97 回退与莫扎特 A-r2 不得当作已合入当前实现，也不要自行合并或删除。
-- 构建、协议、文档入口见 [开发索引](docs/README.md)，Git 发布规范见 [Git 约定](docs/git-governance.md)。按改动风险做必要验证，区分构建、传输完整性与真机体验。
-- 清理前先核实工作树、分支关系、未提交文件和其他活动 Agent；远程删除与 Tag 创建须有单独授权。不重写历史、不强推，不删除共享工具链、签名材料或未知用途文件。
+- 仓库 `a3322505a-sys/guitar-practice`，分支 `codex/v114-count-in-cleanup`，基线 v113 `70fb07b9c63d580793ec4f587c98986694a0998f`；版本 `1.4.4 / 114`。
+- 当前施工与验收依据：[V114 执行规范](docs/V114-执行规范.md)、[实施与交付](docs/V114-实施与交付.md)、[引用审计](docs/V114-源码引用审计.md)。旧 v107/v108/v112/v113 文档记录当时事实，不再作为“当前入口”。
+- 主路径 `MainActivity → ui/PracticeApp → AlphaPlayback / NativeScore`。统一曲包驱动；lesson/piece 从已有 teaching/lesson/practices 推导，不修改 Schema 或曲包生成协议。
+- 只保留一个稳定 AlphaTabView 挂载点，弹窗、曲包库、指板折叠、横竖屏切换不得另建播放器/谱面路径。保留光标平滑及全局 ±500 ms 微调、整数 BPM、四键【BPM/播放/循环/节拍】、↺、红黄绿灯、三主题和折叠指板。
+- 使用 alphaTab 1.8.4 原生声音和预备拍。准备音量独立于正式 click 开关及其旧偏好；唯一音量出口 `AlphaPlayback.applyMix`。灯只观察原生事件；禁止私有字段反射、MIDI 首拍注入、第二音频输出或人工填拍计时器。
+- 缺失曲目返回不可播放的明确占位，`resolve` 抛出 MISSING_PRACTICE；不得替换成不相关教材。保留并发代际、音频焦点、StrictJson、Schema、ScoreValidation、PracticeCompiler、ID/路径/存储保护。
+- `LegacySequenceAdapter` 仍服务试听和确定性练习的 Sequence 转换，必须保留；词典、原始 SoundFont 制作素材、main 的 sonivox.sf2 和第三方许可证必须保留。
+- 历史 Debug 播放器、旧 TAB、P0 探针和其调查脚本已退役。debug 使用同一原生实现；UiTestActivity 仅为现代 Compose JVM 测试宿主。不得恢复旧实现来绕过回归。
+- 内置曲包编写入口 `scripts/build-teaching-v31.py`、`scripts/song_package/daily_practice.py`；音乐事实在 music/score 与现有编译链，教材渐进呈现、练习自由选择。
+- 构建/签名见 [变体文档](docs/build-variants.md)。保留 release/debug/compare/standalone，不新增第三方依赖、不变更引擎或 Gradle 依赖。standalone 沿用已交付专用证书，正式 appId/长期证书不变。
+- 执行完整 Debug 编译/测试/lint/组装、compare 测试/lint/组装、standalone lint/组装、release 组装，以及 Python 曲包/原生数据与实际 APK DEX/PCM 隔离审计。必须区分 CI、主机 PCM 和真机听感；无真实 Android 设备时明确写“待真机验收”。
+- 修改前检查 Git 状态、分支/工作树和其他活动 Agent；只操作独立工作树，不重置用户文件、不强推、不改写远程历史。远程删除与 Tag 另需授权。共享工具链、签名材料及未知用途文件不得清理。
+- 历史截图作为验收证据保留，不进入 APK；无关文档整理不拖延已通过核心检查的 APK 交付。
