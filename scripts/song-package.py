@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""inspect / normalize / validate / pack. Pure data; never imports or emits Android source."""
+"""build / inspect / normalize / validate / pack. Pure data; never imports or emits Android source."""
 import argparse
 from pathlib import Path
 import sys
@@ -13,8 +13,10 @@ def new_directory(path):
     path.mkdir(parents=True)
     return path
 def candidate_payloads(path):
-    path=Path(path);payloads={name:(path/name).read_bytes() for name in FILES if name!="manifest.json"}
-    manifest=strict_json((path/"manifest.json").read_bytes())
+    path=Path(path);manifest=strict_json((path/"manifest.json").read_bytes())
+    if manifest.get("formatVersion",{}).get("major")==2:
+        return {name:(path/name).read_bytes() for name in CORE_FILES}
+    payloads={name:(path/name).read_bytes() for name in FILES if name!="manifest.json"}
     manifest["files"]={name:dict(bytes=len(data),sha256=digest(data)) for name,data in payloads.items()}
     payloads["manifest.json"]=dumps(manifest)
     return payloads
@@ -71,13 +73,22 @@ def normalize(source,selection_path,output):
         next="Independent review must create review.json; pack cannot approve a candidate.")
 def main():
     parser=argparse.ArgumentParser(description=__doc__);commands=parser.add_subparsers(dest="command",required=True)
+    p=commands.add_parser("build");p.add_argument("--input",required=True,type=Path);p.add_argument("--output",required=True,type=Path)
     p=commands.add_parser("inspect");p.add_argument("--source",required=True,type=Path);p.add_argument("--output",required=True,type=Path)
     p=commands.add_parser("normalize");p.add_argument("--source",required=True,type=Path);p.add_argument("--manifest",required=True,type=Path);p.add_argument("--output",required=True,type=Path)
     p=commands.add_parser("validate");p.add_argument("--candidate",required=True,type=Path);p.add_argument("--capabilities",type=Path)
     p=commands.add_parser("pack");p.add_argument("--candidate",required=True,type=Path);p.add_argument("--output",required=True,type=Path);p.add_argument("--capabilities",type=Path)
     args=parser.parse_args()
     try:
-        if args.command=="inspect":
+        if args.command=="build":
+            payloads={name:(args.input/name).read_bytes() for name in CORE_FILES}
+            manifest=strict_json(payloads["manifest.json"])
+            check(manifest.get("formatVersion",{}).get("major")==2,"VERSION","/manifest/formatVersion","build requires v2; use pack for existing v1 packages")
+            summary=[];roots=validate_payloads(payloads,summary=summary)
+            normalized={name:dumps(roots[name]) for name in CORE_FILES}
+            result=dict(status="通过",packageId=manifest["packageId"],output=str(args.output),
+                sha256=write_zip(normalized,args.output,overwrite=True),completed=summary)
+        elif args.command=="inspect":
             target=new_directory(args.output);result=inspect_source(args.source);(target/"inspection.json").write_bytes(dumps(result))
         elif args.command=="normalize": result=normalize(args.source,args.manifest,args.output)
         else:
@@ -85,7 +96,7 @@ def main():
             caps=strict_json(args.capabilities.read_bytes()) if args.capabilities else None
             roots=validate_payloads(payloads,capabilities=caps)
             result=dict(status="compatible",packageId=roots["manifest.json"]["packageId"],revision=roots["manifest.json"]["revision"],
-                coverage=roots["review.json"]["coverage"],requires=roots["manifest.json"]["requires"])
+                requires=sorted(validate_music(roots["score.json"],roots["practices.json"]["practices"])))
             if args.command=="pack": result.update(output=str(args.output),sha256=write_zip(payloads,args.output))
         print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     except (Blocked,OSError,ValueError,KeyError,IndexError) as e:

@@ -14,6 +14,8 @@ object SongLimits {
     const val INPUT = 16*1024*1024
     const val JSON = 32*1024*1024
     const val TOTAL = 64*1024*1024
+    val CORE = setOf("manifest.json","score.json","practices.json")
+    fun ignored(name: String) = name.endsWith("/") || name==".DS_Store" || name.startsWith("__MACOSX/")
     val FILES = setOf("manifest.json","score.json","practices.json","provenance.json","review.json")
 }
 object SongCapabilities {
@@ -37,13 +39,17 @@ class SongReader(private val schema: SongSchema) {
     }
     fun read(bytes: ByteArray,builtin: Boolean = false,cancel: ()->Unit = {}): SongPackage {
         musicCheck(bytes.size<=SongLimits.INPUT,"LIMIT","/container","Compressed input exceeds 16 MiB")
-        centralDirectory(bytes)
+        val central=centralDirectory(bytes)
+        val entries=mutableListOf<String>()
         val files=linkedMapOf<String,ByteArray>();var total=0
         ZipInputStream(ByteArrayInputStream(bytes),Charsets.UTF_8).use { archive ->
             while(true) {
                 cancel();val entry=archive.nextEntry ?: break
-                musicCheck(entry.name in SongLimits.FILES && !files.containsKey(entry.name) && !entry.isDirectory,
-                    "ZIP_ENTRY","/container/"+entry.name,"Unexpected/duplicate/path entry")
+                entries+=entry.name
+                musicCheck(entries.size<=128,"LIMIT","/container","Entry count exceeds 128")
+                val ignored=SongLimits.ignored(entry.name)
+                musicCheck(ignored || entry.name in SongLimits.FILES && !files.containsKey(entry.name),
+                    "ZIP_ENTRY","/container/"+entry.name,"Unexpected/duplicate core file")
                 val out=ByteArrayOutputStream();val buffer=ByteArray(8192)
                 while(true) {
                     cancel();val n=archive.read(buffer);if(n<0) break
@@ -51,17 +57,25 @@ class SongReader(private val schema: SongSchema) {
                     musicCheck(out.size()+n<=SongLimits.JSON && total<=SongLimits.TOTAL,"LIMIT","/container/"+entry.name,"Inflated byte limit")
                     out.write(buffer,0,n)
                 }
-                files[entry.name]=out.toByteArray()
+                if(!ignored) files[entry.name]=out.toByteArray()
             }
         }
-        musicCheck(files.keys==SongLimits.FILES,"ZIP_FILES","/container","Exactly five JSON files required")
-        val declaredInput=StrictJson.parse(files.getValue("manifest.json")).objectValue().strings("requires")
-        musicCheck(declaredInput.all { it in SongCapabilities.supported },"CAPABILITY","/manifest/requires","App upgrade required")
-        val roots=files.mapValues { (name,data) -> cancel();StrictJson.parse(data).also { schema.validate(name.removeSuffix(".json"),it) }.objectValue() }
-        val manifest=roots.getValue("manifest.json")
+        musicCheck(entries.sorted()==central.sorted(),"ZIP","/container","Local/central entries differ")
+        musicCheck(SongLimits.CORE.all { it in files },"ZIP_FILES","/container","Missing core JSON file")
+        val manifest=StrictJson.parse(files.getValue("manifest.json")).objectValue()
+        schema.validate("manifest",manifest)
+        val v2=manifest["formatVersion"].objectValue().i("major")==2
+        musicCheck(files.keys==if(v2) SongLimits.CORE else SongLimits.FILES,"ZIP_FILES","/container","Expected core JSON files for this version")
+        val warnings=mutableListOf<String>()
+        var roots=files.mapValues { (name,data) -> cancel();StrictJson.parse(data).objectValue() }
+        if(v2) {
+            roots.forEach { (name,data) -> schema.validate(name.removeSuffix(".json"),data,normalizing=name!="manifest.json") }
+            roots=normalizeSong(roots,warnings)
+        }
+        roots.forEach { (name,data) -> schema.validate(name.removeSuffix(".json"),data) }
         val packageId=manifest.s("packageId")
-        val nativeTeaching=packageId=="local.teaching-native" || packageId.startsWith("local.demo-")
         musicCheck(builtin || !packageId.startsWith("builtin."),"NAMESPACE","/manifest/packageId","Reserved built-in namespace")
+        if(!v2) {
         manifest["files"].objectValue().forEach { (name,entry) ->
             val expected=entry.objectValue()
             musicCheck(expected.i("bytes")==files.getValue(name).size && expected.s("sha256")==sha256(files.getValue(name)),
@@ -71,18 +85,11 @@ class SongReader(private val schema: SongSchema) {
         review["hashes"].objectValue().forEach { (name,expected) ->
             musicCheck(expected==sha256(files.getValue(name)),"REVIEW_HASH","/review/hashes/"+name,"Review targets different bytes")
         }
-        val score=SongCodec.score(roots.getValue("score.json"));val practices=SongCodec.practices(roots.getValue("practices.json"))
-        if(nativeTeaching) {
-            roots.getValue("score.json").objects("voicings").forEach { v ->
-                musicCheck(v.keys.containsAll(listOf("fingers","barres","quality","teaching")),"TEACHING","/score/voicings","Native voicing must be fully authored")
-            }
-            musicCheck(score.voicings.all { v -> v.frets.indices.all { i ->
-                if(v.frets[i]>0) v.fingers[i] in 1..5 else v.fingers[i]==0
-            } } && score.harmonies.all { it.validUntil!=null && it.voicingId!=null },"TEACHING","/score","Native fingers and harmony intervals are required")
         }
+        val score=SongCodec.score(roots.getValue("score.json"));val practices=SongCodec.practices(roots.getValue("practices.json"))
         val derived=ScoreValidation.validate(score,practices)
-        val declared=manifest.strings("requires").toSet()
-        musicCheck(declared==derived,"CAPABILITY_DECLARATION","/manifest/requires","Expected capabilities: "+derived.joinToString())
+        val declared=if(v2) derived else manifest.strings("requires").toSet()
+        musicCheck(v2 || declared==derived,"CAPABILITY_DECLARATION","/manifest/requires","Expected capabilities: "+derived.joinToString())
         musicCheck(derived.all { it in SongCapabilities.supported },"CAPABILITY","/manifest/requires","App upgrade required")
         cancel()
         val routes=FormCompiler.routes(score)
@@ -90,13 +97,6 @@ class SongReader(private val schema: SongSchema) {
         practices.forEach {
             cancel()
             PracticeCompiler.compile(score,it,routes=routes).also { plan ->
-                if(nativeTeaching) {
-                    val lesson=it.lesson
-                    musicCheck(lesson?.key!=null && lesson.actions.isNotEmpty() && it.teaching?.version?.isNotBlank()==true &&
-                        plan.notes.all { n -> n.note.fret==0 || n.finger in 1..5 } &&
-                        lesson.actions.all { action -> plan.events.any { e -> e.event.id==action.eventId && e.track.id==it.mainTrackId } },
-                        "TEACHING","/practices/"+it.id,"Native lessons require complete fingering and main-track anticipatory actions")
-                }
                 plannedNotes+=plan.notes.size
                 plannedVisits+=plan.visits.size
                 musicCheck(plannedNotes<=1_000_000 && plannedVisits<=50000,"PLAN_LIMIT","/practices","Aggregate planned note/visit budget")
@@ -107,7 +107,9 @@ class SongReader(private val schema: SongSchema) {
                     (1+(n.articulation.ornament?.notes?.count { g -> g.kind=="pick" } ?: 0)) }
             }
         }
-        val warnings=mutableListOf<String>()
+        val sources=if(v2) emptyList() else roots.getValue("provenance.json").objects("sources")
+        if(!v2) {
+        val review=roots.getValue("review.json")
         val assumptions=review.strings("assumptions")
         musicCheck(review.s("method").isNotBlank() && review.s("reviewer").isNotBlank() && !review.s("method").contains("TODO"),
             "REVIEW_NEEDED","/review/method","Independent review not completed")
@@ -126,7 +128,7 @@ class SongReader(private val schema: SongSchema) {
         musicCheck(review.s("status")!="conditional" || assumptions.isNotEmpty(),"CONDITIONAL","/review/assumptions","Conditional requires concrete assumptions")
         warnings+=assumptions
         val provenance=roots.getValue("provenance.json")
-        val sources=provenance.objects("sources")
+
         musicCheck(sources.map { it.s("id") }.distinct().size==sources.size,"SOURCE_ID","/provenance/sources","Duplicate source")
         val sourceIds=sources.map { it.s("id") }.toSet()
         val allNotes=score.voices.flatMap { v -> v.events.flatMap { it.notes } }
@@ -142,6 +144,8 @@ class SongReader(private val schema: SongSchema) {
                 it.dead || it.harmonic!=null || it.articulation!=Articulation() || e.articulation!=Articulation() } },
             "visits" to plannedVisits,"onsets" to onsets)
         expected.forEach { (key,count) -> musicCheck(coverage.i(key)==count,"COVERAGE","/review/coverage/"+key,"Expected "+count) }
+        }
+        val ids=practices.map { it.id }.toSet()
         val aliases=roots.getValue("practices.json").objects("aliases").associate { it.s("from") to it.s("to") }
         musicCheck(aliases.size==roots.getValue("practices.json").objects("aliases").size,"ALIAS","/practices/aliases","Duplicate alias")
         aliases.forEach { (from,to) ->
@@ -153,9 +157,9 @@ class SongReader(private val schema: SongSchema) {
         val display=manifest["display"].objectValue()
         return SongPackage(PackageIdentity(packageId,manifest.i("revision"),sha256(bytes)),display.s("title"),
             display.s("author"),display.s("summary"),score,practices,aliases,derived,warnings.distinct(),
-            sources.joinToString("；") { it.s("name")+" · "+it.s("license")+" · "+it.s("origin") },files.toMap())
+            if(v2) "本地自制曲包" else sources.joinToString("；") { it.s("name")+" · "+it.s("license")+" · "+it.s("origin") },files.toMap())
     }
-    private fun centralDirectory(bytes: ByteArray) {
+    private fun centralDirectory(bytes: ByteArray): List<String> {
         fun u16(at: Int)=(bytes[at].toInt() and 255) or ((bytes[at+1].toInt() and 255) shl 8)
         fun u32(at: Int)=ByteBuffer.wrap(bytes,at,4).order(ByteOrder.LITTLE_ENDIAN).int.toLong() and 0xffffffffL
         var end=-1
@@ -163,22 +167,24 @@ class SongReader(private val schema: SongSchema) {
             if(u32(i)==0x06054b50L && i+22+u16(i+20)==bytes.size) { end=i;break }
         }
         musicCheck(end>=0,"ZIP","/container","Missing ZIP end record")
-        musicCheck(u16(end+4)==0 && u16(end+6)==0 && u16(end+8)==5 && u16(end+10)==5,
-            "ZIP","/container","Five entries; no multi-disk or ZIP64")
+        musicCheck(u16(end+4)==0 && u16(end+6)==0 && u16(end+8)==u16(end+10) && u16(end+10) in 3..128,
+            "ZIP","/container","Entry budget; no multi-disk or ZIP64")
         val offset=u32(end+16);val size=u32(end+12)
         musicCheck(offset+size==end.toLong(),"ZIP","/container","Invalid directory bounds")
-        var at=offset.toInt();val names=mutableSetOf<String>()
-        repeat(5) {
+        var at=offset.toInt();val names=mutableListOf<String>();val core=mutableSetOf<String>()
+        repeat(u16(end+10)) {
             musicCheck(at>=0 && at+46<=end && u32(at)==0x02014b50L,"ZIP","/container","Invalid central entry")
             val flags=u16(at+8);val method=u16(at+10)
             val len=u16(at+28);val extra=u16(at+30);val comment=u16(at+32)
             musicCheck(at+46+len+extra+comment<=end,"ZIP","/container","Truncated central entry")
             val name=String(bytes,at+46,len,Charsets.UTF_8)
             val mode=(u32(at+38) ushr 16).toInt()
-            musicCheck(name in SongLimits.FILES && names.add(name) && flags and 1==0 && method in listOf(0,8) &&
+            musicCheck((SongLimits.ignored(name) || name in SongLimits.FILES && core.add(name)) && flags and 1==0 && method in listOf(0,8) &&
                 mode and 0xf000!=0xa000,"ZIP_ENTRY","/container/"+name,"Unknown, duplicate, encrypted or symlink entry")
+            names+=name
             at+=46+len+extra+comment
         }
         musicCheck(at==end,"ZIP","/container","Extra central entries")
+        return names
     }
 }

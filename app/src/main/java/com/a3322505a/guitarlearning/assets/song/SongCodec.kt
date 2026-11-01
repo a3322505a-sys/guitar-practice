@@ -113,3 +113,120 @@ object SongCodec {
                 it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
     }
 }
+
+/** One v2 preprocessing entry. Schema shape is checked before this function. */
+@Suppress("UNCHECKED_CAST")
+internal fun normalizeSong(roots: Map<String,Map<String,Any?>>, summary: MutableList<String>): Map<String,Map<String,Any?>> {
+    fun mutable(value: Any?) = value as MutableMap<String,Any?>
+    fun qmap(value: Q): Map<String,Any?> = mapOf("n" to value.n.toBigDecimal(),"d" to value.d.toBigDecimal())
+    fun canonical(value: Any?) {
+        when(value) {
+            is Map<*,*> -> {
+                val map=mutable(value)
+                if(map.keys==setOf("n","d")) map.putAll(qmap(map.qValue()))
+                else map.filterKeys { it!="extensions" }.values.forEach(::canonical)
+            }
+            is List<*> -> value.forEach(::canonical)
+        }
+    }
+    canonical(roots)
+    val score=mutable(roots.getValue("score.json"));val cards=mutable(roots.getValue("practices.json"))
+    listOf("tuplets","relations","dynamics","swing","voicings","harmonies").forEach { if(!score.containsKey(it)) score[it]=emptyList<Any?>() }
+    if(!score.containsKey("form")) score["form"]=emptyMap<String,Any?>()
+    if(!score.containsKey("tempos") || score.list("tempos").isEmpty()) {
+        score["tempos"]=listOf(mapOf("at" to qmap(Q.ZERO),"beatUnit" to qmap(Q.ONE),"bpm" to 120))
+        summary+="采用默认速度 120 BPM"
+    }
+    if(!cards.containsKey("aliases")) cards["aliases"]=emptyList<Any?>()
+    val measures=score.objects("measures");val byMeasure=measures.associateBy { it.s("id") }
+    val starts=mutableMapOf<String,Q>();var length=Q.ZERO
+    measures.forEach { starts[it.s("id")]=length;length+=it.q("actualDuration") }
+    val tracks=score.objects("tracks").associateBy { it.s("id") }
+    val ids=mutableSetOf<String>()
+    fun collect(value: Any?) {
+        when(value) {
+            is Map<*,*> -> { (value["id"] as? String)?.let { ids+=it };value.filterKeys { it!="extensions" }.values.forEach(::collect) }
+            is List<*> -> value.forEach(::collect)
+        }
+    }
+    collect(roots)
+    val values=listOf(1,2,4,8,16,32,64).flatMap { base -> (0..3).map { dots ->
+        WrittenValue(base,dots).straight to mapOf<String,Any?>("baseDenominator" to base,"dots" to dots)
+    } }
+    fun written(duration: Q,path: String): Map<String,Any?> {
+        val value=values.firstOrNull { it.first==duration }?.second
+        musicCheck(value!=null,"WRITTEN",path,"Cannot infer an exact ordinary/dotted value")
+        return value!!
+    }
+    val tupletMembers=score.objects("tuplets").flatMap { it.strings("eventIds") }.toSet()
+    var serial=0;var eventCount=score.objects("voices").sumOf { it.objects("events").size }
+    val notes=mutableMapOf<String,Pair<Map<String,Any?>,MutableMap<String,Any?>>>()
+    score.objects("voices").forEachIndexed { vi,voice ->
+        val path="/score/voices/"+vi
+        val track=tracks[voice.s("trackId")]
+        musicCheck(track!=null,"MUSIC",path+"/trackId","Missing track")
+        voice.objects("events").forEachIndexed { ei,event ->
+            val ep=path+"/events/"+ei
+            if(!event.containsKey("written")) {
+                musicCheck(event.s("id") !in tupletMembers,"WRITTEN",ep,"Tuplet member requires explicit written value")
+                mutable(event)["written"]=written(event.q("duration"),ep+"/written")
+            }
+            event.objects("notes").forEach { note ->
+                if(!note.containsKey("midi")) {
+                    var pitch=track!!.list("openStringMidi")[note.i("string")-1].intValue()+track.i("capo",0)+note.i("fret")
+                    note["harmonic"]?.objectValue()?.let { pitch+=(12*kotlin.math.log2(it.i("partial").toDouble())).let { value -> kotlin.math.floor(value+0.5).toInt() } }
+                    mutable(note)["midi"]=pitch
+                }
+                notes[note.s("id")]=event to mutable(note)
+            }
+        }
+        val completed=mutableListOf<Map<String,Any?>>()
+        var covered=Q.ZERO;var mi=0
+        fun fill(end: Q) {
+            while(covered<end) {
+                while(mi<measures.size && covered>=starts.getValue(measures[mi].s("id"))+measures[mi].q("actualDuration")) mi++
+                musicCheck(mi<measures.size,"MUSIC",path,"Gap outside score")
+                val measure=measures[mi];val start=starts.getValue(measure.s("id"))
+                val remaining=minOf(end,start+measure.q("actualDuration"))-covered
+                val value=values.firstOrNull { it.first==remaining } ?: listOf(1,2,4,8,16,32,64)
+                    .firstOrNull { Q(4,it.toLong())<=remaining }?.let { Q(4,it.toLong()) to mapOf<String,Any?>("baseDenominator" to it,"dots" to 0) }
+                musicCheck(value!=null,"WRITTEN",path,"Gap cannot be expressed without ambiguous tuplets")
+                val (duration,w)=value!!
+                do { serial++ } while("auto-rest-"+serial in ids)
+                val id="auto-rest-"+serial;ids+=id
+                eventCount++;musicCheck(eventCount<=200000,"PLAN_LIMIT",path,"Event budget after rest completion")
+                completed+=mapOf("id" to id,"measureId" to measure.s("id"),"onset" to qmap(covered-start),
+                    "duration" to qmap(duration),"written" to w,"notes" to emptyList<Any?>())
+                summary+="补休止 "+voice.s("id")+"/"+measure.s("id")+" @ "+(covered-start)+" + "+duration
+                covered+=duration
+            }
+        }
+        voice.objects("events").forEach { event ->
+            val start=starts[event.s("measureId")]
+            musicCheck(start!=null,"MUSIC",path,"Missing measure")
+            val absolute=start!!+event.q("onset")
+            musicCheck(absolute>=covered && absolute<length,"MUSIC",path,"Overlapping/unordered events or onset outside score")
+            fill(absolute);completed+=event;covered=absolute+event.q("duration")
+        }
+        fill(length);mutable(voice)["events"]=completed
+    }
+    score.objects("relations").filter { it.s("kind") in listOf("tie","hammer","pull","slide","tap") }.forEach { relation ->
+        notes[relation.s("toNoteId")]?.let { (event,note) ->
+            if("pick" !in (note["articulation"]?.objectValue().orEmpty()) && "pick" !in (event["articulation"]?.objectValue().orEmpty())) {
+                if(!note.containsKey("articulation")) note["articulation"]=mutableMapOf<String,Any?>()
+                mutable(note["articulation"])["pick"]="none"
+            }
+        }
+    }
+    cards.objects("practices").forEach { card ->
+        if(!card.containsKey("mixTrackIds")) mutable(card)["mixTrackIds"]=listOf(card.s("mainTrackId"))
+        card.objects("segments").forEach { segment ->
+            val start=mutable(segment["start"]);val end=mutable(segment["end"])
+            if(!start.containsKey("offset")) start["offset"]=qmap(Q.ZERO)
+            val measure=byMeasure[end.s("measureId")]
+            musicCheck(measure!=null,"MUSIC","/practices","Missing end measure")
+            if(!end.containsKey("offset")) end["offset"]=measure!!.getValue("actualDuration")
+        }
+    }
+    return StrictJson.parse(StrictJson.encode(roots)).objectValue().mapValues { it.value.objectValue() }
+}

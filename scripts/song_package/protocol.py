@@ -18,6 +18,7 @@ except ModuleNotFoundError:
     import jsonschema
 
 CONTRACT = Path(__file__).resolve().parents[2]/"contracts/song-package/v1"
+CORE_FILES = ["manifest.json","score.json","practices.json"]
 FILES = ["manifest.json","score.json","practices.json","provenance.json","review.json"]
 LIMIT_INPUT=16*1024*1024
 LIMIT_JSON=32*1024*1024
@@ -45,7 +46,7 @@ def bounded(value,pointer="/score/time"):
 def rational(value):
     value=F(value)
     return dict(n=value.numerator,d=value.denominator)
-def strict_json(data):
+def strict_json(data, canonical=True):
     check(len(data)<=LIMIT_JSON,"LIMIT","/json","Single JSON byte limit")
     def pairs(items):
         result={}
@@ -69,7 +70,7 @@ def strict_json(data):
         nodes+=1
         check(depth<=48 and nodes<=2000000,"LIMIT",pointer,"JSON depth/node budget")
         if isinstance(v,dict):
-            if set(v)=={"n","d"} and not isinstance(v["n"],dict): q(v)
+            if canonical and set(v)=={"n","d"} and not isinstance(v["n"],dict): q(v)
             for k,x in v.items(): visit(x,depth+1,pointer+"/"+k.replace("~","~0").replace("/","~1"))
         elif isinstance(v,list):
             for i,x in enumerate(v): visit(x,depth+1,pointer+"/"+str(i))
@@ -79,9 +80,22 @@ def strict_json(data):
     visit(result,0,"")
     return result
 
-def schemas_validate(roots,contract=CONTRACT):
+def schemas_validate(roots,contract=CONTRACT,normalizing=False):
     for name,data in roots.items():
-        schema=strict_json((contract/(name.replace(".json",".schema.json"))).read_bytes())
+        schema_path=contract/(name.replace(".json",".schema.json"))
+        if name=="manifest.json" and data.get("formatVersion",{}).get("major")==2:
+            schema_path=contract.parent/"v2/manifest.schema.json"
+        schema=strict_json(schema_path.read_bytes())
+        if normalizing and name!="manifest.json":
+            optional={"tuplets","relations","tempos","dynamics","swing","form","voicings","harmonies","midi","written","mixTrackIds","aliases"}
+            def relax(rule):
+                if isinstance(rule,dict):
+                    if "required" in rule: rule["required"]=[k for k in rule["required"] if k not in optional]
+                    for child in rule.values(): relax(child)
+                elif isinstance(rule,list):
+                    for child in rule: relax(child)
+            relax(schema)
+            if name=="score.json": schema["properties"]["tempos"]["minItems"]=0
         errors=sorted(jsonschema.Draft202012Validator(schema).iter_errors(data),key=lambda e:list(map(str,e.path)))
         if errors:
             e=errors[0]; pointer="/"+name.removesuffix(".json")+"/"+"/".join(str(x) for x in e.absolute_path)
@@ -94,10 +108,11 @@ def read_container(path):
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             entries=archive.infolist()
-            check(len(entries)==5,"ZIP_FILES","/container","Exactly five entries required")
+            check(len(entries)<=128,"ZIP_FILES","/container","Entry count exceeds 128")
             for entry in entries:
                 name=entry.filename
-                check(name in FILES and name not in payloads and not entry.is_dir() and
+                ignored=entry.is_dir() or name==".DS_Store" or name.startswith("__MACOSX/")
+                check((name in FILES and name not in payloads or ignored) and
                     not entry.flag_bits&1 and entry.compress_type in (0,8) and
                     (entry.external_attr>>16)&0xf000!=0xa000,"ZIP_ENTRY","/container/"+name,
                     "Unexpected/duplicate/encrypted/symlink/path entry")
@@ -106,9 +121,9 @@ def read_container(path):
                     while chunk:=source.read(8192):
                         out.extend(chunk);total+=len(chunk)
                         check(len(out)<=LIMIT_JSON and total<=LIMIT_TOTAL,"LIMIT","/container/"+name,"Inflated byte limit")
-                payloads[name]=bytes(out)
+                if not ignored: payloads[name]=bytes(out)
     except zipfile.BadZipFile as e: raise Blocked("ZIP","/container",str(e)) from e
-    check(set(payloads)==set(FILES),"ZIP_FILES","/container","Exactly five files required")
+    check(set(CORE_FILES)<=set(payloads),"ZIP_FILES","/container","Missing core JSON file")
     return payloads
 
 def form_visits(score):
@@ -266,7 +281,7 @@ def validate_music(score,practices):
                     touches={n["fret"]+int(math.floor(12*math.log2(h["partial"]/(h["partial"]-k))+.5))
                         for k in range(1,h["partial"]) if math.gcd(k,h["partial"])==1}
                     check(h["touchFret"] in touches,"MUSIC",np,"Harmonic touch node/partial mismatch")
-                else: check(n["midi"]==expected,"MUSIC",np,"Tuning/capo pitch")
+                else: check(n["midi"]==expected,"MUSIC",np+"/midi",f"Measure {e['measureId']}, string {n['string']}, fret {n['fret']}: expected MIDI {expected}, got {n['midi']}")
                 art={**e.get("articulation",{}),**n.get("articulation",{})}
                 expr(art,duration,absolute,np)
                 if n.get("dead"): caps.add("technique.mute.v1")
@@ -576,11 +591,124 @@ def coverage(score,practices):
         techniques=sum(bool(n.get("dead") or n.get("harmonic") or n.get("articulation") or e.get("articulation")) for e in events for n in e["notes"]),
         visits=planned_visits,onsets=onsets)
 
-def validate_payloads(payloads,contract=CONTRACT,builtin=False,capabilities=None):
-    check(set(payloads)==set(FILES),"ZIP_FILES","/container","Exactly five files required")
-    roots={k:strict_json(v) for k,v in payloads.items()}
+def normalize_roots(roots,summary=None):
+    """v2 only: fill absent, determinate values. Explicit music is never rewritten."""
+    summary=[] if summary is None else summary
+    def canonical(value):
+        if isinstance(value,dict):
+            if set(value)=={"n","d"}:
+                value.update(rational(F(value["n"],value["d"])))
+            else:
+                for key,child in value.items():
+                    if key!="extensions": canonical(child)
+        elif isinstance(value,list):
+            for child in value: canonical(child)
+    canonical(roots)
+    score=roots["score.json"];cards=roots["practices.json"]
+    for key in ("tuplets","relations","dynamics","swing","voicings","harmonies"): score.setdefault(key,[])
+    score.setdefault("form",{})
+    if "tempos" not in score or score["tempos"]==[]:
+        score["tempos"]=[dict(at=rational(0),beatUnit=rational(1),bpm=120)]
+        summary.append("采用默认速度 120 BPM")
+    cards.setdefault("aliases",[])
+    measures={};starts={};at=F(0)
+    for m in score["measures"]:
+        measures[m["id"]]=m;starts[m["id"]]=at;at+=q(m["actualDuration"])
+    tracks={t["id"]:t for t in score["tracks"]}
+    ids=set()
+    def collect(value):
+        if isinstance(value,dict):
+            if isinstance(value.get("id"),str): ids.add(value["id"])
+            for key,child in value.items():
+                if key!="extensions": collect(child)
+        elif isinstance(value,list):
+            for child in value: collect(child)
+    collect(roots)
+    written_values=[(sum((F(4,base*2**i) for i in range(dots+1)),F(0)),dict(baseDenominator=base,dots=dots))
+        for base in (1,2,4,8,16,32,64) for dots in range(4)]
+    def written(duration,path):
+        result=next((w.copy() for d,w in written_values if d==duration),None)
+        check(result is not None,"WRITTEN",path,"Cannot infer an exact ordinary/dotted value")
+        return result
+    tuplet_members={id for group in score["tuplets"] for id in group["eventIds"]}
+    rest_serial=0;event_count=sum(len(v["events"]) for v in score["voices"])
+    notes={}
+    for vi,voice in enumerate(score["voices"]):
+        path="/score/voices/"+str(vi)
+        check(voice["trackId"] in tracks,"MUSIC",path+"/trackId","Missing track")
+        track=tracks[voice["trackId"]]
+        for ei,event in enumerate(voice["events"]):
+            ep=path+"/events/"+str(ei)
+            if "written" not in event:
+                check(event["id"] not in tuplet_members,"WRITTEN",ep,"Tuplet member requires explicit written value")
+                event["written"]=written(q(event["duration"]),ep+"/written")
+            for ni,note in enumerate(event["notes"]):
+                np=ep+"/notes/"+str(ni)
+                if "midi" not in note:
+                    pitch=track["openStringMidi"][note["string"]-1]+track.get("capo",0)+note["fret"]
+                    if "harmonic" in note: pitch+=int(math.floor(12*math.log2(note["harmonic"]["partial"])+.5))
+                    note["midi"]=pitch
+                notes[note["id"]]=(event,note)
+        completed=[];covered=F(0);mi=0
+        def fill(end):
+            nonlocal covered,mi,rest_serial,event_count
+            while covered<end:
+                while mi<len(score["measures"]) and covered>=starts[score["measures"][mi]["id"]]+q(score["measures"][mi]["actualDuration"]): mi+=1
+                check(mi<len(score["measures"]),"MUSIC",path,"Gap outside score")
+                m=score["measures"][mi];start=starts[m["id"]]
+                remaining=min(end,start+q(m["actualDuration"]))-covered
+                exact=next(((d,w) for d,w in written_values if d==remaining),None)
+                duration,w=exact or next(((F(4,base),dict(baseDenominator=base,dots=0)) for base in (1,2,4,8,16,32,64) if F(4,base)<=remaining),(None,None))
+                check(duration is not None,"WRITTEN",path,"Gap cannot be expressed without ambiguous tuplets")
+                rest_serial+=1
+                while "auto-rest-"+str(rest_serial) in ids: rest_serial+=1
+                id="auto-rest-"+str(rest_serial);ids.add(id)
+                event_count+=1;check(event_count<=200000,"PLAN_LIMIT",path,"Event budget after rest completion")
+                completed.append(dict(id=id,measureId=m["id"],onset=rational(covered-start),duration=rational(duration),written=w,notes=[]))
+                summary.append("补休止 "+voice["id"]+"/"+m["id"]+" @ "+str(covered-start)+" + "+str(duration))
+                covered+=duration
+        for event in voice["events"]:
+            check(event["measureId"] in starts,"MUSIC",path,"Missing measure")
+            absolute=starts[event["measureId"]]+q(event["onset"])
+            check(absolute>=covered and absolute<at,"MUSIC",path,"Overlapping/unordered events or onset outside score")
+            fill(absolute);completed.append(event);covered=absolute+q(event["duration"])
+        fill(at);voice["events"]=completed
+    for relation in score["relations"]:
+        if relation["kind"] not in ("tie","hammer","pull","slide","tap"): continue
+        target=notes.get(relation["toNoteId"])
+        if target:
+            event,note=target
+            if "pick" not in note.get("articulation",{}) and "pick" not in event.get("articulation",{}):
+                note.setdefault("articulation",{})["pick"]="none"
+    for card in cards["practices"]:
+        card.setdefault("mixTrackIds",[card["mainTrackId"]])
+        for segment in card["segments"]:
+            segment["start"].setdefault("offset",rational(0))
+            end=segment["end"]
+            check(end["measureId"] in measures,"MUSIC","/practices","Missing end measure")
+            end.setdefault("offset",measures[end["measureId"]]["actualDuration"].copy())
+    return roots
+
+def validate_payloads(payloads,contract=CONTRACT,builtin=False,capabilities=None,summary=None):
+    manifest=strict_json(payloads["manifest.json"])
+    v2=manifest.get("formatVersion",{}).get("major")==2
+    expected=CORE_FILES if v2 else FILES
+    check(set(payloads)==set(expected),"ZIP_FILES","/container","Expected "+", ".join(expected))
+    roots={k:strict_json(v,canonical=not v2) for k,v in payloads.items()}
+    if v2:
+        schemas_validate(roots,contract,normalizing=True)
+        normalize_roots(roots,summary)
     schemas_validate(roots,contract)
-    manifest=roots["manifest.json"];score=roots["score.json"];practices=roots["practices.json"]["practices"];review=roots["review.json"]
+    manifest=roots["manifest.json"];score=roots["score.json"];practices=roots["practices.json"]["practices"]
+    if v2:
+        derived=validate_music(score,practices)
+        supported=set((capabilities or strict_json((contract/"capabilities.json").read_bytes()))["capabilities"])
+        check(derived<=supported,"CAPABILITY","/score","App upgrade required")
+        coverage(score,practices)  # Compile boundaries and enforce aggregate limits; no author-maintained counts.
+        validate_aliases(roots["practices.json"],{p["id"] for p in practices})
+        check(builtin or not manifest["packageId"].startswith("builtin."),"NAMESPACE","/manifest/packageId","Reserved namespace")
+        return roots
+    review=roots["review.json"]
     check(builtin or not manifest["packageId"].startswith("builtin."),"NAMESPACE","/manifest/packageId","Reserved namespace")
     for name,meta in manifest["files"].items():
         check(meta["bytes"]==len(payloads[name]) and meta["sha256"]==digest(payloads[name]),"HASH","/manifest/files/"+name,"Bytes/hash mismatch")
@@ -609,14 +737,17 @@ def validate_payloads(payloads,contract=CONTRACT,builtin=False,capabilities=None
     check(all(m["noteId"] in note_ids and m["sourceId"] in sources for m in prov["mappings"]) and
         {m["noteId"] for m in prov["mappings"]}==note_ids,"SOURCE_MAPPING","/provenance/mappings","Every note requires a source locator")
     check(review["coverage"]==coverage(score,practices),"COVERAGE","/review/coverage","Coverage differs from recomputed source/plan counts")
-    aliases={a["from"]:a["to"] for a in roots["practices.json"]["aliases"]}
-    check(len(aliases)==len(roots["practices.json"]["aliases"]),"ALIAS","/practices/aliases","Duplicate alias")
+    validate_aliases(roots["practices.json"],ids)
+    return roots
+
+def validate_aliases(cards,ids):
+    aliases={a["from"]:a["to"] for a in cards["aliases"]}
+    check(len(aliases)==len(cards["aliases"]),"ALIAS","/practices/aliases","Duplicate alias")
     for start,target in aliases.items():
         check(start not in ids and target in ids|aliases.keys(),"ALIAS","/practices/aliases","Missing/shadowed alias")
         seen={start}
         while target in aliases:
             check(target not in seen,"ALIAS_CYCLE","/practices/aliases","Alias cycle");seen.add(target);target=aliases[target]
-    return roots
 
 def package_files(package_id,revision,title,author,score,practices,provenance,review):
     """Bind already-reviewed bytes; caller must supply a real review, never infer one from parsing."""
@@ -634,7 +765,7 @@ def write_zip(payloads,path,overwrite=False):
     path.parent.mkdir(parents=True,exist_ok=True)
     buffer=io.BytesIO()
     with zipfile.ZipFile(buffer,"w") as archive:
-        for name in FILES:
+        for name in payloads:
             info=zipfile.ZipInfo(name,(1980,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
             info.create_system=3;info.external_attr=0o100644<<16
             archive.writestr(info,payloads[name],compresslevel=9)
