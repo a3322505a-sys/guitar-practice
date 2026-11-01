@@ -3,11 +3,19 @@ package com.a3322505a.guitarlearning.assets.song
 import com.a3322505a.guitarlearning.music.score.*
 import com.a3322505a.guitarlearning.music.*
 
-internal fun Map<String,Any?>.s(key: String, default: String = "") = this[key] as? String ?: default
-internal fun Map<String,Any?>.i(key: String, default: Int = 0) = this[key]?.intValue() ?: default
-internal fun Map<String,Any?>.b(key: String, default: Boolean = false) = this[key] as? Boolean ?: default
-internal fun Map<String,Any?>.q(key: String, default: Q = Q.ZERO) = this[key]?.qValue() ?: default
-internal fun Map<String,Any?>.num(key: String, default: Double = 0.0) = this[key]?.doubleValue() ?: default
+// Required scalar reads never invent musical facts. Optional reads name their defaults.
+private fun Map<String,Any?>.required(key: String): Any {
+    musicCheck(containsKey(key) && this[key]!=null,"INPUT","/"+key,"Missing required field "+key)
+    return getValue(key)!!
+}
+internal fun Map<String,Any?>.s(key: String) = required(key).textValue()
+internal fun Map<String,Any?>.s(key: String, default: String) = if(containsKey(key)) required(key).textValue() else default
+internal fun Map<String,Any?>.i(key: String) = required(key).intValue()
+internal fun Map<String,Any?>.i(key: String, default: Int) = if(containsKey(key)) required(key).intValue() else default
+internal fun Map<String,Any?>.b(key: String, default: Boolean = false) = if(containsKey(key)) required(key) as Boolean else default
+internal fun Map<String,Any?>.q(key: String) = required(key).qValue()
+internal fun Map<String,Any?>.q(key: String, default: Q) = if(containsKey(key)) required(key).qValue() else default
+internal fun Map<String,Any?>.num(key: String) = required(key).doubleValue()
 internal fun Map<String,Any?>.list(key: String) = (this[key] as? List<Any?>).orEmpty()
 internal fun Map<String,Any?>.strings(key: String) = list(key).map { it.textValue() }
 internal fun Map<String,Any?>.objects(key: String) = list(key).map { it.objectValue() }
@@ -28,10 +36,10 @@ object SongCodec {
                 val meter=m["meter"].objectValue()
                 Measure(m.s("id"),m.s("label"),Meter(meter.i("numerator"),meter.i("denominator"),
                     meter.list("beatGroups").map { it.intValue() }),m.q("actualDuration"),
-                    m["incompleteReason"] as? String,m["sourceRef"] as? String,m.q("leadIn"))
+                    m["incompleteReason"] as? String,m["sourceRef"] as? String,m.q("leadIn",Q.ZERO))
             },
             root.objects("tracks").map { Track(it.s("id"),it.s("name"),
-                it.list("openStringMidi").map { v -> v.intValue() },it.i("capo"),it.i("fretCount",24),it.s("instrument","guitar")) },
+                it.list("openStringMidi").map { v -> v.intValue() },it.i("capo",0),it.i("fretCount",24),it.s("instrument","guitar")) },
             root.objects("voices").map { v -> Voice(v.s("id"),v.s("trackId"),v.objects("events").map(::event)) },
             root.objects("tuplets").map { TupletGroup(it.s("id"),it.s("voiceId"),it.strings("eventIds"),
                 it.i("actual"),it.i("normal"),it["parentId"] as? String) },
@@ -48,7 +56,7 @@ object SongCodec {
     fun voicing(v: Map<String,Any?>) = GuitarVoicing(v.s("id"),v.s("name"),v.s("trackId"),
         v.list("frets").map { it.intValue() },v.list("fingers").map { it.intValue() },
         v["teaching"]?.objectValue()?.let { t -> VoicingTeaching(t.i("root",-1),t["third"]?.intValue(),
-            t.s("soundingName"),t.s("group"),t.s("source"),labels(t["intervalRoles"]),labels(t["toneNames"])) },
+            t.s("soundingName"),t.s("group"),t.s("source",""),labels(t["intervalRoles"]),labels(t["toneNames"])) },
         v.objects("barres").map { Barre(it.i("finger"),it.i("fret"),it.i("fromString"),it.i("toString")) },
         (v["quality"] as? String)?.let(ChordQuality::valueOf))
     fun lesson(value: Any?): LessonMetadata? = value?.objectValue()?.let { t ->
@@ -62,12 +70,12 @@ object SongCodec {
         "warmupIds" to t.warmupIds,"transitionIds" to t.transitionIds,"leadTrackIds" to t.leadTrackIds,
         "chainStarts" to t.chainStarts,"actions" to t.actions.map { mapOf("eventId" to it.eventId,"kind" to it.kind,"text" to it.text,"voicingId" to it.voicingId,"fromVoicingId" to it.fromVoicingId) }) }
     private fun labels(value: Any?) = value?.objectValue()?.map { (k,v) -> k.toInt() to v.textValue() }?.toMap().orEmpty()
-    fun teaching(value: Any?) = value?.objectValue()?.let { t -> PracticeTeaching(t.s("category"),t.s("passage"),
-        t.s("source"),t.s("technique"),t.s("use"),t["version"] as? String,t.s("tempoLabel"),t.s("explanation")) }
+    fun teaching(value: Any?) = value?.objectValue()?.let { t -> PracticeTeaching(t.s("category",""),t.s("passage",""),
+        t.s("source",""),t.s("technique",""),t.s("use",""),t["version"] as? String,t.s("tempoLabel",""),t.s("explanation","")) }
     private fun event(e: Map<String,Any?>): ScoreEvent {
         val written=e["written"].objectValue()
         return ScoreEvent(e.s("id"),e.s("measureId"),e.q("onset"),e.q("duration"),
-            WrittenValue(written.i("baseDenominator"),written.i("dots"),written.strings("tupletGroupIds")),
+            WrittenValue(written.i("baseDenominator"),written.i("dots",0),written.strings("tupletGroupIds")),
             e.objects("notes").map { n ->
                 val harmonic=n["harmonic"]?.objectValue()?.let { Harmonic(it.s("kind"),it.i("partial"),it.i("touchFret"),it.i("soundMidi")) }
                 ScoreNote(n.s("id"),n.i("string"),n.i("fret"),n.i("midi"),n.b("dead"),harmonic,
@@ -94,14 +102,14 @@ object SongCodec {
         f.objects("jumps").map { Jump(it.s("id"),it.s("at"),it.s("target"),it.s("kind"),it.i("occurrence",1),condition(it["condition"])) },
         f.b("repeatsAfterJump"))
     fun practices(data: Any?) = data.objectValue().objects("practices").map { p ->
-        fun coordinate(c: Any?)=c.objectValue().let { Coordinate(it.s("measureId"),it.q("offset"),it["occurrence"]?.intValue()) }
+        fun coordinate(c: Any?)=c.objectValue().let { Coordinate(it.s("measureId"),it.q("offset",Q.ZERO),it["occurrence"]?.intValue()) }
         PracticeSpec(p.s("id"),p.s("title"),p.s("goal"),p.s("mainTrackId"),p.strings("mixTrackIds"),
             p.objects("segments").map { PracticeSegment(coordinate(it["start"]),coordinate(it["end"]),it.s("formPolicy","written"),
                 it.s("entry","reject"),it.s("exit","reject"),it.strings("affectedNoteIds")) },
             p.i("suggestedTempo",60),p["familyId"] as? String,p["variantOf"] as? String,p.strings("relatedIds"),
-            p.s("visibility","core"),p.i("order"),p.strings("tags"),p.q("padding"),p["paddingReason"] as? String,
+            p.s("visibility","core"),p.i("order",0),p.strings("tags"),p.q("padding",Q.ZERO),p["paddingReason"] as? String,
             p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),
             p.objects("noteFingerings").map { NoteFingering(it.s("sourceNoteId"),it["finger"]?.intValue(),
-                it.s("source"),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
+                it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
     }
 }

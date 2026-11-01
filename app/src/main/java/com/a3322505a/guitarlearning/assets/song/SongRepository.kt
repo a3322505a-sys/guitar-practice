@@ -65,7 +65,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         val id=map.s("packageId");val digest=map.s("digest")
         musicCheck(id.matches(Regex("[a-z][a-z0-9]*(\\.[a-z0-9][a-z0-9-]*)+")) && !id.startsWith("builtin.") &&
             digest.matches(Regex("[0-9a-f]{64}")) && map.i("revision")>0,"INDEX","/index","Invalid stored identity")
-        val metadataHash=map.s("metadataHash")
+        val metadataHash=map.s("metadataHash","")
         musicCheck(metadataHash.isEmpty() || metadataHash.matches(Regex("[0-9a-f]{64}")),"INDEX","/index","Invalid catalogue hash")
         return Entry(id,map.i("revision"),digest,metadataHash)
     }
@@ -125,7 +125,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
                         "IDENTITY","/index","Catalogue identity mismatch")
                     val phrases=metadata.objects("practices").map { descriptor(e,it,metadata) }
                     val teaching=if(metadata.containsKey("voicings")) metadata else StrictJson.parse(StrictJson.encode(metadata(reader.read(bytes)))).objectValue()
-                    val tracks=teaching.objects("tracks").map { Track(it.s("id"),it.s("name"),it.list("openStringMidi").map { n -> n.intValue() },it.i("capo")) }
+                    val tracks=teaching.objects("tracks").map { Track(it.s("id"),it.s("name"),it.list("openStringMidi").map { n -> n.intValue() },it.i("capo",0)) }
                     val songChords=teaching.objects("voicings").map { v ->
                         val voicing=SongCodec.voicing(v)
                         voicing.chord(tracks.first { it.id==voicing.trackId },metadata.s("title"),metadata.s("source"),PracticeKey(e.packageId,voicing.id).encoded)
@@ -336,7 +336,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         return Phrase(key.encoded,p.s("title"),t?.category?.ifBlank { null } ?: metadata.s("title"),t?.passage?.ifBlank { null } ?: ("修订 "+e.revision),
             t?.source?.ifBlank { null } ?: metadata.s("source"),
             metadata.i("sourceBpm",60),p.s("difficulty"),p.s("tags"),"准备后显示轨道与调弦",
-            Sequence(emptyList(),48,p.s("goal")+" "+metadata.s("summary")+" "+metadata.s("warnings"),catalogueOnly=true),
+            Sequence(emptyList(),48,p.s("goal")+" "+metadata.s("summary","")+" "+metadata.s("warnings"),catalogueOnly=true),
             goal=p.s("goal"),suggestedBpm=p.i("suggestedTempo",60),use=t?.use?.ifBlank { null } ?: ("本地曲库 · "+metadata.s("title")),
             relatedId=(p["variantOf"] as? String)?.let { PracticeKey(e.packageId,it).encoded },
             version=t?.version ?: if(p["variantOf"]!=null) p.s("title") else null,assetKey=key,
