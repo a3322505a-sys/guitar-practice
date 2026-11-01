@@ -173,7 +173,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
         staging.listFiles()?.filter { it.isFile && stagingName.matches(it.name) && it.canonicalFile.parentFile==staging && it.canonicalPath !in candidates }
             ?.forEach { it.delete() }
     }
-    @Synchronized fun commit(candidate: ImportCandidate,rollback: Boolean = false,cancel: ()->Unit = {},
+    @Synchronized fun commit(candidate: ImportCandidate,cancel: ()->Unit = {},
         cancellation: ImportCancellation = ImportCancellation(),onCommitStarted: ()->Unit = {}): LibrarySnapshot {
         synchronized(storageLock) {
           try {
@@ -183,10 +183,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
                 "PATH","/staging","Wrong candidate storage")
             readIndex()
             val song=candidate.song;val id=song.identity
-            val existing=history.firstOrNull { it.packageId==id.packageId && it.revision==id.revision }
-            musicCheck(existing==null || existing.digest==id.digest,"REVISION_CONFLICT","/manifest/revision","Same revision has different content")
-            val current=active.firstOrNull { it.packageId==id.packageId }
-            musicCheck(rollback || current==null || id.revision>=current.revision,"ROLLBACK_REQUIRED","/manifest/revision","Use explicit rollback for an older revision")
+            val existing=history.firstOrNull { it.pin==id }
             val bytes=reader.readInput(candidate.stagingFile.inputStream(),::checkpoint)
             musicCheck(sha256(bytes)==id.digest,"HASH","/staging","Preview bytes changed")
             // Validate again before publication; a preview is not a write exemption.
@@ -213,7 +210,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
                 } finally { pending.delete() }
             }
             writeMetadata(e,metadata(verified))
-            val nextHistory=(history+e).distinct()
+            val nextHistory=history.filter { it.pin!=e.pin }+e
             val nextActive=active.filter { it.packageId!=id.packageId }+e
             writeIndex(nextActive,nextHistory)
             active=nextActive;history=nextHistory
@@ -221,7 +218,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
           } finally { this.cancel(candidate) }
         }
     }
-    fun revisions(packageId: String) = history.filter { it.packageId==packageId }.map { it.pin }.sortedByDescending { it.revision }
+    fun revisions(packageId: String) = history.asReversed().filter { it.packageId==packageId }.map { it.pin }
     @Synchronized fun rollback(identity: PackageIdentity): LibrarySnapshot {
         synchronized(storageLock) {
             readIndex()

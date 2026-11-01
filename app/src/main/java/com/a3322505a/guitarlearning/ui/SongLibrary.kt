@@ -53,7 +53,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
             }
         }
     }
-    fun import(preview: ImportCandidate,rollback: Boolean) {
+    fun import(preview: ImportCandidate) {
         val gate=ImportCancellation();cancellation=gate;busy=true;message=""
         operation=scope.launch {
             val job=currentCoroutineContext()
@@ -61,7 +61,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
             withContext(NonCancellable) {
                 try {
                     snapshot=withContext(Dispatchers.IO) {
-                        repository.commit(preview,rollback,{job.ensureActive()},gate,{committing=true})
+                        repository.commit(preview,{job.ensureActive()},gate,{committing=true})
                     }
                     onChanged(snapshot);message="导入完成"
                 } catch(e: CancellationException) { message="已取消导入" }
@@ -122,7 +122,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                 } else {
                 PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
                     Text("导入曲包",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
-                    Text("选择经过审核的 .gpractice 文件；导入后可离线使用。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
+                    Text("选择 .gpractice 文件；导入后可离线使用。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
                     PracticeAction("选择曲包",enabled=!busy && candidate==null,onClick={picker.launch(arrayOf("*/*"))})
                 if(busy) {
                     Text(if(committing) "正在完成导入，请稍候…" else "正在检查曲包…")
@@ -138,7 +138,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                     song.warnings.forEach { Text(it) }
                     val current=snapshot.packages.firstOrNull { it.identity.packageId==song.identity.packageId }
                     if(current!=null) Text("当前修订 "+current.identity.revision+"；正在播放的会话继续使用原修订。")
-                    Button(enabled=!busy,onClick={import(preview,current!=null && song.identity.revision<current.identity.revision)}, shape=MaterialTheme.shapes.small) {
+                    Button(enabled=!busy,onClick={import(preview)}, shape=MaterialTheme.shapes.small) {
                         Text(if(current==null) "导入" else if(song.identity.revision<current.identity.revision) "导入并回退到修订 "+song.identity.revision else "应用更新")
                     }
                     TextButton(enabled=!busy,onClick={candidate=null;discard(preview)}, shape=MaterialTheme.shapes.small) { Text("取消导入") }
@@ -153,8 +153,8 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                         Text("已启用 · 修订 "+pkg.identity.revision,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,color=PracticeSkin.colors.primaryText)
                         OutlinedButton(enabled=!busy,onClick={action { repository.disable(pkg.identity.packageId) }}, shape=MaterialTheme.shapes.small) { Text("停用") }
                     }
-                        repository.revisions(pkg.identity.packageId).filter { it.revision<pkg.identity.revision }.firstOrNull()?.let { prior ->
-                            TextButton(enabled=!busy,onClick={action { repository.rollback(prior) }}, shape=MaterialTheme.shapes.small) { Text("回退到修订 "+prior.revision) }
+                        repository.revisions(pkg.identity.packageId).filter { it!=pkg.identity }.firstOrNull()?.let { prior ->
+                            TextButton(enabled=!busy,onClick={action { repository.rollback(prior) }}, shape=MaterialTheme.shapes.small) { Text(if(prior.revision==pkg.identity.revision) "恢复上次内容" else "回退到修订 "+prior.revision) }
                         }
                     }
                     }
