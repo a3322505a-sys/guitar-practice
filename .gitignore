@@ -9,3 +9,9 @@ output/
 *.jks
 *.password
 __pycache__/
+
+# 历史验收截图和单次验证结果不再纳入当前代码树
+/docs/screenshots/
+/docs/validation/
+/docs/v[0-9]*/
+/docs/archive/
