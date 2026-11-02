@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning.ui
 
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,7 +29,8 @@ import com.a3322505a.guitarlearning.assets.song.*
 import kotlinx.coroutines.*
 
 @Composable
-internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)->Unit,onClose: ()->Unit,displayedSequence: Sequence? = null,themeManager: ThemeManager) {
+internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)->Unit,onClose: ()->Unit,displayedSequence: Sequence? = null,themeManager: ThemeManager,
+    incomingImport: Pair<Int,Uri>? = null,onImportHandled: ()->Unit = {},onImported: (String)->Unit = {}) {
     val context=LocalContext.current;val scope=rememberCoroutineScope()
     var candidate by remember { mutableStateOf<ImportCandidate?>(null) }
     var message by remember { mutableStateOf("") };var busy by remember { mutableStateOf(false) }
@@ -35,6 +38,8 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
     var cancellation by remember { mutableStateOf<ImportCancellation?>(null) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var snapshot by remember { mutableStateOf(repository.snapshot) }
+    var sourceName by remember { mutableStateOf("曲包") }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
     fun discard(preview: ImportCandidate?) {
         if(preview!=null) scope.launch(NonCancellable+Dispatchers.IO) { repository.cancel(preview) }
     }
@@ -57,48 +62,66 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
         val gate=ImportCancellation();cancellation=gate;busy=true;message=""
         operation=scope.launch {
             val job=currentCoroutineContext()
+            var imported=false
             // Keep the IO result when returning to a cancelled UI job. Only validation checks cancellation.
             withContext(NonCancellable) {
                 try {
                     snapshot=withContext(Dispatchers.IO) {
                         repository.commit(preview,{job.ensureActive()},gate,{committing=true})
                     }
-                    onChanged(snapshot);message="导入完成"
+                    onChanged(snapshot);message="导入完成";imported=true
                 } catch(e: CancellationException) { message="已取消导入" }
-                catch(e: Exception) { message=e.message ?: "曲包导入失败" }
+                catch(e: Exception) { message="$sourceName：${e.message?.take(160) ?: "曲包导入失败"}" }
                 finally {
                     withContext(Dispatchers.IO) { repository.cancel(preview) }
                     candidate=null;busy=false;committing=false;cancellation=null
                 }
             }
+            if(imported) onImported(preview.song.identity.packageId)
         }
     }
-    val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if(uri!=null) {
-            busy=true;message=""
-            val gate=ImportCancellation();cancellation=gate
-            operation=scope.launch {
-                var held: ImportCandidate?=null
-                try {
-                    val job=currentCoroutineContext()
-                    val preview=withContext(Dispatchers.IO) {
-                        val input=context.contentResolver.openInputStream(uri) ?: error("无法读取所选文件")
-                        repository.prepare(input) { gate.check();job.ensureActive() }.also { held=it }
-                    }
-                    candidate=preview;held=null
-                } catch(e: CancellationException) { message="已取消检查" }
-                catch(e: Exception) { message=e.message ?: "曲包读取失败" }
-                finally {
-                    withContext(NonCancellable) {
-                        withContext(Dispatchers.IO) { held?.let { repository.cancel(it) } }
-                        busy=false;cancellation=null
-                    }
+    fun prepareUri(uri: Uri) {
+        if(busy || candidate!=null) return
+        sourceName=uri.lastPathSegment?.substringAfterLast('/') ?: "曲包"
+        tab=0
+        busy=true;message=""
+        val gate=ImportCancellation();cancellation=gate
+        operation=scope.launch {
+            var held: ImportCandidate?=null
+            var name=sourceName
+            try {
+                val job=currentCoroutineContext()
+                val preview=withContext(Dispatchers.IO) {
+                    name=runCatching {
+                        context.contentResolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null)?.use { rows ->
+                            if(rows.moveToFirst()) rows.getString(0) else null
+                        }
+                    }.getOrNull() ?: name
+                    // The granted content URI is the only input, shared by external intents and OpenDocument.
+                    val input=context.contentResolver.openInputStream(uri) ?: error("无法读取文件或读取权限已失效")
+                    repository.prepare(input) { gate.check();job.ensureActive() }.also { held=it }
+                }
+                sourceName=name;candidate=preview;held=null
+            } catch(e: CancellationException) { message="已取消检查" }
+            catch(e: Exception) { message="$name：${e.message?.take(160) ?: "曲包读取失败"}" }
+            finally {
+                withContext(NonCancellable) {
+                    withContext(Dispatchers.IO) { held?.let { repository.cancel(it) } }
+                    busy=false;cancellation=null
                 }
             }
         }
     }
+    val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if(uri!=null) prepareUri(uri)
+    }
+    LaunchedEffect(incomingImport,busy,candidate) {
+        if(incomingImport!=null && !busy && candidate==null) {
+            onImportHandled()
+            prepareUri(incomingImport.second)
+        }
+    }
     DisposableEffect(Unit) { onDispose { cancellation?.cancel();operation?.cancel();discard(candidate) } }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
     Dialog(onDismissRequest={close()},properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
         ImmersiveOverlayWindow()
         BackHandler { close() }
@@ -122,7 +145,7 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                 } else {
                 PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
                     Text("导入曲包",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
-                    Text("选择 .gpractice 文件；导入后可离线使用。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
+                    Text("选择 .gpractice 或 .gpractice.zip；也可从下载文件“打开/分享”导入。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
                     PracticeAction("选择曲包",enabled=!busy && candidate==null,onClick={picker.launch(arrayOf("*/*"))})
                 if(busy) {
                     Text(if(committing) "正在完成导入，请稍候…" else "正在检查曲包…")
@@ -133,11 +156,12 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
                 candidate?.let { preview ->
                     val song=preview.song
                     PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+                    Text(sourceName,style=MaterialTheme.typography.bodySmall)
                     Text(song.title+" · 修订 "+song.identity.revision+" · "+song.practices.size+" 项练习",fontWeight=FontWeight.Bold,color=PracticeSkin.colors.textPrimary)
-                    Text(song.summary);Text(song.sourceDescription)
+                    Text(listOf(song.author,song.summary).filter(String::isNotBlank).joinToString(" · "));Text(song.sourceDescription)
                     song.warnings.forEach { Text(it) }
                     val current=snapshot.packages.firstOrNull { it.identity.packageId==song.identity.packageId }
-                    if(current!=null) Text("当前修订 "+current.identity.revision+"；正在播放的会话继续使用原修订。")
+                    if(current!=null) Text("当前修订 "+current.identity.revision+"；确认后应用此内容。")
                     Button(enabled=!busy,onClick={import(preview)}, shape=MaterialTheme.shapes.small) {
                         Text(if(current==null) "导入" else if(song.identity.revision<current.identity.revision) "导入并回退到修订 "+song.identity.revision else "应用更新")
                     }

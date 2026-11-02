@@ -32,6 +32,7 @@ internal fun PackageStageTopBar(
     onExpanded: (Boolean) -> Unit, onPractice: (LibraryPractice) -> Unit, onBack: () -> Unit,
 ) {
     val colors = PracticeSkin.colors
+    val selectedIndex = practices.indexOfFirst { it.key.encoded == selectedId }
     BoxWithConstraints(Modifier.fillMaxWidth().testTag("stage-header")) {
         val compact = maxWidth < 600.dp
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(end = 8.dp),
@@ -42,13 +43,16 @@ internal fun PackageStageTopBar(
                 StageIcon("back", Modifier.size(24.dp))
                 if (!compact) Text("曲包库", modifier = Modifier.padding(start = 8.dp))
             }
+            TextButton(onClick = { practices.getOrNull(selectedIndex - 1)?.let(onPractice) }, enabled = selectedIndex > 0,
+                contentPadding = PaddingValues(0.dp), modifier = Modifier.size(48.dp).testTag("previous-practice")
+                    .semantics { contentDescription = "上一段" }) { Text("‹", style = MaterialTheme.typography.headlineSmall) }
             Box(Modifier.weight(1f)) {
                 Column(Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .clickable(enabled = practices.size > 1) { onExpanded(true) }
                     .testTag("practice-title").padding(horizontal = 4.dp, vertical = 4.dp)) {
-                    Text(title + if (practices.size > 1) " ⌄" else "", maxLines = 2,
+                    Text(title + if (selectedIndex >= 0) " · ${selectedIndex + 1}/${practices.size} ▾" else "", maxLines = 2,
                         overflow = TextOverflow.Ellipsis, style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge)
-                    Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    Text(if (compact) "$subtitle · $measure" else subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         color = colors.textSecondary, style = MaterialTheme.typography.labelMedium)
                 }
                 DropdownMenu(expanded && practices.size > 1, { onExpanded(false) },
@@ -60,7 +64,11 @@ internal fun PackageStageTopBar(
                     }
                 }
             }
-            Column(Modifier.widthIn(max = if (compact) 112.dp else 200.dp).padding(start = 8.dp),
+            TextButton(onClick = { practices.getOrNull(selectedIndex + 1)?.let(onPractice) },
+                enabled = selectedIndex >= 0 && selectedIndex < practices.lastIndex,
+                contentPadding = PaddingValues(0.dp), modifier = Modifier.size(48.dp).testTag("next-practice")
+                    .semantics { contentDescription = "下一段" }) { Text("›", style = MaterialTheme.typography.headlineSmall) }
+            if (!compact) Column(Modifier.widthIn(max = 200.dp).padding(start = 8.dp),
                 horizontalAlignment = Alignment.End) {
                 if (chord.isNotBlank()) Text(chord, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

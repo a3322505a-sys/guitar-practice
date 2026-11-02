@@ -28,6 +28,8 @@ jobs:
           --tests '*SongKernelTest.originalSharedFixturesRetainPolyphonyTupletsAndTechniques'
           --tests '*SongRepositoryTest.importUpdateRollbackAndRestartPreserveLegacySettingsAndPinnedSession'
           --tests '*BundledSongsTest'
+          --tests '*PackageLibraryTest'
+          --tests '*StageTransportTest'
           lintStandalone assembleStandalone assembleRelease
       - uses: actions/upload-artifact@v4
         with:

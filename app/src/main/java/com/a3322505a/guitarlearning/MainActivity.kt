@@ -1,6 +1,11 @@
 package com.a3322505a.guitarlearning
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,8 +23,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         immersiveStatusBar(window)
-        player = ViewModelProvider(this)[PracticeModel::class.java].player
-        setContent { PracticeApp(player) }
+        val model = ViewModelProvider(this)[PracticeModel::class.java]
+        player = model.player
+        if (!model.initialIntentHandled) {
+            model.acceptImport(intent)
+            model.initialIntentHandled = true
+        }
+        setContent { PracticeApp(player, model.pendingImport) { model.pendingImport = null } }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        ViewModelProvider(this)[PracticeModel::class.java].acceptImport(intent)
     }
     override fun onResume() { super.onResume(); immersiveStatusBar(window) }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -40,5 +55,18 @@ internal fun immersiveStatusBar(window: Window) {
 
 class PracticeModel(application: Application) : AndroidViewModel(application) {
     val player = AlphaPlayback(application)
+    var initialIntentHandled = false
+    var pendingImport by mutableStateOf<Pair<Int, Uri>?>(null)
+    private var importNumber = 0
+    @Suppress("DEPRECATION")
+    fun acceptImport(intent: Intent) {
+        val uri = when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> (intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri)
+            else -> null
+        }
+        if (uri?.scheme == "content") pendingImport = ++importNumber to uri
+    }
     override fun onCleared() { player.release() }
 }

@@ -35,7 +35,22 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         val requested=runCatching { prefs.getString("phrase-selected",initial) }.getOrNull() ?: initial
         return resolve(requested)
     }
-    fun select(phrase: Phrase) { prefs.edit().remove("phrase-pending-import").putString("phrase-selected",phrase.id).apply() }
+    fun select(phrase: Phrase) {
+        val recent=(listOf(phrase.id)+recent()).distinct().take(20)
+        prefs.edit().remove("phrase-pending-import").putString("phrase-selected",phrase.id)
+            .putString("library-recent",recent.joinToString("\n")).apply()
+    }
+    fun recent(): List<String> = prefs.getString("library-recent", "").orEmpty().lineSequence().filter(String::isNotBlank).toList()
+    fun favorites(): Set<String> = prefs.getStringSet("library-favorites", emptySet()).orEmpty().toSet()
+    fun favorite(packageId: String, enabled: Boolean) {
+        val next=favorites().toMutableSet()
+        if(enabled) next.add(packageId) else next.remove(packageId)
+        prefs.edit().putStringSet("library-favorites",next).apply()
+    }
+    fun hasSavedSettings(phrase: Phrase): Boolean = phrase.assetKey?.let {
+        val prefix=assetPrefix(phrase)
+        listOf("targetBpm", "bpm", "sourceTempo", "speedPercent", "multiplier", "repeats").any { key -> prefs.contains(prefix+key) }
+    } ?: false
     fun load(phrase: Phrase,fallbackBpm: Int=60,fallbackRepeats: Int=4): PhraseSettings {
         if(phrase.assetKey!=null) {
             return loadAsset(phrase)

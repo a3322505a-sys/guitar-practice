@@ -12,8 +12,8 @@ android {
         manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 115
-        versionName = "1.4.5"
+        versionCode = 116
+        versionName = "1.4.6"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }

@@ -15,7 +15,7 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class PackageLibraryTest {
-    @Test fun libraryIncludesEveryPracticeInSourceOrderIncludingVariantsAndTransitions() {
+    @Test fun libraryIncludesVisiblePracticesInSourceOrderIncludingVariantsAndTransitions() {
         val snapshot = SongTestLibrary.repository().reload()
         assertTrue(snapshot.diagnostics.joinToString(), snapshot.diagnostics.isEmpty())
         val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
@@ -24,12 +24,12 @@ class PackageLibraryTest {
         val cards = packageCards(snapshot)
         assertEquals(songs.keys, cards.map { it.id }.toSet())
         cards.forEach { card ->
-            val source = songs.getValue(card.id).practices.sortedBy { it.order }
+            val source = songs.getValue(card.id).practices.sortedBy { it.order }.filter { it.visibility != "hidden" }
             assertEquals(source.map { it.id }, card.practices.map { it.key.practiceId })
             assertEquals(source.map { it.goal }, card.practices.map { it.goal })
             assertEquals(card.practices.size, card.practices.map { it.key }.distinct().size)
         }
-        assertEquals(snapshot.phrases.size, cards.sumOf { it.practices.size })
+        assertEquals(snapshot.packagePractices.values.flatten().count { it.visibility != "hidden" }, cards.sumOf { it.practices.size })
         assertTrue(cards.sumOf { it.practices.size } > snapshot.catalogue.size)
     }
 

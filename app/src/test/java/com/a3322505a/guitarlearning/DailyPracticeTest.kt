@@ -35,7 +35,7 @@ class DailyPracticeTest {
     }
     @Test fun dailyPackListsFourModulesWithoutHidingTheOtherCardsAndVersionsChangeRealMusic() {
         val all = packageCards(SongTestLibrary.repository.snapshot).single { it.id == "local.daily-practice" }.practices
-        assertEquals(SongTestLibrary.repository.snapshot.phrases.count { it.assetKey?.packageId == "local.daily-practice" }, all.size)
+        assertEquals(SongTestLibrary.repository.snapshot.packagePractices.getValue("local.daily-practice").count { it.visibility != "hidden" }, all.size)
         assertEquals(4, all.filter { it.key.practiceId.endsWith("-basic") && it.key.practiceId.startsWith("DP-") && "join" !in it.key.practiceId }
             .map { it.lesson!!.module }.distinct().size)
         assertNotEquals(daily("DP-02-basic").sequence.performance.notes.map { it.note.midi },daily("DP-02-advanced").sequence.performance.notes.map { it.note.midi })

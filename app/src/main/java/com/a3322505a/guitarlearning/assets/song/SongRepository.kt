@@ -13,10 +13,10 @@ import java.util.concurrent.CancellationException
 import com.a3322505a.guitarlearning.music.*
 
 data class ImportCandidate(val song: SongPackage,val stagingFile: File)
-data class SongRevision(val identity: PackageIdentity,val title: String)
+data class SongRevision(val identity: PackageIdentity,val title: String,val author: String = "")
 /** Lightweight, ordered projection of the existing practices; no score compilation for the library. */
 data class LibraryPractice(val key: PracticeKey, val title: String, val goal: String,
-    val suggestedTempo: Int, val lesson: LessonMetadata?, val teaching: PracticeTeaching?)
+    val suggestedTempo: Int, val lesson: LessonMetadata?, val teaching: PracticeTeaching?, val visibility: String = "core")
 data class LibrarySnapshot(val phrases: List<Phrase>,val catalogue: List<Phrase>,val packages: List<SongRevision>,
     val diagnostics: List<String> = emptyList(),val aliases: Map<String,String> = emptyMap(),val chords: List<Chord> = Chords.all,
     val packagePractices: Map<String,List<LibraryPractice>> = emptyMap())
@@ -60,6 +60,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
     }.also { songs -> musicCheck(songs.map { it.second.identity.packageId }.distinct().size==songs.size,
         "BUNDLE","/bundled","Duplicate bundled package") } }
     private var seeding=false
+    private val authors=mutableMapOf<String,String>()
     private fun trusted(packageId: String)=bundledSongs.any { it.second.identity.packageId==packageId }
     private fun entry(map: Map<String,Any?>): Entry {
         val id=map.s("packageId");val digest=map.s("digest")
@@ -133,11 +134,12 @@ class SongRepository(private val root: File,private val reader: SongReader,
                     external+=phrases;chords+=if(e.packageId=="local.teaching-native") songChords.filter { c -> Chords.all.none { it.name==c.name && it.frets==c.frets && it.fingers==c.fingers && it.capoFret==c.capoFret && it.openStringMidi==c.openStringMidi } } else songChords.distinctBy { listOf(it.name,it.frets,it.fingers,it.capoFret,it.openStringMidi) }
                     metadata.objects("aliases").forEach { alias -> aliases[PracticeKey(e.packageId,alias.s("from")).encoded]=PracticeKey(e.packageId,alias.s("to")).encoded }
                     metadata.objects("practices").filter { it.s("visibility")=="core" }.forEach { visible+=PracticeKey(e.packageId,it.s("id")).encoded }
-                    packages+=SongRevision(e.pin,metadata.s("title"))
+                    packages+=SongRevision(e.pin,metadata.s("title"),metadata["author"] as? String
+                        ?: authors.getOrPut(e.digest) { reader.read(bytes).author })
                     // catalogue.json is already written in PracticeSpec.order, including non-core practices.
                     packagePractices[e.packageId]=metadata.objects("practices").map { p ->
                         LibraryPractice(PracticeKey(e.packageId,p.s("id")),p.s("title"),p.s("goal"),
-                            p.i("suggestedTempo",60),SongCodec.lesson(p["lesson"]),SongCodec.teaching(p["teaching"]))
+                            p.i("suggestedTempo",60),SongCodec.lesson(p["lesson"]),SongCodec.teaching(p["teaching"]),p.s("visibility","core"))
                     }
                 } catch(error: Exception) { diagnostics+=e.packageId+" 已隔离："+error.message }
             }
@@ -302,7 +304,7 @@ class SongRepository(private val root: File,private val reader: SongReader,
     }
     private fun metadata(song: SongPackage): Map<String,Any?> = mapOf(
         "packageId" to song.identity.packageId,"revision" to song.identity.revision,"digest" to song.identity.digest,
-        "title" to song.title,"source" to song.sourceDescription,"sourceBpm" to song.score.tempos.first().bpm.toInt(),
+        "title" to song.title,"author" to song.author,"source" to song.sourceDescription,"sourceBpm" to song.score.tempos.first().bpm.toInt(),
         "warnings" to song.warnings.joinToString(" "),
         "summary" to song.summary,
         "tracks" to song.score.tracks.map { mapOf("id" to it.id,"name" to it.name,"openStringMidi" to it.openStringMidi,"capo" to it.capo) },

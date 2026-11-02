@@ -3,6 +3,7 @@
 package com.a3322505a.guitarlearning.ui
 
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import androidx.compose.ui.draw.clipToBounds
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -38,13 +39,16 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
 @Composable
-fun PracticeApp(player: AlphaPlayback) = PracticeWorkbench(player, player)
+fun PracticeApp(player: AlphaPlayback, incomingImport: Pair<Int, Uri>? = null, onImportHandled: () -> Unit = {}) =
+    PracticeWorkbench(player, player, incomingImport, onImportHandled)
 
 /** One selected PracticeSpec and one permanently mounted score host. */
 @Composable
 internal fun PracticeWorkbench(
     player: PracticePlayback,
     nativePlayer: AlphaPlayback?,
+    incomingImport: Pair<Int, Uri>? = null,
+    onImportHandled: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val themeManager = remember { ThemeManager(context) }
@@ -60,6 +64,11 @@ internal fun PracticeWorkbench(
     var ready by remember { mutableStateOf(false) }
     val packages = remember(snapshot) { packageCards(snapshot) }
     val store = remember { PhraseSettingsStore(preferences, repository::named) }
+    var recent by remember { mutableStateOf(store.recent()) }
+    var favorites by remember { mutableStateOf(store.favorites()) }
+    var focusedPackageId by remember { mutableStateOf<String?>(null) }
+    var quickSwitchOpen by remember { mutableStateOf(false) }
+    var carrySettings by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
     var phraseId by rememberSaveable { mutableStateOf(store.selected().id) }
     var preparedEpoch by remember { mutableIntStateOf(0) }
     var libraryVisible by rememberSaveable { mutableStateOf(true) }
@@ -102,8 +111,10 @@ internal fun PracticeWorkbench(
     LaunchedEffect(sequence) {
         if (sequence != null) {
             val saved = store.load(phrase)
-            bpm = store.targetBpm(phrase)
-            looping = saved.repeats == 0
+            val inherited = carrySettings.takeUnless { store.hasSavedSettings(phrase) }
+            bpm = inherited?.first ?: store.targetBpm(phrase)
+            looping = inherited?.second ?: (saved.repeats == 0)
+            carrySettings = null
             settingsSequence = sequence
         }
         nativePlayer?.prepareSequence(sequence)
@@ -127,16 +138,23 @@ internal fun PracticeWorkbench(
     val activity = LocalActivity.current
     LaunchedEffect(activity) { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
 
+    LaunchedEffect(incomingImport, ready, managementOpen) {
+        if (incomingImport != null && ready) {
+            player.pause(); managementOpen = true; quickSwitchOpen = false; practiceMenuOpen = false
+        }
+    }
     fun selectPractice(practice: LibraryPractice) {
         if (phraseId != practice.key.encoded) {
-            player.invalidate(); preparationError = ""
+            carrySettings = if (phrase.assetKey?.packageId == practice.key.packageId) bpm to looping else null
+            player.invalidate(); preparationError = ""; settingsSequence = null
             phraseId = practice.key.encoded
-            store.select(repository.named(phraseId))
         }
-        libraryVisible = false; practiceMenuOpen = false
+        store.select(repository.named(phraseId)); recent = store.recent()
+        focusedPackageId = null
+        libraryVisible = false; practiceMenuOpen = false; quickSwitchOpen = false
     }
-    fun openLibrary() { player.pause(); libraryVisible = true; practiceMenuOpen = false }
-    BackHandler(enabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen) { openLibrary() }
+    fun openLibrary() { player.pause(); libraryVisible = true; practiceMenuOpen = false; quickSwitchOpen = false; focusedPackageId = null }
+    BackHandler(enabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen && !quickSwitchOpen) { openLibrary() }
     val progress = player.progress
     val session = player.session?.takeUnless { it.preview }
     val cursor = player.cursor?.takeIf { session != null && progress.phase != Phase.IDLE }
@@ -158,6 +176,8 @@ internal fun PracticeWorkbench(
         }
     }
     val packageCard = packages.firstOrNull { it.id == phrase.assetKey?.packageId }
+    val currentPracticeIndex = packageCard?.practices?.indexOfFirst { it.key.encoded == phraseId } ?: -1
+    val nextPractice = packageCard?.practices?.getOrNull(currentPracticeIndex + 1).takeIf { currentPracticeIndex >= 0 }
     val currentSection = sequence?.sectionAt(quarter * (sequence.ticksPerQuarter)) ?: -1
     val shownChord = sequence?.sections?.getOrNull(currentSection)?.let { sequence.chordAt(it) }
     val currentChord = sequence?.runtimePlan?.harmonies?.lastOrNull {
@@ -218,6 +238,15 @@ internal fun PracticeWorkbench(
                                 .onGloballyPositioned { scoreBounds = it.boundsInRoot() })
                         }
                     }
+                    if (progress.phase == Phase.ENDED && !libraryVisible) {
+                        Row(Modifier.fillMaxWidth().testTag("practice-ended"), horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { player.restart() }) { Text("再练一次") }
+                            if (nextPractice != null) TextButton(onClick = { selectPractice(nextPractice) }) { Text("下一段 ›") }
+                            else Text("已到最后一段", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
+                            TextButton(onClick = { quickSwitchOpen = true }) { Text("换曲包") }
+                        }
+                    }
                     StageTransport(targetBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),
                         looping, click, elapsed, duration, { tempoOpen = true }, ::play,
                         { player.invalidate(); looping = !looping },
@@ -235,7 +264,7 @@ internal fun PracticeWorkbench(
                 else Modifier.fillMaxSize()
                 if (nativePlayer != null) {
                     NativeScore(nativePlayer, frame, hasFrame && sequence != null && !libraryVisible,
-                        inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen)
+                        inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen && !quickSwitchOpen)
                 }
                 val error = preparationError.ifBlank {
                     if (ready && revision == null) "曲目不存在或曲包已停用，请从曲包库重新选择" else nativePlayer?.error.orEmpty()
@@ -247,13 +276,17 @@ internal fun PracticeWorkbench(
                             color = if (error.isBlank()) PracticeSkin.colors.textSecondary else PracticeSkin.colors.danger)
                     }
                 }
-                if (libraryVisible) PackageLibraryScreen(packages, ready, phraseId, ::selectPractice, { managementOpen = true })
+                if (libraryVisible) PackageLibraryScreen(packages, ready, phraseId, ::selectPractice, { managementOpen = true },
+                    recent, favorites, { id -> store.favorite(id, id !in favorites); favorites = store.favorites() }, focusedPackageId)
+                if (quickSwitchOpen) QuickPackageSheet(packages, recent, favorites, ::selectPractice, ::openLibrary, { quickSwitchOpen = false })
                 if (managementOpen) SongLibrary(repository, { updated ->
                     snapshot = updated
                     if (updated.phrases.none { it.id == phraseId }) {
                         player.invalidate()
                     }
-                }, { managementOpen = false }, sequence, themeManager)
+                }, { managementOpen = false }, sequence, themeManager, incomingImport, onImportHandled, { id ->
+                    focusedPackageId = id; libraryVisible = true; managementOpen = false
+                })
                 if (tempoOpen) BpmSheet(targetBpm, minBpm, maxBpm, ::setBpm, { tempoOpen = false },
                     cursorOffsetMs, { value ->
                         cursorOffsetMs = value.coerceIn(-500, 500)
