@@ -140,7 +140,7 @@ internal fun PracticeWorkbench(
 
     LaunchedEffect(incomingImport, ready, managementOpen) {
         if (incomingImport != null && ready) {
-            player.pause(); managementOpen = true; quickSwitchOpen = false; practiceMenuOpen = false
+            player.pause(); managementOpen = true; quickSwitchOpen = false; practiceMenuOpen = false; tempoOpen = false
         }
     }
     fun selectPractice(practice: LibraryPractice) {
