@@ -69,7 +69,9 @@ internal fun PackageLibraryScreen(
         val index = filtered.indexOfFirst { it.id == focusedPackageId }
         if (index >= 0) listState.scrollToItem(index)
     }
-    val continuation = recent.firstNotNullOfOrNull { id -> packages.flatMap { it.practices }.firstOrNull { it.key.encoded == id } }
+    val availablePractices = packages.flatMap { it.practices }
+    val continuation = recent.firstNotNullOfOrNull { id -> availablePractices.firstOrNull { it.key.encoded == id } }
+        ?: availablePractices.firstOrNull { it.key.encoded == selectedPracticeId }
     val imported = packages.firstOrNull { it.id == focusedPackageId }
     val colors = PracticeSkin.colors
     Surface(color = colors.background, modifier = Modifier.fillMaxSize().testTag("package-library")) {
