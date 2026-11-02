@@ -74,7 +74,7 @@ object ScoreValidation {
                     check(n.harmonic?.let { h ->
                         h.soundMidi==n.midi && h.soundMidi==expected+(12*log2(h.partial.toDouble())).roundToInt() &&
                             h.touchFret>n.fret && (h.kind!="natural" || n.fret==0)
-                    } ?: (n.midi==expected),np+"/midi","Sound pitch disagrees with tuning/capo/harmonic")
+                    } ?: (n.midi==expected),np+"/midi","Measure ${e.measureId}, string ${n.string}, fret ${n.fret}: expected MIDI ${n.harmonic?.let { expected+(12*log2(it.partial.toDouble())).roundToInt() } ?: expected}, got ${n.midi}")
                     if(n.harmonic!=null) capabilities+="technique.harmonic.v1"
                     n.harmonic?.let { h ->
                         val touchPoints=(1 until h.partial).filter { k -> gcd(k,h.partial)==1 }.map {

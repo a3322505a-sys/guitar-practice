@@ -1,15 +1,10 @@
-# 当前开发入口：V114
+# 吉他练习 App：当前开发指引
 
-- 仓库 `a3322505a-sys/guitar-practice`，分支 `codex/v114-count-in-cleanup`，基线 v113 `70fb07b9c63d580793ec4f587c98986694a0998f`；版本 `1.4.4 / 114`。
-- 当前施工与验收依据：[V114 执行规范](docs/V114-执行规范.md)、[实施与交付](docs/V114-实施与交付.md)、[引用审计](docs/V114-源码引用审计.md)。旧 v107/v108/v112/v113 文档记录当时事实，不再作为“当前入口”。
-- 主路径 `MainActivity → ui/PracticeApp → AlphaPlayback / NativeScore`。统一曲包驱动；lesson/piece 从已有 teaching/lesson/practices 推导，不修改 Schema 或曲包生成协议。
-- 只保留一个稳定 AlphaTabView 挂载点，弹窗、曲包库、指板折叠、横竖屏切换不得另建播放器/谱面路径。保留光标平滑及全局 ±500 ms 微调、整数 BPM、四键【BPM/播放/循环/节拍】、↺、红黄绿灯、三主题和折叠指板。
-- 使用 alphaTab 1.8.4 原生声音和预备拍。准备音量独立于正式 click 开关及其旧偏好；唯一音量出口 `AlphaPlayback.applyMix`。灯只观察原生事件；禁止私有字段反射、MIDI 首拍注入、第二音频输出或人工填拍计时器。
-- 缺失曲目返回不可播放的明确占位，`resolve` 抛出 MISSING_PRACTICE；不得替换成不相关教材。保留并发代际、音频焦点、StrictJson、Schema、ScoreValidation、PracticeCompiler、ID/路径/存储保护。
-- `LegacySequenceAdapter` 仍服务试听和确定性练习的 Sequence 转换，必须保留；词典、原始 SoundFont 制作素材、main 的 sonivox.sf2 和第三方许可证必须保留。
-- 历史 Debug 播放器、旧 TAB、P0 探针和其调查脚本已退役。debug 使用同一原生实现；UiTestActivity 仅为现代 Compose JVM 测试宿主。不得恢复旧实现来绕过回归。
-- 内置曲包编写入口 `scripts/build-teaching-v31.py`、`scripts/song_package/daily_practice.py`；音乐事实在 music/score 与现有编译链，教材渐进呈现、练习自由选择。
-- 构建/签名见 [变体文档](docs/build-variants.md)。保留 release/debug/compare/standalone，不新增第三方依赖、不变更引擎或 Gradle 依赖。standalone 沿用已交付专用证书，正式 appId/长期证书不变。
-- 执行完整 Debug 编译/测试/lint/组装、compare 测试/lint/组装、standalone lint/组装、release 组装，以及 Python 曲包/原生数据与实际 APK DEX/PCM 隔离审计。必须区分 CI、主机 PCM 和真机听感；无真实 Android 设备时明确写“待真机验收”。
-- 修改前检查 Git 状态、分支/工作树和其他活动 Agent；只操作独立工作树，不重置用户文件、不强推、不改写远程历史。远程删除与 Tag 另需授权。共享工具链、签名材料及未知用途文件不得清理。
-- 历史截图作为验收证据保留，不进入 APK；无关文档整理不拖延已通过核心检查的 APK 交付。
+- 当前开发基线是 `codex/song-package-v2`，App `1.4.5 / 115`；默认 `main` 仍是较早发布代码。开发前以目标分支的最新代码为准，按 `README.md`、`docs/README.md` 和实际实现判断，不按旧施工单回滚。
+- 项目是个人工具，优先快速可用、简单易改。合理默认值；不做过度防御、企业级抽象、冗余校验或无目的测试。关键崩溃/数据损坏/谱面事实错误/权限风险保留必要保护。
+- 曲包内容读取与存储依赖 `SongReader`、`SongRepository`、Schema、ScoreValidation 与编译链；不因简化需求删除必要音乐校验与 ID/路径安全。
+- v2 本地制包按 `docs/song-package-v2.md` 的 manifest/score/practices 三文件执行；现有旧 v1 仅兼容输入，不能把旧的审核模板、哈希表当成新包默认必填项。
+- 播放保持一个 AlphaTab 1.8.4 宿主、统一原生时间轴和声音。保留光标微调、完整预备拍、重来、整数 BPM、指板折叠及底部【BPM、播放、循环、节拍】，不恢复退役的双播放器或旧 P0 探针。
+- 新交互施工依据 `docs/曲包库与连续练习-整合实施方案.md`，与既有 `PracticeApp.kt`、`SongLibrary.kt`、`PhraseSettingsStore` 直接结合，先实现 Happy Path。
+- 构建与签名参考 `docs/build-variants.md`；保持正式包名、长期签名、原生音源与许可证。未真实运行的 CI、构建、APK 或真机结果不得声明已通过。
+- 不直接改写 Git 历史；删除历史文档和截图只改变当前分支文件树，不删业务代码、测试夹具、构建脚本或第三方授权文件。不再向 Git 追加入库旧截图和每版独立施工方案。
