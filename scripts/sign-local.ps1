@@ -1,7 +1,7 @@
 param(
     [string]$Keystore = 'D:\软件\001-release.p12',
     [string]$PasswordFile = 'D:\软件\001-release.password',
-    [ValidateSet('release','p0')][string]$BuildType = 'release'
+    [ValidateSet('release','compare','p0')][string]$BuildType = 'release'
 )
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
@@ -14,10 +14,14 @@ New-Item -ItemType Directory -Path $output -Force | Out-Null
 $cert = Join-Path $output 'release-cert.der'
 & $keytool -exportcert -keystore $Keystore -storepass:file $PasswordFile -alias guitar-release -file $cert
 if($LASTEXITCODE -ne 0) { throw 'Cannot export existing certificate' }
-if((Get-FileHash -LiteralPath $cert -Algorithm SHA256).Hash -ne '43b7af607adb264fb2faa79437d91dbc7e1bea7d7ce92804965fe0f1c8daf320') { throw 'Existing release identity does not match 001' }
-$aligned = Join-Path $output 'aligned-unsigned.apk'
+if((Get-FileHash -LiteralPath $cert -Algorithm SHA256).Hash -ne '43b7af607adb264fb2faa79437d91dbc7e1bea7d7ce92804965fe0f1c8daf320') { throw 'Existing release identity does not match guitar-practice' }
+$aligned = Join-Path $output "$BuildType-aligned-unsigned.apk"
 $apkDirectory = Join-Path $project "app\build\outputs\apk\$BuildType"
 $metadata = Get-Content -LiteralPath (Join-Path $apkDirectory 'output-metadata.json') -Raw | ConvertFrom-Json
+if($metadata.variantName -ne $BuildType -or $metadata.elements.Count -ne 1) { throw 'Expected one APK for the selected build type' }
+$expectedApplicationId = 'com.a3322505a.guitarlearning'
+if($BuildType -eq 'compare') { $expectedApplicationId += '.compare' }
+if($metadata.applicationId -ne $expectedApplicationId) { throw 'APK applicationId does not match the selected build type' }
 $version = $metadata.elements[0]
 & (Join-Path $sdkTools 'zipalign.exe') -f -p 4 (Join-Path $apkDirectory $version.outputFile) $aligned
 if($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }

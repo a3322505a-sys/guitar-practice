@@ -1,0 +1,53 @@
+{
+  "practices": [
+    {
+      "id": "practice",
+      "title": "原创 practice",
+      "goal": "按完整乐句练习",
+      "mainTrackId": "guitar",
+      "mixTrackIds": [
+        "guitar"
+      ],
+      "segments": [
+        {
+          "start": {
+            "measureId": "bar1",
+            "occurrence": 1
+          },
+          "end": {
+            "measureId": "bar1",
+            "offset": {
+              "n": 4,
+              "d": 1
+            },
+            "occurrence": 1
+          },
+          "formPolicy": "written"
+        }
+      ],
+      "noteFingerings": [
+        {
+          "sourceNoteId": "simple-n0",
+          "finger": null,
+          "source": "Original fixture: open string; no left hand finger"
+        },
+        {
+          "sourceNoteId": "simple-n1",
+          "finger": 1,
+          "source": "Original adjacent-fret fixture, reviewed index/middle/ring fingering"
+        },
+        {
+          "sourceNoteId": "simple-n2",
+          "finger": 2,
+          "source": "Original adjacent-fret fixture, reviewed index/middle/ring fingering"
+        },
+        {
+          "sourceNoteId": "simple-n3",
+          "finger": 3,
+          "source": "Original adjacent-fret fixture, reviewed index/middle/ring fingering"
+        }
+      ]
+    }
+  ],
+  "aliases": []
+}

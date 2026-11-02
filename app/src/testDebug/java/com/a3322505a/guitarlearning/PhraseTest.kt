@@ -1,13 +1,9 @@
 package com.a3322505a.guitarlearning
 
-import com.a3322505a.guitarlearning.audio.*
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.File
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 class PhraseTest {
     @Test fun reducedChordGripsHaveCorrectTonesFingersAndRoles() {
@@ -47,33 +43,10 @@ class PhraseTest {
             assertEquals(chord.name,event.chord)
             assertTrue(event.positions.all { it in chord.positions })
         }
-        val bars=seq.tabBars()
-        assertEquals(2,bars.size)
-        assertTrue(bars.all { it.segments.size==8 && it.segments.sumOf { s -> s.value.ticks }==48 })
-        assertTrue(bars.flatMap { it.segments }.all { it.value==RhythmValue.EIGHTH && !it.tieIn && !it.tieOut })
+        assertEquals(2,seq.performance.visits.size)
+        assertEquals(16,seq.performance.events.size)
+        assertTrue(seq.performance.events.all { it.duration.value()==.5 })
         assertEquals("D/F♯",seq.sections[seq.sectionAt(95.9)].chord)
-        assertEquals(0.0,Session(seq,60,false,4).cursor(96.0).localTick,0.0)
-    }
-    @Test fun ringStopsAtRepickedStringGripChangeAndLoopEndAndPcmIsChunkInvariant() {
-        val seq=LegacyUsotsukiFixture.phrase.sequence
-        assertEquals(listOf(24,12,12,6,24,12,12,6,24,12,12,6,24,12,12,6),seq.events.map { seq.soundDuration(it,it.positions.single()) })
-        val sampler=Sampler(SoundBank.NYLON) { root -> File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
-        val session=Session(seq,80,false,1)
-        val pcm=Pcm(session,sampler)
-        val count=session.frame(96.0).toInt()
-        val all=pcm.block(0,count,true,false)
-        assertTrue(all.any { it!=0.toShort() })
-        val chunks=ShortArray(count)
-        for(start in 0 until count step 8191) pcm.block(start.toLong(),minOf(8191,count-start),true,false).copyInto(chunks,start)
-        assertArrayEquals(all,chunks)
-        assertTrue(pcm.block(count.toLong(),4096,true,false).all { it==0.toShort() })
-        val output=File("../output/usotsuki-S01-demo-80bpm.wav")
-        output.parentFile.mkdirs()
-        val data=ByteBuffer.allocate(44+all.size*2).order(ByteOrder.LITTLE_ENDIAN)
-        data.put("RIFF".toByteArray()).putInt(36+all.size*2).put("WAVEfmt ".toByteArray()).putInt(16)
-        data.putShort(1).putShort(1).putInt(SAMPLE_RATE).putInt(SAMPLE_RATE*2).putShort(2).putShort(16)
-        data.put("data".toByteArray()).putInt(all.size*2)
-        all.forEach { data.putShort(it) }
-        output.writeBytes(data.array())
+        assertEquals(8.0,seq.performance.length.value(),0.0)
     }
 }

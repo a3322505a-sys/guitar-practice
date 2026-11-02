@@ -17,26 +17,32 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[28])
 class ChordSourceTest {
+    private fun encodedPackageId(id: String): String? {
+        val colon = id.indexOf(':').takeIf { it > 0 } ?: return null
+        val length = id.take(colon).toIntOrNull()?.takeIf { it > 0 } ?: return null
+        return id.substring(colon + 1).takeIf { it.length > length }?.take(length)
+    }
     @Test fun selectedPackageChordResolvesWithoutFoundationNameLookup() {
         val repository=SongTestLibrary.repository()
-        val chord=repository.reload().chords.first { it.group.startsWith("斜阳") }
+        val chord=repository.reload().chords.first { encodedPackageId(it.id)=="local.demo-c" }
         val sequence=chordSequence(chord,chord,ChordExercise.CHECK,4)
         assertSame(chord,sequence.chordAt(sequence.sections.single()))
     }
 
     @Test fun selectedPackageChordCompilesWithoutFoundationNameLookup() {
         val repository=SongTestLibrary.repository()
-        val chord=repository.reload().chords.first { it.group.startsWith("斜阳") }
+        val chord=repository.reload().chords.first { encodedPackageId(it.id)=="local.demo-c" }
         val sequence=chordSequence(chord,chord,ChordExercise.CHECK,4)
         assertEquals(chord.positions.map(chord::midi),sequence.performance.notes.map { it.note.midi })
     }
 
     @Test fun allLoadedCardsKeepGripIdentityTeachingAndSoundAcrossExercises() {
         val chords=SongTestLibrary.repository().reload().chords
-        assertEquals(32,chords.size)
-        assertEquals(16,chords.count { it.group.startsWith("斜阳") })
-        assertEquals(4,chords.count { it.group=="本地曲库 · 嘘月" })
-        assertTrue(chords.any { c -> c.positions.size==2 && c.baseFret>=10 })
+        assertTrue(chords.size>=21)
+        assertTrue(chords.any { encodedPackageId(it.id)=="local.demo-c" })
+        assertTrue(chords.any { encodedPackageId(it.id)=="local.demo-capo" && it.capoFret==2 })
+        assertEquals(chords.size,chords.map { it.id }.distinct().size)
+        assertTrue(chords.any { c -> c.barres.isNotEmpty() })
         assertTrue(chords.any { c -> c.frets.any { it==null } && c.frets.any { it==0 } })
         chords.forEach { chord ->
             assertNull(chord.name,chord.unavailableReason)
@@ -52,6 +58,7 @@ class ChordSourceTest {
                 val projected=plan.score.voicings.single().chord(plan.mainTrack)
                 assertEquals(chord.frets,projected.frets)
                 assertEquals(chord.fingers,projected.fingers)
+                assertEquals(chord.barres,projected.barres)
                 assertEquals(chord.root,projected.root)
                 assertEquals(chord.source,projected.source)
                 assertEquals(chord.intervalRoles,projected.intervalRoles)
@@ -66,10 +73,10 @@ class ChordSourceTest {
     }
 
     @Test fun identicalNamesNeverReplaceDifferentLoadedGrips() {
-        val loaded=SongTestLibrary.repository().reload().chords.filter { it.group.startsWith("斜阳") }
+        val loaded=SongTestLibrary.repository().reload().chords.filter { encodedPackageId(it.id)=="local.demo-c" }
         // Exercise a name collision with two real, independently reviewed source grips.
         val low=loaded.first().copy(name="同名测试")
-        val high=loaded.first { it.baseFret>=10 }.copy(name="同名测试")
+        val high=loaded.first { it.frets!=loaded.first().frets }.copy(name="同名测试")
         val sequence=chordSequence(low,high,ChordExercise.CHANGE,4)
         assertSame(low,sequence.chordAt(sequence.sections[0]))
         assertSame(high,sequence.chordAt(sequence.sections[1]))

@@ -7,7 +7,7 @@ import kotlin.math.roundToInt
 object ScoreValidation {
     fun validate(score: ScoreDocument, practices: List<PracticeSpec>): Set<String> {
         val capabilities=sortedSetOf("score.rational.v1","guitar.six-string.v1")
-        if(score.voicings.any { it.teaching!=null } || practices.any { it.teaching!=null || it.legacyIds.isNotEmpty() })
+        if(score.voicings.any { it.teaching!=null } || practices.any { it.teaching!=null })
             capabilities+="catalogue.teaching.v1"
         fun check(ok: Boolean, path: String, reason: String) = musicCheck(ok,"MUSIC",path,reason)
         val ids=mutableSetOf<String>()
@@ -74,7 +74,7 @@ object ScoreValidation {
                     check(n.harmonic?.let { h ->
                         h.soundMidi==n.midi && h.soundMidi==expected+(12*log2(h.partial.toDouble())).roundToInt() &&
                             h.touchFret>n.fret && (h.kind!="natural" || n.fret==0)
-                    } ?: (n.midi==expected),np+"/midi","Sound pitch disagrees with tuning/capo/harmonic")
+                    } ?: (n.midi==expected),np+"/midi","Measure ${e.measureId}, string ${n.string}, fret ${n.fret}: expected MIDI ${n.harmonic?.let { expected+(12*log2(it.partial.toDouble())).roundToInt() } ?: expected}, got ${n.midi}")
                     if(n.harmonic!=null) capabilities+="technique.harmonic.v1"
                     n.harmonic?.let { h ->
                         val touchPoints=(1 until h.partial).filter { k -> gcd(k,h.partial)==1 }.map {
@@ -236,6 +236,17 @@ object ScoreValidation {
             check(p.mainTrackId in p.mixTrackIds && p.mixTrackIds.all { it in tracks } && p.mixTrackIds.distinct().size==p.mixTrackIds.size,
                 "/practices/practices/"+i,"Invalid participating tracks")
             check(p.padding>=Q.ZERO && (p.padding==Q.ZERO || !p.paddingReason.isNullOrBlank()),"/practices/practices/"+i,"Padding requires reason")
+            if(p.noteFingerings.isNotEmpty()) capabilities+="teaching.note-fingering.v1"
+            val assignments=mutableSetOf<Pair<String,Int?>>()
+            p.noteFingerings.forEach { f ->
+                val n=notes[f.sourceNoteId]
+                check(n!=null && n.first.trackId in p.mixTrackIds,"/practices/noteFingerings","Unknown or excluded source note")
+                check(f.finger==null || f.finger in 1..5,"/practices/noteFingerings","Left hand finger must be 1..4, 5 (thumb) or null")
+                check(!f.source.isBlank() && (f.occurrence==null || f.occurrence>0),"/practices/noteFingerings","Review source/occurrence required")
+                check(assignments.add(f.sourceNoteId to f.occurrence),"/practices/noteFingerings","Duplicate fingering assignment")
+                check(f.finger==null || n?.third?.fret?.let { it>0 }==true,
+                    "/practices/noteFingerings","Finger number requires a fretted or touched source position")
+            }
             p.segments.forEachIndexed { si,s ->
                 listOf(s.start,s.end).forEach { c ->
                     check(c.measureId in measureIndex && c.offset>=Q.ZERO && c.offset<=score.measures[measureIndex.getValue(c.measureId)].actualDuration,
@@ -245,8 +256,6 @@ object ScoreValidation {
             }
         }
         val practiceIds=practices.map { it.id }.toSet()
-        val legacyIds=practices.flatMap { it.legacyIds }
-        check(legacyIds.distinct().size==legacyIds.size,"/practices/legacyIds","Duplicate legacy ID")
         practices.forEach { p ->
             check(listOfNotNull(p.familyId,p.variantOf).plus(p.relatedIds).all { it in practiceIds },"/practices","Missing family/variant/related practice")
             var parent=p.variantOf; val seen=mutableSetOf(p.id)
@@ -255,6 +264,8 @@ object ScoreValidation {
         if(score.form.repeats.isNotEmpty()) capabilities+="form.repeat.v1"
         if(score.form.endings.isNotEmpty()) capabilities+="form.volta.v1"
         if(score.form.jumps.isNotEmpty()) capabilities+="form.jump.v1"
+        if(score.voicings.any { 5 in it.fingers } || practices.any { p -> p.noteFingerings.any { it.finger==5 } }) capabilities += "teaching.thumb.v1"
+        if(LessonValidation.validate(score,practices)) capabilities += "teaching.lesson.v1"
         return capabilities
     }
     private fun gcd(a: Int,b: Int): Int = if(b==0) a else gcd(b,a%b)

@@ -55,7 +55,7 @@ object LegacySequenceAdapter {
         }
         val grips=sectionChords.distinctBy { it.id }.map { chord ->
             GuitarVoicing(chord.id,chord.name,track.id,chord.frets.reversed().map { it ?: -1 },chord.fingers.reversed(),
-                VoicingTeaching(chord.root,chord.third,chord.soundingName,chord.group,chord.source,chord.intervalRoles,chord.toneNames))
+                VoicingTeaching(chord.root,chord.third,chord.soundingName,chord.group,chord.source,chord.intervalRoles,chord.toneNames),chord.barres,chord.quality)
         }
         val harmonies=sequence.sections.mapIndexed { i,s ->
             val bar=sequence.barAt(s.tick.toDouble())

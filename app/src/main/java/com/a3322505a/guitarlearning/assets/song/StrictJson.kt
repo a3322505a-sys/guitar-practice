@@ -131,17 +131,29 @@ internal fun Any?.qValue(): Q = objectValue().let { Q(it["n"].longValue(),it["d"
 class SongSchema(load: (String)->ByteArray) {
     private val schemas by lazy { listOf("manifest","score","practices","provenance","review")
         .associateWith { StrictJson.parse(load(it+".schema.json")).objectValue() } }
-    fun validate(name: String, data: Any?) = visit(schemas.getValue(name),data,"/"+name,schemas.getValue(name))
-    private fun visit(schema: Map<String,Any?>, data: Any?, path: String, root: Map<String,Any?>) {
+    private val v2Manifest by lazy { StrictJson.parse(loadV2()).objectValue() }
+    private val loadV2 = { load("manifest-v2.schema.json") }
+    private val inferred = setOf("tuplets","relations","tempos","dynamics","swing","form","voicings","harmonies","midi","written","mixTrackIds","aliases")
+    fun validate(name: String, data: Any?, normalizing: Boolean = false) {
+        val rule=if(name=="manifest" && (data as? Map<*,*>)?.get("formatVersion").let { it as? Map<*,*> }?.get("major").let { (it as? BigDecimal)?.compareTo(BigDecimal(2))==0 }) v2Manifest else schemas.getValue(name)
+        visit(rule,data,"/"+name,rule,normalizing)
+    }
+    private fun visit(schema: Map<String,Any?>, data: Any?, path: String, root: Map<String,Any?>, normalizing: Boolean) {
         fun check(ok: Boolean, message: String) = musicCheck(ok,"SCHEMA",path,message)
         val ref=schema["\$ref"] as? String
         if(ref!=null) {
-            visit(root["\$defs"].objectValue()[ref.substringAfterLast('/')].objectValue(),data,path,root)
-            if(ref=="#/\$defs/q") {
+            visit(root["\$defs"].objectValue()[ref.substringAfterLast('/')].objectValue(),data,path,root,normalizing)
+            if(!normalizing && ref=="#/\$defs/q") {
                 val value=data.objectValue();val q=value.qValue()
                 musicCheck(q.n==value["n"].longValue() && q.d==value["d"].longValue(),"Q",path,"Rational must be canonical")
             }
             return
+        }
+        val alternatives=schema["anyOf"] as? List<*>
+        if(alternatives!=null) {
+            check(alternatives.any { rule ->
+                try { visit(rule.objectValue(),data,path,root,normalizing); true } catch(e: MusicError) { false }
+            },"Value does not match any permitted type")
         }
         val options=schema["enum"] as? List<*>
         if(options!=null) check(options.any { equalJson(it,data) },"Value outside enum")
@@ -150,23 +162,24 @@ class SongSchema(load: (String)->ByteArray) {
                 check(data is Map<*,*>,"Expected object"); val map=data.objectValue()
                 val properties=(schema["properties"] as? Map<*,*>)?.let { schema["properties"].objectValue() }.orEmpty()
                 val patterns=(schema["patternProperties"] as? Map<*,*>)?.let { schema["patternProperties"].objectValue() }.orEmpty()
-                (schema["required"] as? List<*>)?.forEach { check(map.containsKey(it),"Missing field "+it) }
+                (schema["required"] as? List<*>)?.forEach { musicCheck(map.containsKey(it) || normalizing && it in inferred,"SCHEMA",path+"/"+it,"Missing field "+it) }
                 (schema["maxProperties"] as? BigDecimal)?.let { check(map.size<=it.toInt(),"Too many properties") }
                 map.forEach { (key,value) ->
                     val rule=properties[key] ?: patterns.entries.firstOrNull { Regex(it.key).containsMatchIn(key) }?.value
                     val pointer=path+"/"+key.replace("~","~0").replace("/","~1")
                     if(rule==null) musicCheck(schema["additionalProperties"]!=false,"SCHEMA",pointer,"Unknown field")
-                    else visit(rule.objectValue(),value,pointer,root)
+                    else visit(rule.objectValue(),value,pointer,root,normalizing)
                 }
             }
             "array" -> {
                 check(data is List<*>,"Expected array"); val list=data.arrayValue()
-                (schema["minItems"] as? BigDecimal)?.let { check(list.size>=it.toInt(),"Too few items") }
+                (schema["minItems"] as? BigDecimal)?.let { check(list.size>=it.toInt() || normalizing && path=="/score/tempos","Too few items") }
                 (schema["maxItems"] as? BigDecimal)?.let { check(list.size<=it.toInt(),"Too many items") }
-                list.forEachIndexed { i,value -> visit(schema["items"].objectValue(),value,path+"/"+i,root) }
+                list.forEachIndexed { i,value -> visit(schema["items"].objectValue(),value,path+"/"+i,root,normalizing) }
             }
             "string" -> {
                 check(data is String,"Expected string"); val text=data.textValue()
+                (schema["minLength"] as? BigDecimal)?.let { check(text.codePointCount(0,text.length)>=it.toInt(),"Text too short") }
                 (schema["maxLength"] as? BigDecimal)?.let { check(text.codePointCount(0,text.length)<=it.toInt(),"Text too long") }
                 (schema["pattern"] as? String)?.let { check(Regex(it).containsMatchIn(text),"Invalid identifier") }
             }
@@ -177,6 +190,7 @@ class SongSchema(load: (String)->ByteArray) {
                 (schema["maximum"] as? BigDecimal)?.let { check(number<=it,"Number above limit") }
             }
             "boolean" -> check(data is Boolean,"Expected boolean")
+            "null" -> check(data==null,"Expected null")
         }
     }
     private fun equalJson(a: Any?, b: Any?) = if(a is BigDecimal && b is BigDecimal) a.compareTo(b)==0 else a==b

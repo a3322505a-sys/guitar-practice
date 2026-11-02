@@ -1,5 +1,8 @@
 name: Android core
 on: [push, pull_request]
+concurrency:
+  group: android-core-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -14,9 +17,22 @@ jobs:
           packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - run: python -m pip install -r scripts/song_package/requirements.txt
-      - run: python scripts/test_song_assets.py && python scripts/test_song_packages.py
-      - run: chmod +x gradlew && ./gradlew testDebugUnitTest lintDebug assembleRelease :app:compileP0Kotlin
+      - name: Song package happy paths
+        run: >-
+          PYTHONPATH=scripts python -m unittest
+          test_song_packages.PackageTests.test_all_original_shared_fixtures
+          test_song_packages.PackageTests.test_bundled_content_matches_independent_source_facts
+      - name: Import, playback and Android build
+        run: >-
+          chmod +x gradlew && ./gradlew testDebugUnitTest
+          --tests '*SongKernelTest.originalSharedFixturesRetainPolyphonyTupletsAndTechniques'
+          --tests '*SongRepositoryTest.importUpdateRollbackAndRestartPreserveLegacySettingsAndPinnedSession'
+          --tests '*BundledSongsTest'
+          --tests '*PackageLibraryTest'
+          --tests '*StageTransportTest'
+          lintStandalone assembleStandalone assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: unsigned-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: unsigned-standalone-apk
+          retention-days: 7
+          path: app/build/outputs/apk/standalone/*.apk

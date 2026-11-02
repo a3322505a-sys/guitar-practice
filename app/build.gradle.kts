@@ -3,39 +3,49 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+val tabletReview = providers.gradleProperty("tabletReview").map { it.toBoolean() }.getOrElse(false)
 android {
     namespace = "com.a3322505a.guitarlearning"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.a3322505a.guitarlearning"
+        applicationId = if (tabletReview) "com.a3322505a.guitarlearning.tablet98" else "com.a3322505a.guitarlearning"
+        manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 96
-        versionName = "4.2.0-local48-isolated"
+        versionCode = 116
+        versionName = "1.4.6"
     }
     buildTypes {
         release { isMinifyEnabled = false; isShrinkResources = false }
-        create("p0") {
+        create("compare") {
             initWith(getByName("release"))
-            isDebuggable = true
+            applicationIdSuffix = ".compare"
+            versionNameSuffix = "-compare"
+            manifestPlaceholders["appLabel"] = "吉他练习·对照"
+            isDebuggable = false
             matchingFallbacks += "release"
         }
+        create("standalone") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".standalone"
+            versionNameSuffix = "-standalone"
+            manifestPlaceholders["appLabel"] = "吉他练习·新版"
+            isDebuggable = false
+            matchingFallbacks += "release"
+        }
+
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
-    sourceSets.getByName("debug").assets.srcDir(rootProject.file("assets/soundfont-source"))
-    sourceSets.getByName("p0").assets.srcDir(rootProject.file("work/p0-assets"))
-    testOptions { unitTests.isIncludeAndroidResources = true }
-    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-}
-androidComponents {
-    onVariants(selector().withBuildType("p0")) { variant ->
-        variant.outputs.forEach {
-            it.versionCode.set(86)
-            it.versionName.set("4.0.0-local38-alphatab-p0")
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            it.maxHeapSize = "2g"
+            it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
+    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 dependencies {
     implementation("net.alphatab:alphaTab:1.8.4")

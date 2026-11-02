@@ -1,5 +1,7 @@
 package com.a3322505a.guitarlearning.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -9,16 +11,32 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextMeasurer
@@ -29,10 +47,15 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.a3322505a.guitarlearning.music.*
-import com.a3322505a.guitarlearning.practice.MovingPosition
+import com.a3322505a.guitarlearning.practice.*
+import com.a3322505a.guitarlearning.practice.compile.PerformancePlan
+import com.a3322505a.guitarlearning.practice.compile.IntervalIndex
+import com.a3322505a.guitarlearning.audio.Phase
+import kotlin.math.floor
+import kotlin.math.ceil
 import kotlin.math.hypot
 
-enum class Hint(val title: String) { FULL("完整提示"), ROOTS("仅主音／根音"), HIDDEN("隐藏音位／指法") }
+enum class Hint(val title: String) { FULL("完整提示"), ROOTS("仅主音／根音"), HIDDEN("隐藏音位／指法"), PENTATONIC("五声骨架"), CHORD_TONES("和弦音靶心") }
 
 private val SINGLE_INLAY_FRETS = setOf(3, 5, 7, 9, 15, 17, 19, 21)
 private val DOUBLE_INLAY_FRETS = setOf(12, 24)
@@ -69,20 +92,39 @@ fun Fretboard(
     capoFret: Int = 0,
     openStringMidi: List<Int> = Music.openMidi.toList(),
     movingPositions: List<MovingPosition> = moving?.let { listOf(it) }.orEmpty(),
+    fretWindow: IntRange? = null,
+    subtleContext: Boolean = false,
+    reserveOpenString: Boolean = false,
+    noteLabels: Map<Position, String> = emptyMap(),
+    staticFocus: Boolean = false,
 ) {
-    if (positions.isNotEmpty() && positions.all { it.fret == 0 }) {
+    val teaching = LocalBoardTeaching.current
+    if (positions.isEmpty()) {
+        Box(Modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) {
+            Text("参照谱面演奏", color = PracticeSkin.colors.textSecondary)
+        }
+        return
+    }
+    if (fretWindow == null && positions.isNotEmpty() && positions.all { it.fret == 0 }) {
         OpenStringBoard(positions, key, hint, current, upcoming, enabled, onTap, capoFret, openStringMidi)
         return
     }
+    val targetRange = fretWindow ?: (positions.filter { it.fret>0 }.minOfOrNull { it.fret } ?: 0)..positions.maxOf { it.fret }
+    val expandedPositions = if(hint==Hint.CHORD_TONES && !teaching.chordTones.isNullOrEmpty())
+        (positions + (1..6).flatMap { string -> targetRange.mapNotNull { fret ->
+            Position(string,fret).takeIf { (openStringMidi[string-1]+fret+capoFret)%12 in teaching.chordTones.orEmpty() }
+        } }).distinct() else positions
     val visible = when (hint) {
-        Hint.FULL -> positions
-        Hint.ROOTS -> if (key == null) positions else positions.filter(key::isRoot)
+        Hint.FULL, Hint.PENTATONIC, Hint.CHORD_TONES -> expandedPositions
+        Hint.ROOTS -> positions.filter { p -> (openStringMidi[p.string-1]+p.fret+capoFret)%12 == (key?.root ?: teaching.root) }
         Hint.HIDDEN -> emptyList()
-    }
-    val hasOpen = positions.any { it.fret == 0 }
-    val low = positions.filter { it.fret > 0 }.minOf { it.fret }.let { if (hasOpen) 1 else it }
-    val high = positions.maxOf { it.fret }
-    val columns = high - low + 1
+    }.filter { fretWindow == null || it.fret == 0 || it.fret in fretWindow }
+    val hasOpen = reserveOpenString || positions.any { it.fret == 0 }
+    val low = fretWindow?.first ?: positions.filter { it.fret > 0 }.minOfOrNull { it.fret }?.let { if (hasOpen) 1 else it } ?: 1
+    val high = fretWindow?.last ?: positions.maxOf { it.fret }.coerceAtLeast(low)
+    val columns = (high - low + 1).coerceAtLeast(1)
+    val animatedLow by animateFloatAsState(low.toFloat(), tween(if (fretWindow == null) 0 else 180), label = "fret-window-start")
+    val touchLow by rememberUpdatedState(animatedLow)
     val measurer = rememberTextMeasurer()
     val diagramHeight = height
     val colors = PracticeSkin.colors
@@ -91,19 +133,23 @@ fun Fretboard(
         val width = maxOf(maxWidth, (columns * 36 + 56 + if (hasOpen) 36 else 0).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
             Canvas(
-                Modifier.width(width).height(diagramHeight).testTag("fretboard").semantics {
+                Modifier.width(width).height(diagramHeight).clipToBounds().testTag("fretboard").semantics {
                     contentDescription = if (hint == Hint.HIDDEN) "指板，提示已隐藏" else buildString {
                         append("指板，上为 1 弦，下为 6 弦。")
                         if (capoFret > 0) append("变调夹${capoFret}品，品位相对变调夹，音名为实际发声。")
                         current.filter { it in visible }.forEach { append("当前 ${it.string} 弦 ${it.fret} 品；") }
                         upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 ${it.fret} 品；") }
+                        movingPositions.forEach { move ->
+                            append(when (move.mark) { "/", "\\" -> "滑音"; "h" -> "击弦"; "p" -> "勾弦"; else -> "技巧" })
+                            append(" ${move.source.fret}${move.mark}${move.target.fret}；")
+                        }
                     }
                 }.pointerInput(visible, enabled, onTap) {
                     if (enabled) detectTapGestures { tap ->
                         val left = 46.dp.toPx()
                         val gridLeft = left + if (hasOpen) 36.dp.toPx() else 0f
                         val cell = (size.width - gridLeft - 10.dp.toPx()) / columns
-                        fun x(fret: Int) = if (fret == 0) left + 18.dp.toPx() else gridLeft + (fret - low + .5f) * cell
+                        fun x(fret: Int) = if (fret == 0) left + 18.dp.toPx() else gridLeft + (fret - touchLow + .5f) * cell
                         val vertical = size.height / 238.dp.toPx()
                         val top = 40.dp.toPx() * vertical
                         val row = 32.dp.toPx() * vertical
@@ -117,43 +163,41 @@ fun Fretboard(
                 val left = 46.dp.toPx()
                 val gridLeft = left + if (hasOpen) 36.dp.toPx() else 0f
                 val cell = (size.width - gridLeft - 10.dp.toPx()) / columns
-                fun x(fret: Float) = if (fret == 0f) left + 18.dp.toPx() else gridLeft + (fret - low + .5f) * cell
+                fun x(fret: Float) = if (fret == 0f) left + 18.dp.toPx() else gridLeft + (fret - animatedLow + .5f) * cell
                 val vertical = size.height / 238.dp.toPx()
                 val top = 40.dp.toPx() * vertical
                 val row = 32.dp.toPx() * vertical
                 drawRoundRect(
-                    colors.diagramSurface,
+                    colors.fretboardWood,
                     Offset(left, top - 12.dp.toPx() * vertical),
                     androidx.compose.ui.geometry.Size(size.width - left, 5 * row + 24.dp.toPx() * vertical),
                     androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()),
                 )
-                for (i in 0 until columns) {
-                    val fretNumber = low + i
-                    val cx = gridLeft + (i + 0.5f) * cell
+                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
+                    val cx = gridLeft + (fretNumber - animatedLow + 0.5f) * cell
                     if (fretNumber in SINGLE_INLAY_FRETS) {
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
                     } else if (fretNumber in DOUBLE_INLAY_FRETS) {
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
-                        drawCircle(colors.border.copy(alpha = 0.55f), 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
+                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
                     }
                 }
-                for (i in 0..columns) {
+                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns).toInt()) {
                     drawLine(
-                        colors.diagramGrid,
-                        Offset(gridLeft + i * cell, top - 12.dp.toPx() * vertical),
-                        Offset(gridLeft + i * cell, top + 5 * row + 12.dp.toPx() * vertical),
+                        colors.fretboardWire,
+                        Offset(gridLeft + (fretNumber - animatedLow) * cell, top - 12.dp.toPx() * vertical),
+                        Offset(gridLeft + (fretNumber - animatedLow) * cell, top + 5 * row + 12.dp.toPx() * vertical),
                         metrics.borderWidth.toPx(),
                     )
                 }
-                for (i in 0 until columns) {
-                    val fretNumber = low + i
+                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
                     val isMarker = fretNumber in SINGLE_INLAY_FRETS || fretNumber in DOUBLE_INLAY_FRETS
                     label(
                         measurer,
                         "$fretNumber",
-                        gridLeft + (i + 0.5f) * cell,
+                        gridLeft + (fretNumber - animatedLow + 0.5f) * cell,
                         16.dp.toPx() * vertical,
-                        if (isMarker) colors.primary else colors.textSecondary,
+                        if (isMarker) colors.primaryText else colors.textSecondary,
                         bold = isMarker,
                     )
                 }
@@ -168,37 +212,47 @@ fun Fretboard(
                 }
                 for (s in 1..6) {
                     val y = top + (s - 1) * row
-                    drawLine(colors.diagramGrid, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), (0.45 + s * 0.13).dp.toPx())
+                    drawLine(colors.fretboardWire, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), (0.45 + s * 0.13).dp.toPx())
                     label(measurer, "$s ${Music.name(openStringMidi[s - 1] + capoFret)}", 21.dp.toPx(), y, colors.textSecondary, size = 12)
                 }
                 for (p in visible) {
                     val center = Offset(x(p.fret.toFloat()), top + (p.string - 1) * row)
-                    val root = key?.isRoot(p) == true
+                    val root = (openStringMidi[p.string-1]+p.fret+capoFret)%12 == (if(hint==Hint.CHORD_TONES) teaching.emphasisRoot(hint) else key?.root ?: teaching.root)
                     val active = p in current
+                    val emphasized = teaching.emphasized(hint,openStringMidi[p.string-1]+p.fret+capoFret)
+                    val midi = openStringMidi[p.string - 1] + p.fret + capoFret
+                    val characteristic = teaching.key?.scale == ScaleDefinition.BLUES && Math.floorMod(midi - teaching.key.tonic.pitchClass, 12) == 6
+                    val fill = when {
+                        root -> colors.noteRoot
+                        characteristic -> colors.noteCharacteristic
+                        midi % 12 in teaching.chordTones -> colors.noteChordTone
+                        else -> colors.noteScalePassing
+                    }
+                    val ink = if (subtleContext && !active && !root) colors.noteInkLight else if (fill.luminance() > .18f) colors.noteInkDark else colors.noteInkLight
                     val radius = (if (root || active) 13.5f else 12.5f).dp.toPx() * vertical
                     drawCircle(
-                        if (active) colors.fretboardNoteActive else if (root) colors.fretboardRoot else colors.fretboardNoteNormal,
+                        if (!root && !active && (!emphasized || subtleContext)) fill.copy(alpha = .35f) else fill,
                         radius,
                         center,
                     )
                     if (!active && !root) {
-                        drawCircle(colors.primary.copy(alpha = 0.65f), radius, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
+                        drawCircle(colors.fretboardNoteStroke, radius, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
                     } else if (root && !active) {
-                        drawCircle(colors.primary.copy(alpha = 0.32f), 16.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
+                        drawCircle(colors.noteRoot, 16.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2.5f).toPx()))
                     }
                     if (active) {
-                        drawCircle(colors.textPrimary, 16.5.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2).toPx()))
+                        drawCircle(colors.fretboardWire, 16.5.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2).toPx()))
                     }
-                    if (p in upcoming) {
-                        drawCircle(colors.primary, 19.dp.toPx() * vertical, center, style = Stroke((metrics.borderWidth * 2).toPx()))
+                    if (p in upcoming && !active) {
+                        drawCircle(colors.primary, 19.dp.toPx() * vertical, center, style = Stroke(metrics.borderWidth.toPx()))
                     }
-                    label(
+                    if (!subtleContext || active || p in upcoming) label(
                         measurer,
-                        if (degrees && key != null) key.degree(openStringMidi[p.string - 1] + p.fret + capoFret).toString()
-                        else Music.name(openStringMidi[p.string - 1] + p.fret + capoFret),
+                        if (degrees && key != null) key.degreeLabel(openStringMidi[p.string - 1] + p.fret + capoFret)
+                        else noteLabels[p] ?: (key?.context ?: teaching.key)?.noteName(openStringMidi[p.string - 1] + p.fret + capoFret) ?: Music.name(openStringMidi[p.string - 1] + p.fret + capoFret),
                         center.x,
                         center.y,
-                        if (active) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal,
+                        ink.copy(alpha = if (emphasized || active || root) 1f else .6f),
                         bold = root || active,
                     )
                 }
@@ -215,7 +269,7 @@ fun Fretboard(
                             "${movingItem.source.fret}${movingItem.mark}${movingItem.target.fret}",
                             (moveIndex + 1) * size.width / (movingPositions.size + 1),
                             205.dp.toPx() * vertical,
-                            color = colors.primary,
+                            color = colors.primaryText,
                             bold = true,
                         )
                     }
@@ -239,9 +293,10 @@ private fun OpenStringBoard(
     capoFret: Int = 0,
     openStringMidi: List<Int> = Music.openMidi.toList(),
 ) {
+    val teaching = LocalBoardTeaching.current
     val visible = when (hint) {
-        Hint.FULL -> positions
-        Hint.ROOTS -> if (key == null) positions else positions.filter(key::isRoot)
+        Hint.FULL, Hint.PENTATONIC, Hint.CHORD_TONES -> positions
+        Hint.ROOTS -> positions.filter { p -> (openStringMidi[p.string-1]+p.fret+capoFret)%12 == (key?.root ?: teaching.root) }
         Hint.HIDDEN -> emptyList()
     }
     val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
@@ -281,7 +336,7 @@ private fun OpenStringBoard(
                             style = MaterialTheme.typography.labelLarge,
                             color = if (shown) ink else colors.textSecondary,
                         )
-                        Text(if (shown) "0" else "", style = MaterialTheme.typography.labelSmall, color = if (active) ink else colors.primary)
+                        Text(if (shown) "O" else "", style = MaterialTheme.typography.labelSmall, color = if (active) ink else colors.primaryText)
                     }
                 }
             }
@@ -289,107 +344,151 @@ private fun OpenStringBoard(
     }
 }
 
-@Composable
-fun ChordDiagram(
-    chord: Chord,
-    hint: Hint,
-    current: List<Position>,
-    enabled: Boolean,
-    height: androidx.compose.ui.unit.Dp = 300.dp,
-    onTap: (Position) -> Unit,
-) {
-    chord.unavailableReason?.let { Text(it, color = PracticeSkin.colors.danger); return }
-    val measurer = rememberTextMeasurer()
-    val diagramHeight = height
-    val colors = PracticeSkin.colors
-    val metrics = PracticeSkin.metrics
-    val visible = when (hint) {
-        Hint.FULL -> chord.positions
-        Hint.ROOTS -> chord.positions.filter(chord::isRoot)
-        Hint.HIDDEN -> emptyList()
+/** Shift only when a required fretted note leaves the window; leave room after a shift. */
+internal fun stableFretWindow(previous: IntRange, requiredFrets: List<Int>): IntRange {
+    val required = requiredFrets.filter { it in 1..36 }
+    if (required.isEmpty() || required.all { it in previous }) return previous
+    val low = required.min()
+    val high = required.max()
+    val span = high - low + 1
+    val columns = maxOf(7, previous.count(), span + 2).coerceAtMost(36)
+    val first = (low - (columns - span) / 2).coerceIn(1, 37 - columns)
+    return first..(first + columns - 1)
+}
+
+internal data class BoardTarget(val at: Double, val positions: List<Position>, val rest: Boolean, val dead: Boolean)
+
+/** Immutable display index: it never advances audio time or changes accepted source notes. */
+internal class LessonBoardIndex(private val plan: PerformancePlan) {
+    private val notes = plan.notes.filter { it.track.id == plan.practice.mainTrackId && !it.note.dead }
+    private val intervals = IntervalIndex(notes, { it.start.value() }, { maxOf(it.soundEnd, it.event.end).value() })
+    private val tiedTargets = plan.relations.filter { it.kind == "tie" }.map { it.to }.toSet()
+    private val byEvent = notes.groupBy { it.event.id }
+    private val byOnset = notes.groupBy { it.event.activation.value() }
+    private val techniques = plan.relations.mapNotNull { relation ->
+        if (relation.kind !in listOf("slide", "slide-pick", "hammer", "pull", "tap")) return@mapNotNull null
+        val from = plan.noteById[relation.from] ?: return@mapNotNull null
+        val to = plan.noteById[relation.to] ?: return@mapNotNull null
+        if (from.track.id != plan.practice.mainTrackId || to.track.id != from.track.id ||
+            from.position.string != to.position.string || from.note.dead || to.note.dead || to.start <= from.start) return@mapNotNull null
+        Triple(from, to, when (relation.kind) { "hammer" -> "h"; "pull" -> "p"; "tap" -> "T"; else -> if (to.position.fret >= from.position.fret) "/" else "\\" })
     }
-    Canvas(
-        Modifier.fillMaxWidth().height(diagramHeight).testTag("chord-diagram").semantics {
-            contentDescription = if (hint == Hint.HIDDEN) "和弦图，提示已隐藏" else buildString {
-                append("${chord.name}，${chord.conditions}，起始相对品位${chord.baseFret}。")
-                visible.forEach { append("${it.string} 弦 ${it.fret} 品，${chord.noteName(it, true)} ${chord.role(it)}；") }
-            }
-        }.pointerInput(chord, hint, enabled, onTap) {
-            if (enabled) detectTapGestures { tap ->
-                val geometry = ChordGeometry(size.width.toFloat(), size.height.toFloat(), chord.baseFret)
-                val stringIndex = (0..5).minBy { kotlin.math.abs(tap.x - (geometry.left + it * geometry.stringStep)) }
-                visible.firstOrNull { it.string == 6 - stringIndex }?.let { p ->
-                    if ((tap - geometry.position(p)).getDistance() <= maxOf(22.dp.toPx(), geometry.unit * 20)) onTap(p)
-                }
-            }
-        },
-    ) {
-        val geometry = ChordGeometry(size.width, size.height, chord.baseFret)
-        val left = geometry.left
-        val step = geometry.stringStep
-        val top = geometry.top
-        val fretStep = geometry.fretStep
-        val right = left + 5 * step
-        // One scale for both axes: the grid stays square, even inside a wide card.
-        drawRoundRect(
-            colors.diagramSurface,
-            Offset(left, top),
-            androidx.compose.ui.geometry.Size(5 * step, 4 * fretStep),
-            androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx().coerceAtMost(5 * geometry.unit)),
-        )
-        for (i in 0..4) {
-            drawLine(
-                if (i == 0 && chord.baseFret == 1) colors.textPrimary else colors.diagramGrid,
-                Offset(left, top + i * fretStep),
-                Offset(right, top + i * fretStep),
-                if (i == 0 && chord.baseFret == 1) (metrics.borderWidth * 4).toPx() else metrics.borderWidth.toPx(),
-            )
+    private val techniqueIntervals = IntervalIndex(techniques, { it.first.start.value() }, { it.second.start.value() })
+    fun techniquesAt(q: Double): List<MovingPosition> = techniqueIntervals.query(q, q + 1e-9).map { (from, to, mark) ->
+        val fraction = if (mark == "/" || mark == "\\") ((q - from.start.value()) / (to.start - from.start).value()).toFloat() else 0f
+        MovingPosition(from.position, to.position, from.position.fret + (to.position.fret - from.position.fret) * fraction, mark)
+    }
+    val targets = plan.events.filter { it.track.id == plan.practice.mainTrackId }
+        .groupBy { it.activation.value() }.toSortedMap().map { (at, events) ->
+            BoardTarget(at, events.flatMap { byEvent[it.id].orEmpty() }.filter { it.id !in tiedTargets }.map { it.position }.distinct(), events.all { it.effectiveNotes.isEmpty() }, events.flatMap { it.effectiveNotes }.let { it.isNotEmpty() && it.all { note -> note.dead } })
         }
-        for (i in 0..5) {
-            val x = left + i * step
-            drawLine(colors.diagramGrid, Offset(x, top), Offset(x, top + 4 * fretStep), (1.1 - i * 0.11).dp.toPx())
-            label(measurer, "${6 - i}", x, geometry.stringY, colors.textSecondary, size = 12)
-            if (hint == Hint.FULL) {
-                label(measurer, chord.label(i), x, geometry.noteY, colors.textPrimary, size = 13)
-                if (chord.frets[i] == null) label(measurer, "X", x, geometry.openY, color = colors.textSecondary, bold = true)
+    private val onsets = targets.filter { it.positions.isNotEmpty() }
+    val hasOpen = notes.any { it.position.fret == 0 }
+    val labels = notes.groupBy { it.position }.mapValues { (position, values) ->
+        val pitches = values.map { it.note.harmonic?.soundMidi ?: it.note.midi }.distinct()
+        if (pitches.size == 1) Music.name(pitches.single(), true) else "${position.fret}品"
+    }
+    fun labelsAt(q: Double, next: BoardTarget?, mode: String, root: Int?, keyContext: KeyContext? = null): Map<Position,String> {
+        val heads=intervals.query(q,q+1e-7)+next?.let { t -> byOnset[t.at].orEmpty() }.orEmpty()
+        return heads.groupBy { it.position }.mapValues { (position,values) ->
+            when {
+                mode=="fingers" && position.fret==0 -> "O"
+                mode=="fingers" && values.map { it.finger }.distinct().singleOrNull()!=null -> if(values.first().finger==5) "T" else values.first().finger.toString()
+                mode=="degrees" && root!=null -> keyContext?.degree(values.first().note.midi) ?: listOf("1","♭2","2","♭3","3","4","♯4","5","♭6","6","♭7","7")[Math.floorMod(values.first().note.midi-root,12)]
+                else -> values.map { val midi=it.note.harmonic?.soundMidi ?: it.note.midi; (keyContext?.noteName(midi) ?: Music.name(midi))+(midi/12-1) }.distinct().singleOrNull() ?: "${position.fret}品"
             }
         }
-        for (p in visible) {
-            val center = geometry.position(p)
-            val root = chord.isRoot(p)
-            val active = p in current
-            drawCircle(
-                if (active) colors.fretboardNoteActive else if (root) colors.fretboardRoot else colors.fretboardNoteNormal,
-                13 * geometry.unit,
-                center,
-            )
-            if (!active && !root) {
-                drawCircle(colors.primary.copy(alpha = 0.7f), 13 * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.4f).toPx()))
-            } else if (root && !active) {
-                drawCircle(colors.primary.copy(alpha = 0.35f), 15.5f * geometry.unit, center, style = Stroke((metrics.borderWidth * 1.5f).toPx()))
-            }
-            label(
-                measurer,
-                if (hint == Hint.ROOTS) "根" else if (p.fret == 0) "O" else chord.fingers[6 - p.string].toString(),
-                center.x,
-                center.y,
-                if (active) colors.onFretboardNoteActive else if (root) colors.onFretboardRoot else colors.onFretboardNoteNormal,
-                bold = true,
-            )
-            if (active) drawCircle(colors.textPrimary, 17 * geometry.unit, center, style = Stroke((metrics.borderWidth * 2).toPx()))
+    }
+    fun pool(visit: Int): List<Position> {
+        val v = plan.visits.getOrNull(visit) ?: return emptyList()
+        return intervals.query(v.start.value(), (v.start + v.duration).value()).map { it.position }.distinct()
+    }
+    fun targetAt(q: Double): BoardTarget? {
+        var lo = 0
+        var hi = targets.size
+        while (lo < hi) {
+            val mid = (lo + hi) / 2
+            if (targets[mid].at <= q + 1e-8) lo = mid + 1 else hi = mid
         }
-        for (i in 1..4) label(measurer, "${chord.baseFret + i - 1}", left - 23 * geometry.unit, top + (i - 0.5f) * fretStep, colors.textSecondary, size = 12)
+        return targets.getOrNull(lo - 1)
+    }
+    fun next(q: Double, first: Double, end: Double, loop: Boolean): Pair<BoardTarget?, Boolean> {
+        fun after(value: Double, inclusive: Boolean): Int {
+            var lo = 0
+            var hi = onsets.size
+            while (lo < hi) {
+                val mid = (lo + hi) / 2
+                if (onsets[mid].at < value || (!inclusive && onsets[mid].at <= value + 1e-8)) lo = mid + 1 else hi = mid
+            }
+            return lo
+        }
+        val next = onsets.getOrNull(maxOf(after(q, false), after(first, true)))?.takeIf { it.at < end }
+        if (next != null) return next to false
+        val head = if (loop) onsets.getOrNull(after(first, true))?.takeIf { it.at < end } else null
+        return head to (head != null)
     }
 }
 
-internal class ChordGeometry(width: Float, height: Float, private val baseFret: Int = 1) {
-    val unit = minOf(width / 260f, height / 300f)
-    val stringStep = 36 * unit
-    val fretStep = 45 * unit
-    val left = width / 2 - 90 * unit
-    val top = (height - 300 * unit) / 2 + 54 * unit
-    val openY = top - 26 * unit
-    val noteY = top + 207 * unit
-    val stringY = top + 236 * unit
-    fun position(p: Position) = Offset(left + (6 - p.string) * stringStep, if (p.fret == 0) openY else top + (p.fret - baseFret + .5f) * fretStep)
+@Composable
+internal fun LinkedFretboardDock(
+    sequence: Sequence,
+    cursor: Cursor?,
+    phase: Phase,
+    current: List<Position>,
+    range: BarRange,
+    onTap: (Position) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = false,
+    loopContinues: Boolean = false,
+    labelRoot: Int? = null,
+    labelMode: String = "notes",
+) {
+    val plan = remember(sequence) { sequence.performance }
+    val index = remember(plan) { LessonBoardIndex(plan) }
+    val visit = (cursor?.bar ?: range.first).coerceIn(range.first, range.last)
+    val q = cursor?.localTick?.div(sequence.ticksPerQuarter) ?: plan.visits[range.first].start.value()
+    val first = plan.visits[range.first].start.value()
+    val end = plan.visits[range.last].let { (it.start + it.duration).value() }
+    val target = index.targetAt(q)
+    val next = if (cursor?.pre == true || phase == Phase.ENDED || phase == Phase.ERROR) null to false else index.next(q, first, end, loopContinues)
+    val pool = remember(index, visit) { index.pool(visit) }
+    val active = when {
+        cursor?.pre == true || phase == Phase.ENDED || phase == Phase.ERROR -> emptyList()
+        cursor != null -> if(phase==Phase.PAUSED) current.ifEmpty { target?.positions.orEmpty() } else current
+        else -> target?.positions.orEmpty()
+    }
+    val upcoming = next.first?.positions.orEmpty()
+    val required = (active + upcoming).map { it.fret }.distinct().sorted()
+    var window by remember(sequence) { mutableStateOf(stableFretWindow(1..7, required)) }
+    LaunchedEffect(required) { window = stableFretWindow(window, required) }
+    val positions = (pool + active + upcoming).distinct()
+    val noteLabels=index.labelsAt(q,next.first,labelMode,labelRoot,LocalBoardTeaching.current.key)
+    val techniques = if (cursor?.pre == true || phase == Phase.ENDED || phase == Phase.ERROR) emptyList()
+        else cursor?.movingPositions?.takeIf { it.isNotEmpty() } ?: index.techniquesAt(q)
+    Box(modifier) {
+        Column(Modifier.fillMaxSize()) {
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+                Fretboard(
+                    positions = positions,
+                    key = null,
+                    hint = Hint.FULL,
+                    degrees = false,
+                    current = active,
+                    enabled = enabled,
+                    height = maxHeight.coerceAtLeast(1.dp),
+                    onTap = onTap,
+                    upcoming = upcoming,
+                    showLegend = false,
+                    capoFret = sequence.capoFret,
+                    openStringMidi = sequence.runtimePlan?.mainTrack?.openStringMidi ?: sequence.openStringMidi,
+                    fretWindow = window,
+                    subtleContext = true,
+                    reserveOpenString = index.hasOpen,
+                    noteLabels = noteLabels,
+                    staticFocus = phase==Phase.PAUSED,
+                    movingPositions = techniques,
+                )
+            }
+        }
+    }
 }

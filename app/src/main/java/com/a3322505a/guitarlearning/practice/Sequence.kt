@@ -53,7 +53,7 @@ data class Sequence(val events: List<Event>, val length: Int, val explanation: S
     val route get() = runtimePlan?.mainPositions ?: events.flatMap { it.positions }.distinct()
     fun midi(position: Position) = runtimePlan?.mainTrack?.midi(position.string,position.fret) ?: (openStringMidi[position.string-1]+position.fret+capoFret)
     fun eventAt(tick: Double) = events.lastOrNull { tick >= it.tick && tick < it.tick + it.duration }
-    fun sectionAt(tick: Double) = runtimePlan?.harmonies?.indexOfLast { it.start.value()*QUARTER<=tick } ?: sections.indexOfLast { it.tick <= tick }
+    fun sectionAt(tick: Double) = runtimePlan?.harmonies?.indexOfLast { it.start.value()*QUARTER<=tick && (it.end==null || tick<it.end.value()*QUARTER) } ?: sections.indexOfLast { it.tick <= tick }
     fun chordAt(section: Section): Chord? {
         section.sourceChord?.let { return it.takeIf { chord -> chord.unavailableReason==null } }
         if(runtimePlan==null) return Chords.all.firstOrNull { it.name==section.chord }
@@ -84,21 +84,23 @@ enum class ScaleExercise(val title: String, val instruction: String) {
 
 data class ScaleOptions(val pattern: Int = 0, val key: Tonality = Tonality.C_MAJOR, val exercise: ScaleExercise = ScaleExercise.ASCEND,
     val firstString: Int = 1, val lastString: Int = 6, val octave: Boolean = true, val notesPerBeat: Int = 1,
-    val startDegree: Int = 1, val reverse: Boolean = false) {
+    val startDegree: Int = 1, val reverse: Boolean = false, val pentatonic: Boolean = false) {
     init { require(notesPerBeat in 1..3) }
 }
 data class RouteResult(val sequence: Sequence?, val reason: String = "")
 
 object Routes {
     fun scale(o: ScaleOptions): RouteResult {
-        val first = Patterns.all[o.pattern]
-        val next = Patterns.all[(o.pattern + 1) % 5]
-        if (o.exercise == ScaleExercise.CONNECTION && o.pattern == 4) return RouteResult(null, "re 是本次五型的最后一型；选择 mi、sol、la 或 si 连接下一型。")
+        val patterns = Patterns.forKey(o.key,o.pentatonic)
+        val first = patterns[o.pattern.coerceIn(patterns.indices)]
+        val next = patterns[(o.pattern + 1) % patterns.size]
+        if (o.exercise == ScaleExercise.CONNECTION && o.pattern >= patterns.lastIndex) return RouteResult(null, "这是最后一个把位；选择前一个把位连接下一型。")
         val available = (if(o.exercise == ScaleExercise.CONNECTION) first.positions + next.positions else first.positions)
             .distinct().filter { it.string in o.firstString..o.lastString }
         val ordered = available.sortedWith(compareBy<Position> { it.midi }.thenBy { it.fret }).distinctBy { it.midi }
         val roots = ordered.filter(o.key::isRoot)
-        val octave = roots.firstOrNull { root -> (root.midi..root.midi+12).count { m -> ordered.any { it.midi == m } } == 8 }
+        val noteCount=(if(o.pentatonic) o.key.mode.pentatonic else o.key.mode).semitones.size+1
+        val octave = roots.firstOrNull { root -> (root.midi..root.midi+12).count { m -> ordered.any { it.midi == m } } == noteCount }
         if (ordered.isEmpty()) return RouteResult(null, "所选弦范围没有音位。")
         if (o.octave && o.exercise != ScaleExercise.ROOTS && octave == null) return RouteResult(null, "所选弦范围不够组成主音起的一八度；扩大弦范围或选择整型音域。")
         val pool = if(o.octave && octave != null) ordered.filter { it.midi in octave.midi..octave.midi+12 } else ordered
@@ -137,8 +139,7 @@ object Routes {
         val connection = if(o.exercise == ScaleExercise.CONNECTION) {
             " ${first.solfege} → ${next.solfege} → ${first.solfege}；共享主音后调整手型，转折音只弹一次。"
         } else ""
-        val stretch = if(o.pattern == 2) " la 指型三弦 4 品 B：可伸指或轻微移位。" else ""
-        return RouteResult(Sequence(events, length, "${o.exercise.instruction} $scope，${o.firstString}–${o.lastString} 弦。$connection$tail$stretch",tuplets=tuplets).also { it.validateExpression() })
+        return RouteResult(Sequence(events, length, "${o.exercise.instruction} $scope，${o.firstString}–${o.lastString} 弦。$connection$tail",tuplets=tuplets).also { it.validateExpression() })
     }
 }
 
@@ -148,9 +149,10 @@ data class ConnectionPlan(val outward: List<Position>, val returning: List<Posit
 
 /** Choose positions for each direction independently; pitch reversal alone does not choose a fingering. */
 fun connectionPlan(o: ScaleOptions, allowedMidi: Set<Int>? = null): ConnectionPlan? {
-    if(o.pattern !in 0..3) return null
-    val a=Patterns.all[o.pattern].positions
-    val b=Patterns.all[o.pattern+1].positions
+    val patterns=Patterns.forKey(o.key,o.pentatonic)
+    if(o.pattern !in 0 until patterns.lastIndex) return null
+    val a=patterns[o.pattern.coerceIn(patterns.indices)].positions
+    val b=patterns[o.pattern+1].positions
     fun eligible(p: Position)=p.string in o.firstString..o.lastString && (allowedMidi==null || p.midi in allowedMidi)
     fun paths(slots: List<List<Position>>): List<List<Position>> = slots.fold(listOf(emptyList<Position>())) { paths,slot ->
         paths.flatMap { path -> slot.filter { p -> path.isEmpty() || kotlin.math.abs(path.last().string-p.string)<=1 }
@@ -186,6 +188,7 @@ fun connectionPlan(o: ScaleOptions, allowedMidi: Set<Int>? = null): ConnectionPl
 }
 
 fun suggestedFinger(position: Position, pattern: Pattern): Int {
+    pattern.fingers[position]?.let { return it }
     if(position.fret==0) return 0
     val base=if(pattern.frets.any { 0 in it }) 1 else pattern.frets[position.string-1].first { it>0 }
     return (position.fret-base+1).coerceIn(1,4)

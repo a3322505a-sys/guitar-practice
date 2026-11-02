@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "id": "original-source",
+      "name": "simple 原创手工数据",
+      "sha256": "9d4f2e2d1333168fe42193ce7085df8c2c7ee69f238b12e366f98b7eafef8f22",
+      "format": "original",
+      "license": "CC0",
+      "origin": "项目原创契约样本"
+    }
+  ],
+  "tool": "song-package-v1",
+  "exclusions": [],
+  "mappings": [
+    {
+      "noteId": "simple-n0",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e0/simple-n0"
+    },
+    {
+      "noteId": "simple-n1",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e1/simple-n1"
+    },
+    {
+      "noteId": "simple-n2",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e2/simple-n2"
+    },
+    {
+      "noteId": "simple-n3",
+      "sourceId": "original-source",
+      "location": "bar1/simple-e3/simple-n3"
+    }
+  ]
+}

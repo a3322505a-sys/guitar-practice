@@ -15,7 +15,11 @@ class EngineProjection(val visits: List<MasterBarTickLookup>, private val sounds
     data class Sound(val track: Int, val start: Double, val end: Double, val positions: List<Position>)
     private val index = IntervalIndex(sounds, { it.start }, { it.end })
     fun active(tick: Double, track: Int) = index.query(tick, tick + 1e-7).filter { it.track == track }.flatMap { it.positions }.distinct()
-    fun visitAt(tick: Double) = visits.indexOfLast { it.start <= tick }.coerceAtLeast(0)
+    fun visitAt(tick: Double): Int {
+        var lo=0; var hi=visits.size
+        while(lo<hi) { val mid=(lo+hi)/2; if(visits[mid].start<=tick) lo=mid+1 else hi=mid }
+        return (lo-1).coerceAtLeast(0)
+    }
     fun label(visit: Int): String {
         val current = visits.getOrNull(visit) ?: return ""
         val number = current.masterBar.index.toInt() + 1

@@ -2,11 +2,8 @@ package com.a3322505a.guitarlearning
 
 import com.a3322505a.guitarlearning.music.*
 import com.a3322505a.guitarlearning.practice.*
-import com.a3322505a.guitarlearning.audio.*
 import org.junit.Assert.*
 import org.junit.Test
-import java.io.File
-import kotlin.math.*
 
 class CoreTest {
     @Test fun scaleTripletsHaveTwelveEquallySpacedOnsetsInAFullBarAt60Bpm() {
@@ -17,15 +14,9 @@ class CoreTest {
         assertTrue(seq.events.none { it.rest })
         assertEquals((0..11).map { it*4 },seq.events.map { it.tick })
         assertEquals(listOf(Tuplet(0,4),Tuplet(12,4),Tuplet(24,4),Tuplet(36,4)),seq.tuplets)
-        val session=Session(seq,60,true,2)
-        val frames=seq.events.map { session.frame((session.preTicks+it.tick).toDouble()) }
-        assertEquals(4*44100L,frames.first().toLong())
-        assertEquals(List(11) { 14700L },frames.zipWithNext { a,b -> b-a })
-        assertEquals(8*44100L,session.frame((session.preTicks+seq.length).toDouble()))
-        assertEquals(0.0,session.cursor(96.0).localTick,0.0)
-        assertEquals(1,session.cursor(96.0).loop)
-        assertEquals(48.0,session.resumeTick(71.0),0.0)
-        assertEquals(7350L,Session(seq,120,false,1).frame(4.0))
+        val notes=seq.performance.notes
+        assertEquals((0..11).map { com.a3322505a.guitarlearning.music.score.Q(it.toLong(),3) }, notes.map { it.start })
+        assertEquals(com.a3322505a.guitarlearning.music.score.Q(4),seq.performance.length)
     }
     @Test fun partialTripletTailsKeepTheExistingWholeBarBoundary() {
         // Two roots leave two sounding members; the full sol round trip leaves one.
@@ -48,7 +39,7 @@ class CoreTest {
             assertEquals(seq.length-group.end,tail.sumOf { it.duration })
             assertTrue(tail.all { it.rest && it.duration%12==0 })
             assertEquals(seq.length,seq.events.sumOf { it.duration })
-            assertEquals(0.0,Session(seq,60,false,2).cursor(seq.length.toDouble()).localTick,0.0)
+            assertEquals(seq.length.toDouble()/12,seq.performance.length.value(),0.0)
             seq.validateExpression()
         }
         assertEquals(setOf(1,2),remainders)
@@ -84,22 +75,22 @@ class CoreTest {
         assertEquals("C♯",Chords.named("A").label(4))
         assertEquals("X",Chords.named("C").label(0))
     }
-    @Test fun fiveShapesMatchSourceTableIncludingEdges() {
-        val expected=listOf(
-            "0,1,3|0,1,3|0,2|0,2,3|0,2,3|0,1,3",
-            "3,5|3,5,6|2,4,5|2,3,5|2,3,5|3,5",
-            "5,7,8|5,6,8|4,5,7|5,7|5,7,8|5,7,8",
-            "7,8,10|8,10|7,9,10|7,9,10|7,8,10|7,8,10",
-            "10,12,13|10,12,13|9,10,12|9,10,12|10,12|10,12,13")
-        assertEquals(listOf("mi C","sol A","la G","si E","re D"),Patterns.all.map { "${it.solfege} ${it.caged}" })
-        Patterns.all.forEachIndexed { i,p ->
-            assertEquals(expected[i],p.frets.joinToString("|") { it.joinToString(",") })
-            assertTrue(p.positions.all { it.midi%12 in listOf(0,2,4,5,7,9,11) })
+    @Test fun fiveClosedBoxesAndTheSeparateOpenPositionCoverOnlyTheirNativeScalePitches() {
+        val c = Patterns.forKey(Tonality.C_MAJOR)
+        assertEquals(6, c.size)
+        assertEquals(setOf("C", "A", "G", "E", "D"), c.filter { it.caged.isNotBlank() }.map { it.caged }.toSet())
+        assertTrue(c.first().positions.containsAll(listOf(Position(5, 3), Position(2, 1))))
+        Tonality.entries.forEach { key ->
+            val patterns = Patterns.forKey(key)
+            val closed = patterns.filter { it.solfege != "开放把位" }
+            assertEquals(key.title, 5, closed.size)
+            assertTrue(closed.all { it.positions.none { p -> p.fret == 0 } })
+            patterns.forEach { pattern ->
+                assertEquals(pattern.positions.toSet(), pattern.fingers.keys)
+                assertTrue(pattern.positions.all { it.midi % 12 in key.pitchClasses })
+                assertTrue(pattern.positions.all { it.string in 1..6 && it.fret in 0..24 })
+            }
         }
-        assertTrue(Position(2,6) in Patterns.all[1].positions)
-        assertTrue(Position(3,4) in Patterns.all[2].positions)
-        assertTrue(Position(2,13) in Patterns.all[4].positions)
-        assertTrue(Position(1,13) in Patterns.all[4].positions)
     }
     @Test fun s1QuarterAndEighthAndMinorAreRealRoutes() {
         val s1=Routes.scale(ScaleOptions()).sequence!!
@@ -147,8 +138,8 @@ class CoreTest {
             val result=Routes.scale(ScaleOptions(pattern=pattern,key=key,exercise=ScaleExercise.CONNECTION,octave=false,firstString=start,lastString=end,reverse=reverse))
             val seq=result.sequence
             if(seq==null) { assertTrue(result.reason.isNotBlank()); continue }
-            val first=Patterns.all[pattern].positions
-            val next=Patterns.all[pattern+1].positions
+            val first=Patterns.forKey(key)[pattern].positions
+            val next=Patterns.forKey(key)[pattern+1].positions
             assertTrue(seq.route.any { it in first && it !in next })
             assertTrue(seq.route.any { it in next && it !in first })
             assertTrue(seq.route.all { it.string in start..end })
@@ -158,14 +149,16 @@ class CoreTest {
         for(key in Tonality.entries) for(pattern in 0..4) for(kind in ScaleExercise.entries) {
             if(kind==ScaleExercise.CONNECTION && pattern==4) continue
             val o=ScaleOptions(pattern=pattern,key=key,exercise=kind,octave=false)
-            val s=Routes.scale(o).sequence!!
-            val valid=Patterns.all[pattern].positions + if(kind==ScaleExercise.CONNECTION) Patterns.all[pattern+1].positions else emptyList()
+            val result = Routes.scale(o)
+            val s = result.sequence
+            if (s == null) { assertTrue("$key / $pattern / $kind", result.reason.isNotBlank()); continue }
+            val valid=Patterns.forKey(key)[pattern].positions + if(kind==ScaleExercise.CONNECTION) Patterns.forKey(key)[pattern+1].positions else emptyList()
             assertTrue(s.route.all { it in valid })
             assertEquals(0,s.length%48)
             if(kind==ScaleExercise.ROOTS) assertTrue(s.route.all(key::isRoot))
             if(kind==ScaleExercise.CONNECTION) {
-                assertTrue(s.route.any { it in Patterns.all[pattern].positions && it !in Patterns.all[pattern+1].positions })
-                assertTrue("$key / $pattern : ${s.route}",s.route.any { it in Patterns.all[pattern+1].positions && it !in Patterns.all[pattern].positions })
+                assertTrue(s.route.any { it in Patterns.forKey(key)[pattern].positions && it !in Patterns.forKey(key)[pattern+1].positions })
+                assertTrue("$key / $pattern : ${s.route}",s.route.any { it in Patterns.forKey(key)[pattern+1].positions && it !in Patterns.forKey(key)[pattern].positions })
             }
         }
         for(start in 1..6) for(end in start..6) {
@@ -197,50 +190,5 @@ class CoreTest {
         assertEquals(listOf(5,4,3,2,1),down.events.first().positions.map { it.string })
         val arp=chordSequence(Chords.named("D"),a,ChordExercise.ARPEGGIO,4)
         assertEquals(listOf(4,3,2,1,5,3,2,1),arp.events.flatMap { it.positions }.map { it.string })
-    }
-    @Test fun absoluteFramesNeverAccumulateLoopRoundingErrorAndResumeKeepsRound() {
-        val s=Session(Routes.scale(ScaleOptions()).sequence!!,137,true,4)
-        assertEquals(816L,s.totalTicks)
-        assertEquals(48,s.preTicks)
-        assertEquals(-1,s.loopAt(47.9))
-        assertEquals(0,s.loopAt(48.0))
-        assertEquals(0,s.loopAt(239.9))
-        assertEquals(1,s.loopAt(240.0))
-        assertEquals(0.0,s.resumeTick(27.0),0.0)
-        assertEquals(288.0,s.resumeTick(311.0),0.0)
-        for(loop in 0..1000) {
-            val ticks=48.0+loop*192
-            assertEquals(round(ticks*44100*60/(137*12)).toLong(),s.frame(ticks))
-        }
-    }
-    private fun sampler() = Sampler(SoundBank.NYLON) { root -> File("../assets/soundfont-source/guitar-nylon/$root.pcm").readBytes() }
-    private fun energy(p: ShortArray) = p.sumOf { it.toDouble()*it }
-    @Test fun realPcmOnsetsRestsMuteAndLoopSeam() {
-        val seq=Sequence(listOf(Event(0,6,listOf(Position(5,3))),Event(6,6,emptyList()),Event(12,12,listOf(Position(4,0))),Event(24,24,emptyList())),48,"test")
-        val session=Session(seq,137,false,2)
-        val pcm=Pcm(session,sampler())
-        assertTrue(pcm.block(100,1024,true,false).count { abs(it.toInt()) > 64 } > 100)
-        assertEquals(0.0,energy(pcm.block(session.frame(7.0),1024,true,false)),0.0)
-        assertEquals(0.0,energy(pcm.block(session.frame(25.0),1024,true,false)),0.0)
-        assertEquals(0.0,energy(pcm.block(0,4096,false,false)),0.0)
-        assertTrue(energy(pcm.block(100,1024,false,true))>1e8)
-        val boundary=session.frame(48.0)
-        val around=pcm.block(boundary-64,256,true,false)
-        assertTrue(around.take(64).all { it==0.toShort() })
-        assertTrue(around.drop(64).any { it!=0.toShort() })
-        // Rendering is independent of buffer chunk boundaries.
-        val all=pcm.block(0,90000,true,true)
-        val chunks=(0 until 90000 step 257).flatMap { start -> pcm.block(start.toLong(),minOf(257,90000-start),true,true).toList() }.toShortArray()
-        assertArrayEquals(all,chunks)
-    }
-    @Test fun realPcmStrumActuallySeparatesStringAttacks() {
-        val chord=Chords.named("C")
-        val sampler=sampler()
-        val together=Pcm(Session(Sequence(listOf(Event(0,12,chord.positions)),48,""),60,false,1),sampler)
-        val strum=Pcm(Session(Sequence(listOf(Event(0,12,chord.positions,strum=true)),48,""),60,false,1),sampler)
-        assertFalse(together.block(0,6000,true,false).contentEquals(strum.block(0,6000,true,false)))
-        val single=Pcm(Session(Sequence(listOf(Event(0,12,listOf(chord.positions.first()))),48,""),60,false,1),sampler)
-        val s=strum.block(0,400,true,false);val one=single.block(0,400,true,false)
-        for(i in s.indices) assertEquals(one[i]/sqrt(5.0),s[i].toDouble(),1.0)
     }
 }
