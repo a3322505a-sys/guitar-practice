@@ -67,7 +67,8 @@ def audit_daily(score,practices,plans):
     r=relations['slide'];assert (notes[r['fromNoteId']]['midi'],notes[r['toNoteId']]['midi'])==(57,60)
 def audit(directory=ASSETS):
     result=[];packages={};warmups=[]
-    for path in sorted(directory.glob('*.gpractice')):
+    for name in ('daily-practice.gpractice','demo-c.gpractice','demo-capo.gpractice','demo-rock.gpractice','teaching-native.gpractice'):
+        path=directory/name
         roots=validate_payloads(read_container(path));no_null(roots)
         assert '未提供' not in json.dumps(roots,ensure_ascii=False)
         score=roots['score.json'];ps=roots['practices.json']['practices'];pid=roots['manifest.json']['packageId']

@@ -17,6 +17,7 @@
 
 - [Git 分支与交付约定](git-governance.md)、[执行规则](../AGENTS.md)
 - [曲包协议与编译链](../contracts/song-package/v1/README.md)、[曲包生产手册](曲包生产手册.md)、[来源与许可](来源与许可.md)
+- [五首保留曲包与定点简化](五首保留曲包适配-20261023.md)、[花に亡霊曲包适配与重复段精简](花に亡霊曲包适配-20261023.md)
 - [alphaTab 正式接入](alphaTab-正式接入-v90.md)、[release/debug 隔离记录](v96-alphaTab-release-isolation.md)
 - [平板联动工作台](平板联动工作台-v98.md)、[主题同步](StudioDark与主题同步-v100.md)、[内容面板](练习内容面板-v101.md)
 
