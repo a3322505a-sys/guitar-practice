@@ -29,6 +29,7 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
     private var framePending = false
     private var forceFrame = false
     private var redrawOnIdle = false
+    private var userScrollInProgress = false
     private val touchGate = ScoreTouchGate(ViewConfiguration.get(context).scaledTouchSlop) {
         val cancel = MotionEvent.obtain(0L, android.os.SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, 0f, 0f, 0)
         super.dispatchTouchEvent(cancel)
@@ -67,6 +68,7 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
     private val settledRedraw = Runnable {
         val shouldRender = redrawOnIdle
         redrawOnIdle = false
+        userScrollInProgress = false
         // Even if the user returned to the previous scroll offset, the visible
         // chunk bitmap might already have been recycled.
         refreshViewport(force = true)
@@ -85,7 +87,7 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         scheduleViewportRefresh()
         // An alphaTab player-follow scroll still gets the cheap viewport sync.
         // Only a user drag/fling or a restored window requires the full redraw.
-        if (touchGate.dragged || redrawOnIdle) scheduleSettledRedraw()
+        if (userScrollInProgress || redrawOnIdle) scheduleSettledRedraw()
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -104,6 +106,7 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         } else {
             viewport = null
             redrawOnIdle = false
+            userScrollInProgress = false
             removeCallbacks(settledRedraw)
         }
     }
@@ -121,6 +124,7 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         framePending = false
         forceFrame = false
         redrawOnIdle = false
+        userScrollInProgress = false
         viewport = null
         super.onDetachedFromWindow()
     }
@@ -129,7 +133,11 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         set(value) { touchGate.enabled = value }
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (isAttachedToWindow && !hasWindowFocus() || !touchGate.observe(event)) return true
-        if (event.actionMasked == MotionEvent.ACTION_UP && touchGate.dragged) scheduleSettledRedraw()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> userScrollInProgress = false
+            MotionEvent.ACTION_MOVE -> if (touchGate.dragged) userScrollInProgress = true
+            MotionEvent.ACTION_UP -> if (userScrollInProgress) scheduleSettledRedraw()
+        }
         return super.dispatchTouchEvent(event)
     }
     fun consumeTap(): Boolean = touchGate.consumeTap()
