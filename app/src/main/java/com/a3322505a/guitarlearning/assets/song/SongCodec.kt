@@ -101,7 +101,10 @@ object SongCodec {
         f.objects("markers").map { Marker(it.s("id"),it.s("measureId"),it.s("kind")) },
         f.objects("jumps").map { Jump(it.s("id"),it.s("at"),it.s("target"),it.s("kind"),it.i("occurrence",1),condition(it["condition"])) },
         f.b("repeatsAfterJump"))
-    fun practices(data: Any?) = data.objectValue().objects("practices").map { p ->
+    fun practices(data: Any?): List<PracticeSpec> {
+        val root=data.objectValue()
+        val muteMainTrack=root["extensions"]?.objectValue()?.get("playback.mute-main-track")=="true"
+        return root.objects("practices").map { p ->
         fun coordinate(c: Any?)=c.objectValue().let { Coordinate(it.s("measureId"),it.q("offset",Q.ZERO),it["occurrence"]?.intValue()) }
         PracticeSpec(p.s("id"),p.s("title"),p.s("goal"),p.s("mainTrackId"),p.strings("mixTrackIds"),
             p.objects("segments").map { PracticeSegment(coordinate(it["start"]),coordinate(it["end"]),it.s("formPolicy","written"),
@@ -110,7 +113,8 @@ object SongCodec {
             p.s("visibility","core"),p.i("order",0),p.strings("tags"),p.q("padding",Q.ZERO),p["paddingReason"] as? String,
             p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),
             p.objects("noteFingerings").map { NoteFingering(it.s("sourceNoteId"),it["finger"]?.intValue(),
-                it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]),p.b("muteMainTrack"))
+                it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]),muteMainTrack)
+        }
     }
 }
 

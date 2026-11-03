@@ -1485,9 +1485,6 @@
           "type": "string",
           "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,95}$"
         },
-        "muteMainTrack": {
-          "type": "boolean"
-        },
         "mixTrackIds": {
           "type": "array",
           "items": {
