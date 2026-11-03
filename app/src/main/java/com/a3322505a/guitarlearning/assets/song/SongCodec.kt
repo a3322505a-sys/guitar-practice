@@ -110,7 +110,7 @@ object SongCodec {
             p.s("visibility","core"),p.i("order",0),p.strings("tags"),p.q("padding",Q.ZERO),p["paddingReason"] as? String,
             p.s("tempoMode","source"),p.s("difficulty","自行调整"),teaching(p["teaching"]),
             p.objects("noteFingerings").map { NoteFingering(it.s("sourceNoteId"),it["finger"]?.intValue(),
-                it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]))
+                it.s("source",""),it["occurrence"]?.intValue()) }, lesson(p["lesson"]),p.b("muteMainTrack"))
     }
 }
 

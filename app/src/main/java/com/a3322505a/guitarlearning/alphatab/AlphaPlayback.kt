@@ -363,7 +363,8 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private fun applyMix(countInOnPlay: Boolean = countIn) {
         val api = view?.api ?: return
         score?.tracks?.forEach { track ->
-            api.changeTrackMute(alphaTab.collections.List(track), !guitar)
+            val muteMain = sequence?.performance?.practice?.muteMainTrack == true && track === selectedTrack
+            api.changeTrackMute(alphaTab.collections.List(track), !guitar || muteMain)
             api.changeTrackVolume(alphaTab.collections.List(track), AlphaTone.trackVolume(track.playbackInfo.volume, mix.music))
         }
         if (!guitar) positions = emptyList()

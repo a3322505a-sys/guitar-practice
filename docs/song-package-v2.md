@@ -28,3 +28,8 @@ python scripts/song-package.py build --input my-song --output my-song.gpractice
 - 内容历史按整包哈希分开保存，可用现有回退按钮恢复上次内容；已开始的播放会话继续使用原数据。
 
 验证只覆盖制包、导入、编译与历史恢复主流程，不新增单元测试。播放内核、AlphaTab、节拍器和设置存储保持现有实现。
+
+伴奏练习可在 practices.json 的练习对象中写 `"muteMainTrack": true`。
+`mainTrackId` 仍指定唯一显示 TAB 和指板提示的主轨，`mixTrackIds` 包含主轨及所有伴奏轨。
+仅主轨静音，伴奏使用现有音乐音量；播放、暂停、速度和循环仍由同一个播放器控制。
+省略该字段时保持原来的全部参与轨道发声行为，无新增界面控件或音量设置。
