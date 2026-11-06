@@ -17,7 +17,7 @@ import java.io.File
 @Config(sdk=[28])
 class SongKernelTest {
     private val contract=File("../contracts/song-package/v1")
-    private fun reader()=SongReader(SongSchema { File(contract,it).readBytes() })
+    private fun reader()=SongReader(SongTestLibrary.schema())
     private fun fixture(name: String)=NativeContent.fixture(name)
     @Test fun boundedFormSupportsVoltaNestedAndExplicitDaCapoFine() {
         val source=fixture("simple").score
@@ -39,7 +39,7 @@ class SongKernelTest {
         listOf("{\"x\":1,\"x\":2}","[NaN]","[1e9999]","[\"\\ud800\"]").forEach {
             assertTrue(runCatching { StrictJson.parse(it.toByteArray()) }.isFailure)
         }
-        val schema=SongSchema { File(contract,it).readBytes() }
+        val schema=SongTestLibrary.schema()
         val score=File(contract,"fixtures/simple/score.json").readText()
         assertTrue(runCatching { schema.validate("score",StrictJson.parse(score.replace("\"documentId\":", "\"unknown\": 1, \"documentId\":").toByteArray())) }.isFailure)
         assertTrue(runCatching { schema.validate("score",StrictJson.parse(score.replace("\"d\": 1","\"d\": 2").toByteArray())) }.isFailure)
