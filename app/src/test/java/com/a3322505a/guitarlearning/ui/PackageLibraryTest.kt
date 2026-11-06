@@ -18,7 +18,7 @@ class PackageLibraryTest {
     @Test fun libraryIncludesVisiblePracticesInSourceOrderIncludingVariantsAndTransitions() {
         val snapshot = SongTestLibrary.repository().reload()
         assertTrue(snapshot.diagnostics.joinToString(), snapshot.diagnostics.isEmpty())
-        val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
+        val reader = SongReader(SongTestLibrary.schema())
         val songs = SongTestLibrary.assets.listFiles()!!.filter { it.extension == "gpractice" }
             .map { reader.read(it.readBytes()) }.associateBy { it.identity.packageId }
         val cards = packageCards(snapshot)
