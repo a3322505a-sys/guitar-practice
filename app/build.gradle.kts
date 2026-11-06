@@ -27,9 +27,9 @@ android {
         }
         create("standalone") {
             initWith(getByName("release"))
-            applicationIdSuffix = ".standalone"
+            applicationIdSuffix = ".isolated120"
             versionNameSuffix = "-standalone"
-            manifestPlaceholders["appLabel"] = "吉他练习·新版"
+            manifestPlaceholders["appLabel"] = "吉他练习·v120独立"
             isDebuggable = false
             matchingFallbacks += "release"
         }
