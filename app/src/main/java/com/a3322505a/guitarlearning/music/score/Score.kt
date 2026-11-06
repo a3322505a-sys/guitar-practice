@@ -162,7 +162,8 @@ data class PracticeSpec(val id: String, val title: String, val goal: String, val
     val tags: List<String> = emptyList(), val padding: Q = Q.ZERO, val paddingReason: String? = null,
     val tempoMode: String = "source", val difficulty: String = "自行调整",
     val teaching: PracticeTeaching? = null,
-    val noteFingerings: List<NoteFingering> = emptyList(), val lesson: LessonMetadata? = null)
+    val noteFingerings: List<NoteFingering> = emptyList(), val lesson: LessonMetadata? = null,
+    val muteMainTrack: Boolean = false)
 data class PracticeKey(val packageId: String, val practiceId: String) {
     val encoded get() = packageId.length.toString()+":"+packageId+practiceId
 }

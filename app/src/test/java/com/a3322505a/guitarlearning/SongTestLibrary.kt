@@ -10,8 +10,13 @@ import java.nio.file.Files
 internal object SongTestLibrary {
     private val contract=File("../contracts/song-package/v1")
     val assets=File("src/main/assets/song-packages")
+    fun schema()=SongSchema { name ->
+        val path=if(name=="manifest-v2.schema.json") File("../contracts/song-package/v2/manifest.schema.json")
+            else File(contract,name)
+        path.readBytes()
+    }
     fun repository(root: File=Files.createTempDirectory("bundled-songs").toFile())=SongRepository(root,
-        SongReader(SongSchema { File(contract,it).readBytes() }),
+        SongReader(schema()),
         assets.listFiles()!!.filter { it.extension=="gpractice" }.associate { it.name to { it.inputStream() } })
     val repository by lazy { repository().also { it.reload() } }
     val mozart get()=listOf("K265-A","K265-B","K265-C").map(repository::resolve)

@@ -26,7 +26,7 @@ internal object NativeContent {
         assertTrue(error!!.message.orEmpty(),error.message.orEmpty().contains(unsupported.getValue(name)))
     }
     private val contract = File("../contracts/song-package/v1")
-    fun fixture(name: String): SongPackage = SongReader(SongSchema { File(contract,it).readBytes() })
+    fun fixture(name: String): SongPackage = SongReader(SongTestLibrary.schema())
         .read(File(contract,"fixtures/$name.gpractice").readBytes())
     fun plan(name: String): PerformancePlan {
         if (!name.startsWith("boundary-")) return fixture(name).let { PracticeCompiler.compile(it.score,it.practices.first()) }

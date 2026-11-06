@@ -42,7 +42,7 @@ class BundledSongsTest {
     }
 
     @Test fun independentPackageReadsKeepAllPracticeIdsScoresAndExplicitFingerings() {
-        val reader = SongReader(SongSchema { File("../contracts/song-package/v1", it).readBytes() })
+        val reader = SongReader(SongTestLibrary.schema())
         val repo = SongTestLibrary.repository().also { it.reload() }
         var count = 0
         SongTestLibrary.assets.listFiles()!!.filter { it.extension == "gpractice" }.forEach { file ->
