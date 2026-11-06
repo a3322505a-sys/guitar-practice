@@ -8,7 +8,7 @@
 
 - Android：`app/src/main/java/com/a3322505a/guitarlearning/`；主界面 `ui/PracticeApp.kt`，曲包管理 `ui/SongLibrary.kt`。
 - 曲包导入与校验：`assets/song/SongReader.kt`、`SongRepository.kt`，曲谱/编译在 `music/score/`、`practice/compile/`。
-- 曲包格式：支持三 JSON 文件的 v2 自制包；v1 五文件包兼容读取。制作参见 [本地三文件曲包](docs/song-package-v2.md)，完整协议/夹具参见 `contracts/song-package/v1/`。
+- 曲包格式：统一走 v2 三 JSON 文件导入路径；旧五文件包的审核元数据导入时直接丢弃。制作及批量转换见 [本地三文件曲包](docs/song-package-v2.md)。历史夹具留在 `contracts/song-package/v1/` 仅供归档。
 - 构建：JDK 17、Kotlin、Jetpack Compose、AlphaTab 1.8.4；请看 [构建与变体](docs/build-variants.md)。
 
 ## 文档
