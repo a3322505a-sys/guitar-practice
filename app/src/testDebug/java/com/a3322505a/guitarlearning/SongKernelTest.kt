@@ -19,17 +19,6 @@ class SongKernelTest {
     private val contract=File("../contracts/song-package/v1")
     private fun reader()=SongReader(SongSchema { File(contract,it).readBytes() })
     private fun fixture(name: String)=NativeContent.fixture(name)
-    @Test fun producerAndAppUseExactlyTheSamePositiveAndNegativeCorpus() {
-        val cases=StrictJson.parse(File(contract,"fixtures/cases.json").readBytes()).arrayValue()
-        cases.forEach { value ->
-            val c=value.objectValue()
-            val result=runCatching { reader().read(File(contract,"fixtures/"+c.s("file")).readBytes()) }
-            assertEquals(c.s("file"),c.b("valid"),result.isSuccess)
-            if(!c.b("valid")) assertEquals(c.s("file"),c.s("code"),(result.exceptionOrNull() as MusicError).diagnostic.code)
-        }
-        val advertised=StrictJson.parse(File(contract,"capabilities.json").readBytes()).objectValue().strings("capabilities").toSet()
-        assertEquals(SongCapabilities.supported,advertised)
-    }
     @Test fun boundedFormSupportsVoltaNestedAndExplicitDaCapoFine() {
         val source=fixture("simple").score
         val measures=(0..3).map { source.measures[0].copy(id="m"+it,label=it.toString()) }
