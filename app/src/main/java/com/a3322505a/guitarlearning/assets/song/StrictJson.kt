@@ -129,13 +129,12 @@ internal fun Any?.qValue(): Q = objectValue().let { Q(it["n"].longValue(),it["d"
 
 /** The App consumes the identical closed schemas shipped to the producer. */
 class SongSchema(load: (String)->ByteArray) {
-    private val schemas by lazy { listOf("manifest","score","practices","provenance","review")
+    private val schemas by lazy { listOf("score","practices")
         .associateWith { StrictJson.parse(load(it+".schema.json")).objectValue() } }
-    private val v2Manifest by lazy { StrictJson.parse(loadV2()).objectValue() }
-    private val loadV2 = { load("manifest-v2.schema.json") }
+    private val v2Manifest by lazy { StrictJson.parse(load("manifest-v2.schema.json")).objectValue() }
     private val inferred = setOf("tuplets","relations","tempos","dynamics","swing","form","voicings","harmonies","midi","written","mixTrackIds","aliases")
     fun validate(name: String, data: Any?, normalizing: Boolean = false) {
-        val rule=if(name=="manifest" && (data as? Map<*,*>)?.get("formatVersion").let { it as? Map<*,*> }?.get("major").let { (it as? BigDecimal)?.compareTo(BigDecimal(2))==0 }) v2Manifest else schemas.getValue(name)
+        val rule=if(name=="manifest") v2Manifest else schemas.getValue(name)
         visit(rule,data,"/"+name,rule,normalizing)
     }
     private fun visit(schema: Map<String,Any?>, data: Any?, path: String, root: Map<String,Any?>, normalizing: Boolean) {
