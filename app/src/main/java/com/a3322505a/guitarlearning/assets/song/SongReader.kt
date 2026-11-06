@@ -74,38 +74,6 @@ class SongReader(private val schema: SongSchema) {
         val routes=FormCompiler.routes(score)
         practices.forEach { cancel();PracticeCompiler.compile(score,it,routes=routes) }
         val ids=practices.map { it.id }.toSet()
-        review.objects("diagnostics").forEachIndexed { i,d ->
-            val p="/review/diagnostics/"+i
-            musicCheck(d.strings("practiceIds").all { it in ids },"REVIEW_REF",p,"Unknown affected practice")
-            musicCheck(d.s("category")!="unsupported-blocker","REVIEW_BLOCKER",p,d.s("reason"))
-            if(d.s("category")=="review-needed") {
-                musicCheck(review.s("status")=="conditional" && assumptions.isNotEmpty() && d.s("handling")=="assumption" &&
-                    d.s("featureId") in setOf("source.repeat-count.v1","source.coverage.v1") && d.strings("practiceIds").isNotEmpty(),
-                    "REVIEW_NEEDED",p,"Unresolved musical fact must be reviewed")
-            }
-            if(d.s("category") in listOf("approximation","review-needed")) warnings+=d.s("reason")
-        }
-        musicCheck(review.s("status")!="conditional" || assumptions.isNotEmpty(),"CONDITIONAL","/review/assumptions","Conditional requires concrete assumptions")
-        warnings+=assumptions
-        val provenance=roots.getValue("provenance.json")
-
-        musicCheck(sources.map { it.s("id") }.distinct().size==sources.size,"SOURCE_ID","/provenance/sources","Duplicate source")
-        val sourceIds=sources.map { it.s("id") }.toSet()
-        val allNotes=score.voices.flatMap { v -> v.events.flatMap { it.notes } }
-        val noteIds=allNotes.map { it.id }.toSet()
-        val mappings=provenance.objects("mappings")
-        musicCheck(mappings.all { it.s("noteId") in noteIds && it.s("sourceId") in sourceIds } &&
-            mappings.map { it.s("noteId") }.toSet()==noteIds,"SOURCE_MAPPING","/provenance/mappings","Every source note requires a valid locator")
-        val allEvents=score.voices.flatMap { it.events }
-        val coverage=review["coverage"].objectValue()
-        val expected=mapOf("tracks" to score.tracks.size,"voices" to score.voices.size,"measures" to score.measures.size,
-            "events" to allEvents.size,"notes" to allNotes.size,"rests" to allEvents.count { it.notes.isEmpty() },
-            "relations" to score.relations.size,"techniques" to allEvents.sumOf { e -> e.notes.count {
-                it.dead || it.harmonic!=null || it.articulation!=Articulation() || e.articulation!=Articulation() } },
-            "visits" to plannedVisits,"onsets" to onsets)
-        expected.forEach { (key,count) -> musicCheck(coverage.i(key)==count,"COVERAGE","/review/coverage/"+key,"Expected "+count) }
-        }
-        val ids=practices.map { it.id }.toSet()
         val aliases=roots.getValue("practices.json").objects("aliases").associate { it.s("from") to it.s("to") }
         musicCheck(aliases.size==roots.getValue("practices.json").objects("aliases").size,"ALIAS","/practices/aliases","Duplicate alias")
         aliases.forEach { (from,to) ->
