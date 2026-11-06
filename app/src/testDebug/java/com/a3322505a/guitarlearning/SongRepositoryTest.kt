@@ -23,7 +23,7 @@ import java.nio.file.Files
 @Config(sdk=[28])
 class SongRepositoryTest {
     private val contract=File("../contracts/song-package/v1")
-    private fun reader()=SongReader(SongSchema { File(contract,it).readBytes() })
+    private fun reader()=SongReader(SongTestLibrary.schema())
     private fun fixture(name: String)=File(contract,"fixtures/"+name+".gpractice").readBytes()
     @Test fun twoActivityRepositoriesSeedOneStorageRootWithoutRacingPublication() {
         val root=Files.createTempDirectory("song-concurrent-seed").toFile()
