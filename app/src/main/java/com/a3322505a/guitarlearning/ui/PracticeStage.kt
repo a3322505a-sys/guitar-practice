@@ -1,6 +1,5 @@
 package com.a3322505a.guitarlearning.ui
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,9 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -115,36 +111,18 @@ internal fun StageFretboard(
     }
 }
 
-/** Small vector controls use the same stroke and inherit the active theme. */
+/** Existing stage callers share the same bundled Material Symbols entry point. */
 @Composable
 internal fun StageIcon(kind: String, modifier: Modifier = Modifier) {
-    val color = LocalContentColor.current
-    Canvas(modifier) {
-        val w = size.width; val h = size.height
-        fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(color,
-            Offset(w*x1,h*y1), Offset(w*x2,h*y2), strokeWidth = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        when (kind) {
-            "back" -> { line(.65f,.18f,.3f,.5f); line(.3f,.5f,.65f,.82f) }
-            "up" -> { line(.2f,.65f,.5f,.35f); line(.5f,.35f,.8f,.65f) }
-            "down" -> { line(.2f,.35f,.5f,.65f); line(.5f,.65f,.8f,.35f) }
-            "pause" -> { line(.35f,.2f,.35f,.8f); line(.65f,.2f,.65f,.8f) }
-            "play" -> drawPath(Path().apply { moveTo(w*.28f,h*.16f); lineTo(w*.8f,h*.5f); lineTo(w*.28f,h*.84f); close() }, color, style = Stroke(2.dp.toPx()))
-            "loop" -> {
-                drawPath(Path().apply { moveTo(w*.78f,h*.3f); cubicTo(w*.62f,h*.02f,w*.12f,h*.15f,w*.18f,h*.57f)
-                    moveTo(w*.22f,h*.7f); cubicTo(w*.38f,h*.98f,w*.88f,h*.85f,w*.82f,h*.43f) }, color, style = Stroke(2.dp.toPx()))
-                line(.78f,.3f,.52f,.3f); line(.78f,.3f,.78f,.08f); line(.22f,.7f,.48f,.7f); line(.22f,.7f,.22f,.92f)
-            }
-            "restart" -> {
-                drawPath(Path().apply { moveTo(w*.2f,h*.35f)
-                    cubicTo(w*.38f,h*.02f,w*.92f,h*.2f,w*.8f,h*.65f)
-                    cubicTo(w*.7f,h*.98f,w*.28f,h*.95f,w*.18f,h*.68f) }, color, style = Stroke(2.dp.toPx()))
-                line(.2f,.35f,.2f,.08f); line(.2f,.35f,.47f,.35f)
-            }
-            "click" -> {
-                drawPath(Path().apply { moveTo(w*.22f,h*.86f); lineTo(w*.42f,h*.12f); lineTo(w*.58f,h*.12f); lineTo(w*.78f,h*.86f); close() }, color, style = Stroke(2.dp.toPx()))
-                line(.46f,.66f,.78f,.27f)
-            }
-            else -> repeat(5) { i -> line(.15f+i*.17f,.5f-(if(i%2==0) .18f else .34f),.15f+i*.17f,.5f+(if(i%2==0) .18f else .34f)) }
-        }
-    }
+    AppIcon(when (kind) {
+        "back" -> AppSymbol.Back
+        "up" -> AppSymbol.Collapse
+        "down" -> AppSymbol.Expand
+        "pause" -> AppSymbol.Pause
+        "play" -> AppSymbol.Play
+        "loop" -> AppSymbol.Repeat
+        "restart" -> AppSymbol.Restart
+        "click" -> AppSymbol.Beat
+        else -> AppSymbol.Tempo
+    }, contentDescription = null, modifier = modifier)
 }

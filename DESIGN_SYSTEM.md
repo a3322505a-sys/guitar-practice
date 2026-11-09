@@ -6,7 +6,7 @@
 
 - 主题：`ui/Style.kt` 的 `PracticeTheme` / `PracticeSkin`；色彩：`ui/ThemeTokens.kt`、`ui/ThemeRegistry.kt`。使用现有主题切换与持久化。
 - 七个组件与图标：`app/src/main/java/com/a3322505a/guitarlearning/ui/AppUiKit.kt`。
-- 代表接入：`ThemePreviewCard.kt` 的主题恢复按钮、`Style.kt` 的 `PracticeAction` / `TransportMotif`。不修改播放、导入、谱面或段落状态。
+- 代表接入：`ThemePreviewCard.kt` 的主题恢复按钮、`Style.kt` 的 `PracticeAction` / `TransportMotif` 及 `PracticeStage.kt` 的 `StageIcon`。不修改播放、导入、谱面或段落状态。
 - Material Symbols Outlined 24px / weight 400，保存在 `app/src/main/res/drawable/ms_*.xml`；默认 20dp、紧凑 16dp、导航可 24dp。图标通过 `AppIcon` 渲染，单独操作通过 `AppIconButton` 提供 48dp 热区。装饰图标描述传 null；图标按钮提供准确的动作描述。
 - 上游：https://github.com/google/material-design-icons/tree/master/symbols/android 。Apache 2.0 许可证见 `third_party/material-symbols-LICENSE.txt`。
 
