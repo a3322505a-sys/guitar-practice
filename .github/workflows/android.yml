@@ -36,3 +36,8 @@ jobs:
           name: unsigned-standalone-apk
           retention-days: 7
           path: app/build/outputs/apk/standalone/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-release-apk
+          retention-days: 7
+          path: app/build/outputs/apk/release/*.apk
