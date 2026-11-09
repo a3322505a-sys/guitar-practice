@@ -20,8 +20,16 @@ try {
         ANDROID_KEY_PASSWORD = $password
     }
     foreach ($entry in $values.GetEnumerator()) {
-        $entry.Value | gh secret set $entry.Key --repo $repository
-        if ($LASTEXITCODE -ne 0) { throw "Could not configure $($entry.Key)." }
+        $start = New-Object System.Diagnostics.ProcessStartInfo
+        $start.FileName = (Get-Command gh).Source
+        $start.Arguments = "secret set $($entry.Key) --repo $repository"
+        $start.UseShellExecute = $false
+        $start.RedirectStandardInput = $true
+        $process = [System.Diagnostics.Process]::Start($start)
+        $process.StandardInput.Write($entry.Value)
+        $process.StandardInput.Close()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "Could not configure $($entry.Key)." }
     }
     Write-Host 'Signing configured. Run Android core on main in GitHub Actions to publish.'
 } finally {
