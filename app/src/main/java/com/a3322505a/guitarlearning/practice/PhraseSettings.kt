@@ -7,16 +7,20 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
     /** New stage speeds persist as integers. Read the former ratio once when migrating. */
     fun targetBpm(phrase: Phrase): Int {
         val reference = TempoControl.sourceBpm(phrase.sequence)
-        val saved = runCatching { prefs.getInt(assetPrefix(phrase)+"targetBpm", 0) }.getOrDefault(0)
-        val old = tempo(phrase)
-        val migrated = if (old.first || phrase.sequence.runtimePlan?.tempos?.size?.let { it > 1 } == true)
-            kotlin.math.round(reference * old.second / 100).toInt() else load(phrase).bpm
-        return (if (saved > 0) saved else migrated).coerceIn(TempoControl.minimum(reference), TempoControl.maximum(reference))
+        val prefix = if (phrase.assetKey == null) "phrase.${phrase.id}." else assetPrefix(phrase)
+        val saved = runCatching { prefs.getInt(prefix+"targetBpm", 0) }.getOrDefault(0)
+        val legacy = listOf("bpm", "sourceTempo", "speedPercent", "multiplier").any { prefs.contains(prefix+it) }
+        val initial = if (legacy) {
+            val old = tempo(phrase)
+            if (old.first) kotlin.math.round(reference * old.second / 100).toInt() else load(phrase).bpm
+        } else phrase.suggestedBpm.takeIf { it > 0 } ?: 60
+        return (if (saved > 0) saved else initial).coerceIn(TempoControl.MIN_BPM, TempoControl.MAX_BPM)
     }
     fun saveTargetBpm(phrase: Phrase, bpm: Int) {
-        TempoControl.ratio(bpm, TempoControl.sourceBpm(phrase.sequence))
-        prefs.edit().putInt(assetPrefix(phrase)+"targetBpm", bpm).apply()
+        val prefix = if (phrase.assetKey == null) "phrase.${phrase.id}." else assetPrefix(phrase)
+        prefs.edit().putInt(prefix+"targetBpm", bpm.coerceIn(TempoControl.MIN_BPM, TempoControl.MAX_BPM)).apply()
     }
+
     fun tempo(phrase: Phrase): Pair<Boolean,Double> {
         if(phrase.assetKey==null) return false to 100.0
         val prefix=assetPrefix(phrase)
@@ -58,15 +62,13 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
         val settingsId=phrase.id
         fun read(key: String,default: Int)=runCatching { prefs.getInt("phrase.$settingsId.$key",default) }.getOrDefault(default)
         val whole=BarRange(0,phrase.sequence.barCount-1)
-        val bpm=read("bpm",fallbackBpm).takeIf { it in 30..180 } ?: fallbackBpm
+        val bpm=read("bpm",fallbackBpm).takeIf { it in TempoControl.MIN_BPM..TempoControl.MAX_BPM } ?: fallbackBpm
         val repeats=read("repeats",fallbackRepeats).takeIf { it in listOf(0,1,4,8) } ?: fallbackRepeats
         val saved=BarRange(read("first",whole.first),read("last",whole.last))
         return PhraseSettings(bpm,repeats,if(!saved.valid(phrase.sequence)) whole else saved)
     }
     fun save(phrase: Phrase,bpm: Int,repeats: Int,range: BarRange) {
-        val bpmRange = if (phrase.assetKey == null) 30..180 else TempoControl.sourceBpm(phrase.sequence).let {
-            TempoControl.minimum(it)..TempoControl.maximum(it)
-        }
+        val bpmRange = TempoControl.MIN_BPM..TempoControl.MAX_BPM
         require(bpm in bpmRange && repeats in listOf(0,1,4,8) && range.valid(phrase.sequence))
         if(phrase.assetKey!=null) {
             val prefix="asset."+phrase.assetKey.encoded+"."
@@ -89,8 +91,7 @@ class PhraseSettingsStore(private val prefs: SharedPreferences,private val resol
     private fun loadAsset(phrase: Phrase): PhraseSettings {
         val prefix=assetPrefix(phrase)
         fun number(key: String,default: Int)=runCatching { prefs.getInt(prefix+key,default) }.getOrDefault(default)
-        val maxBpm = maxOf(180, TempoControl.maximum(TempoControl.sourceBpm(phrase.sequence)))
-        val bpm=number("bpm",phrase.suggestedBpm).takeIf { it in 20..maxBpm } ?: phrase.suggestedBpm
+        val bpm=number("bpm",phrase.suggestedBpm).takeIf { it in TempoControl.MIN_BPM..TempoControl.MAX_BPM } ?: phrase.suggestedBpm
         val repeats=number("repeats",4).takeIf { it in listOf(0,1,4,8) } ?: 4
         val whole=BarRange(0,phrase.sequence.barCount-1)
         if(phrase.unprepared) return PhraseSettings(bpm,repeats,whole)

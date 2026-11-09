@@ -1,7 +1,12 @@
 name: Android core
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
-  group: android-core-${{ github.ref }}
+  group: android-core-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 jobs:
   verify:
@@ -30,14 +35,97 @@ jobs:
           --tests '*BundledSongsTest'
           --tests '*PackageLibraryTest'
           --tests '*StageTransportTest'
-          lintStandalone assembleStandalone assembleRelease
+          --tests '*ThemeRegistryTest'
+          --tests '*ThemeManagerTest'
+          --tests '*UnifiedStageRenderTest'
+          --tests '*PlaybackTempoTest'
+          --tests '*PhraseSettingsTest'
+          --tests '*AlphaNotationTest.fixedPracticeTempoRestoresPrintedSourceEventsEvenWhenGenerationFails'
+          lintDebug assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: unsigned-standalone-apk
+          name: unsigned-release-check
           retention-days: 7
-          path: app/build/outputs/apk/standalone/*.apk
+          path: app/build/outputs/apk/release/*-unsigned.apk
       - uses: actions/upload-artifact@v4
+        if: failure()
         with:
-          name: unsigned-release-apk
+          name: verification-reports
           retention-days: 7
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/reports/
+  release:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Check signing configuration
+        id: signing
+        shell: bash
+        run: |
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" && -n "$ANDROID_KEYSTORE_PASSWORD" && -n "$ANDROID_KEY_ALIAS" && -n "$ANDROID_KEY_PASSWORD" ]]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::Official APK pending: configure the four ANDROID signing secrets using scripts/setup-release-signing.ps1; no substitute key will be generated.'
+            echo 'Official APK pending: signing secrets need one-time setup. See docs/build-variants.md.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.signing.outputs.ready == 'true'
+      - uses: actions/setup-java@v4
+        if: steps.signing.outputs.ready == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        if: steps.signing.outputs.ready == 'true'
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.signing.outputs.ready == 'true'
+      - name: Restore existing release key
+        if: steps.signing.outputs.ready == 'true'
+        shell: bash
+        run: |
+          umask 077
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/guitar-release.p12"
+          echo "ANDROID_KEYSTORE_PATH=$ANDROID_KEYSTORE_PATH" >> "$GITHUB_ENV"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          keytool -exportcert -keystore "$ANDROID_KEYSTORE_PATH" -storepass:env ANDROID_KEYSTORE_PASSWORD -alias "$ANDROID_KEY_ALIAS" -file "$RUNNER_TEMP/release-cert.der"
+          echo '43b7af607adb264fb2faa79437d91dbc7e1bea7d7ce92804965fe0f1c8daf320  '"$RUNNER_TEMP/release-cert.der" | sha256sum --check
+      - name: Build signed release
+        if: steps.signing.outputs.ready == 'true'
+        run: chmod +x gradlew && ./gradlew assembleRelease
+      - name: Verify official APK
+        if: steps.signing.outputs.ready == 'true'
+        shell: bash
+        run: |
+          apk=(app/build/outputs/apk/release/GuitarPractice-*.apk)
+          test "${#apk[@]}" -eq 1
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "${apk[0]}"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "${apk[0]}" | head -5
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          m = json.loads(Path('app/build/outputs/apk/release/output-metadata.json').read_text())
+          assert m['applicationId'] == 'com.a3322505a.guitarlearning'
+          e, = m['elements']
+          assert e['outputFile'] == f"GuitarPractice-{e['versionName']}.apk"
+          print(f"Official APK: {e['outputFile']} / versionCode={e['versionCode']}")
+          PY
+          sha256sum "${apk[0]}"
+      - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.ready == 'true'
+        with:
+          name: official-release-apk
+          retention-days: 30
+          if-no-files-found: error
+          path: app/build/outputs/apk/release/GuitarPractice-*.apk
+      - name: Remove temporary signing files
+        if: always()
+        shell: bash
+        run: rm -f "$ANDROID_KEYSTORE_PATH" "$RUNNER_TEMP/release-cert.der"

@@ -34,7 +34,11 @@ fun ThemePreviewCard(theme: AppThemeSpec, selected: Boolean, onSelect: () -> Uni
                 Text(theme.displayName, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), color = c.textPrimary)
                 if (selected) {
                     Surface(color = c.primaryContainer, shape = RoundedCornerShape(m.cornerSmall), border = BorderStroke(m.borderWidth, c.primary)) {
-                        Text("✓ 当前主题", color = c.primaryText, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            AppIcon(AppSymbol.Check, null, size = 16.dp, tint = c.primaryText)
+                            Text("当前主题", color = c.primaryText, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }
@@ -83,8 +87,6 @@ internal fun ThemePicker(manager: ThemeManager) {
     ThemeRegistry.all.forEach { theme ->
         ThemePreviewCard(theme, manager.current.id == theme.id, { manager.select(theme.id) })
     }
-    OutlinedButton(onClick = manager::reset, modifier = Modifier.fillMaxWidth().testTag("theme-reset"), shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = PracticeSkin.colors.primaryText)) {
-        Text("恢复默认主题")
-    }
+    AppButton("恢复默认主题", manager::reset, Modifier.fillMaxWidth().testTag("theme-reset"),
+        style = AppButtonStyle.Secondary, symbol = AppSymbol.Restart)
 }

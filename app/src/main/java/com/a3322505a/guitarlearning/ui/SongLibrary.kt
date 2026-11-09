@@ -2,23 +2,16 @@ package com.a3322505a.guitarlearning.ui
 
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.testTag
 import com.a3322505a.guitarlearning.practice.Sequence
 import com.a3322505a.guitarlearning.practice.Swing
@@ -122,90 +115,84 @@ internal fun SongLibrary(repository: SongRepository,onChanged: (LibrarySnapshot)
         }
     }
     DisposableEffect(Unit) { onDispose { cancellation?.cancel();operation?.cancel();discard(candidate) } }
-    Dialog(onDismissRequest={close()},properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
-        ImmersiveOverlayWindow()
-        BackHandler { close() }
-        Surface(color=Color.Transparent,modifier=Modifier.fillMaxSize().testTag("management-sheet")) {
+    AppFullScreenDialog({ close() }, Modifier.testTag("management-sheet")) {
         Column(Modifier.fillMaxSize().practiceBackground().displayCutoutPadding().navigationBarsPadding().padding(12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                Text("曲包管理与外观",style=MaterialTheme.typography.titleLarge,color=PracticeSkin.colors.primaryText,modifier=Modifier.weight(1f))
-                OutlinedButton(enabled=!committing,onClick={close()},modifier=Modifier.heightIn(min=48.dp), shape=MaterialTheme.shapes.small) { Text("完成") }
+            AppTopBar("曲包管理与外观") {
+                AppButton("完成", { close() }, Modifier.testTag("management-done"), size = AppButtonSize.Sm,
+                    style = AppButtonStyle.Secondary, enabled = !committing)
             }
-            TabRow(selectedTabIndex = tab) {
-                listOf("曲包管理", "读谱帮助", "三套配色").forEachIndexed { index, title ->
-                    Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title) },
-                        modifier = Modifier.heightIn(min = 48.dp))
-                }
-            }
+            SecondaryBar(listOf("曲包管理", "读谱帮助", "三套配色"), tab, { tab = it })
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                 if(tab==2) {
                     ThemePicker(themeManager)
                 } else if(tab==1) {
                     DiagramHelp(displayedSequence)
                 } else {
-                PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+                AppCard {
                     Text("导入曲包",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
                     Text("选择 .gpractice 或 .gpractice.zip；也可从下载文件“打开/分享”导入。",style=MaterialTheme.typography.bodySmall,color=PracticeSkin.colors.textSecondary)
-                    PracticeAction("选择曲包",enabled=!busy && candidate==null,onClick={picker.launch(arrayOf("*/*"))})
+                    AppButton("选择曲包", { picker.launch(arrayOf("*/*")) }, Modifier.testTag("import-package"),
+                        symbol = AppSymbol.Import, enabled = !busy && candidate == null)
                 if(busy) {
                     Text(if(committing) "正在完成导入，请稍候…" else "正在检查曲包…")
-                    if(!committing) TextButton(onClick={if(cancellation?.cancel()!=false) operation?.cancel()}, shape=MaterialTheme.shapes.small) { Text("取消检查") }
+                    if(!committing) AppButton("取消检查", { if(cancellation?.cancel()!=false) operation?.cancel() },
+                        size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
                 }
                 if(message.isNotBlank()) Text(message,color=PracticeSkin.colors.primaryText,style=MaterialTheme.typography.bodySmall)
                 }
                 candidate?.let { preview ->
                     val song=preview.song
-                    PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+                    AppCard {
                     Text(sourceName,style=MaterialTheme.typography.bodySmall)
                     Text(song.title+" · 修订 "+song.identity.revision+" · "+song.practices.size+" 项练习",fontWeight=FontWeight.Bold,color=PracticeSkin.colors.textPrimary)
                     Text(listOf(song.author,song.summary).filter(String::isNotBlank).joinToString(" · "));Text(song.sourceDescription)
                     song.warnings.forEach { Text(it) }
                     val current=snapshot.packages.firstOrNull { it.identity.packageId==song.identity.packageId }
                     if(current!=null) Text("当前修订 "+current.identity.revision+"；确认后应用此内容。")
-                    Button(enabled=!busy,onClick={import(preview)}, shape=MaterialTheme.shapes.small) {
-                        Text(if(current==null) "导入" else if(song.identity.revision<current.identity.revision) "导入并回退到修订 "+song.identity.revision else "应用更新")
-                    }
-                    TextButton(enabled=!busy,onClick={candidate=null;discard(preview)}, shape=MaterialTheme.shapes.small) { Text("取消导入") }
+                    AppButton(if(current==null) "导入" else if(song.identity.revision<current.identity.revision)
+                        "导入并回退到修订 "+song.identity.revision else "应用更新", { import(preview) },
+                        symbol = AppSymbol.Import, enabled = !busy)
+                    AppButton("取消导入", { candidate=null;discard(preview) }, size = AppButtonSize.Sm,
+                        style = AppButtonStyle.Quiet, enabled = !busy)
                     }
                 }
                 Text("已启用曲包 · ${snapshot.packages.size}",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
                 snapshot.packages.forEach { pkg ->
-                    Surface(shape=MaterialTheme.shapes.large,color=PracticeSkin.colors.surface,border=BorderStroke(PracticeSkin.metrics.borderWidth,PracticeSkin.colors.border),modifier=Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                    AppCard {
                         Text(pkg.title,style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.textPrimary)
                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                         Text("已启用 · 修订 "+pkg.identity.revision,modifier=Modifier.weight(1f),style=MaterialTheme.typography.labelSmall,color=PracticeSkin.colors.primaryText)
-                        OutlinedButton(enabled=!busy,onClick={action { repository.disable(pkg.identity.packageId) }}, shape=MaterialTheme.shapes.small) { Text("停用") }
+                        AppButton("停用", { action { repository.disable(pkg.identity.packageId) } }, size = AppButtonSize.Sm,
+                            style = AppButtonStyle.Secondary, enabled = !busy)
                     }
                         repository.revisions(pkg.identity.packageId).filter { it!=pkg.identity }.firstOrNull()?.let { prior ->
-                            TextButton(enabled=!busy,onClick={action { repository.rollback(prior) }}, shape=MaterialTheme.shapes.small) { Text(if(prior.revision==pkg.identity.revision) "恢复上次内容" else "回退到修订 "+prior.revision) }
+                            AppButton(if(prior.revision==pkg.identity.revision) "恢复上次内容" else "回退到修订 "+prior.revision,
+                                { action { repository.rollback(prior) } }, size = AppButtonSize.Sm, style = AppButtonStyle.Quiet, enabled = !busy)
                         }
-                    }
                     }
                 }
                 snapshot.diagnostics.forEach { Text(it) }
                 }
             }
         }
-        }
     }
 }
 
 @Composable
 private fun DiagramHelp(displayedSequence: Sequence?) {
-    PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+    AppCard {
         Text("读横向指板",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("横向指板上方是 1 弦，下方是 6 弦；左侧数字为弦号，上方数字为品位。",style=MaterialTheme.typography.bodySmall)
             Text("当前音位有外圈高亮，下一音位有预告圈；可切换实际音名与度数。点击右上角箭头收起指板，给乐谱留出更多空间。",style=MaterialTheme.typography.bodySmall)
     }
-    PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+    AppCard {
         Text("六线谱与演奏提示",style=MaterialTheme.typography.titleMedium,color=PracticeSkin.colors.primaryText)
             Text("x 为死音，P.M. 为手掌制音；拨弦、滑音、击弦、勾弦和延音按原谱标记演奏。休止继续数拍。",style=MaterialTheme.typography.bodySmall)
             if(displayedSequence?.swing!=Swing.NONE && displayedSequence!=null) Text("${displayedSequence.swing.title}：保留书面时值，按长短2:1演奏；装饰音与推弦使用标准谱面标记。",style=MaterialTheme.typography.bodySmall)
             Text("六线谱上方为 1 弦、下方为 6 弦，数字为品位；0 为空弦，x 为死音。",style=MaterialTheme.typography.bodySmall)
     }
-    PracticeContentCard(modifier=Modifier.fillMaxWidth()) {
+    AppCard {
         Text("开始练琴", style = MaterialTheme.typography.titleMedium)
-        Text("从曲包库选择练习；同包有多个练习时，也可点击舞台顶栏的曲名切换。底部依次为 BPM、播放、循环、节拍。", style = MaterialTheme.typography.bodySmall)
+        Text("从曲包库选择练习；同包有多个练习时，也可点击曲名下方的段落名称，在底部面板选择段落。底部依次为 BPM、播放、循环、节拍。", style = MaterialTheme.typography.bodySmall)
     }
 }

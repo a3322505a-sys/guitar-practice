@@ -1,24 +1,47 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
-val tabletReview = providers.gradleProperty("tabletReview").map { it.toBoolean() }.getOrElse(false)
+val releaseKeystore = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
+val releaseStorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(releaseKeystore, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
 android {
     namespace = "com.a3322505a.guitarlearning"
     compileSdk = 36
     defaultConfig {
-        applicationId = if (tabletReview) "com.a3322505a.guitarlearning.tablet98" else "com.a3322505a.guitarlearning"
-        manifestPlaceholders["appLabel"] = if (tabletReview) "吉他练习·联动验收" else "吉他练习"
+        applicationId = "com.a3322505a.guitarlearning"
+        manifestPlaceholders["appLabel"] = "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 120
-        versionName = "1.4.10"
+        versionCode = 123
+        versionName = "1.4.13"
+    }
+    signingConfigs {
+        if (hasReleaseSigning) create("official") {
+            storeFile = file(releaseKeystore!!)
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
     }
     buildTypes {
-        release { isMinifyEnabled = false; isShrinkResources = false }
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "吉他练习·调试"
+        }
+        release {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("official")
+        }
         create("compare") {
             initWith(getByName("release"))
+            signingConfig = null
             applicationIdSuffix = ".compare"
             versionNameSuffix = "-compare"
             manifestPlaceholders["appLabel"] = "吉他练习·对照"
@@ -27,6 +50,7 @@ android {
         }
         create("standalone") {
             initWith(getByName("release"))
+            signingConfig = null
             applicationIdSuffix = ".standalone"
             versionNameSuffix = "-standalone"
             manifestPlaceholders["appLabel"] = "吉他练习·新版"
@@ -34,6 +58,12 @@ android {
             matchingFallbacks += "release"
         }
 
+    }
+    applicationVariants.all {
+        if (buildType.name == "release") outputs.all {
+            (this as BaseVariantOutputImpl).outputFileName =
+                "GuitarPractice-${versionName}${if (hasReleaseSigning) "" else "-unsigned"}.apk"
+        }
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }

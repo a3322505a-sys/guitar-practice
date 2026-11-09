@@ -74,7 +74,7 @@ fun PracticeTheme(
                 inversePrimary = c.primaryContainer,
             ),
             typography = Typography(
-                titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 27.sp, letterSpacing = (-.3).sp, fontFeatureSettings = "tnum"),
+                titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-.3).sp, fontFeatureSettings = "tnum"),
                 titleMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 22.sp, fontFeatureSettings = "tnum"),
                 titleSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"),
                 labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = if (largeControls) 16.sp else 14.sp, lineHeight = if (largeControls) 22.sp else 20.sp, fontFeatureSettings = "tnum"),
@@ -137,48 +137,6 @@ fun PracticeContentCard(
 @Composable
 fun DiagramContainer(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     Box(modifier, content = content)
-}
-
-@Composable
-fun PracticeAction(title: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    val c = PracticeSkin.colors
-    val m = PracticeSkin.metrics
-    val large = LocalLargePracticeControls.current
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.heightIn(min = if (large) m.buttonStyle.minHeightLarge else m.buttonStyle.minHeight),
-        shape = RoundedCornerShape(m.cornerSmall),
-        contentPadding = PaddingValues(horizontal = m.buttonStyle.horizontalPadding, vertical = 10.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = c.primary,
-            contentColor = c.onPrimary,
-            disabledContainerColor = c.surfaceSecondary,
-            disabledContentColor = c.textTertiary,
-        ),
-    ) {
-        TransportMotif(if (title == "暂停") "pause" else "play", Modifier.size(if (large) 20.dp else 16.dp), if (enabled) c.onPrimary else c.textTertiary)
-        Spacer(Modifier.width(8.dp))
-        Text(title, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun TransportMotif(kind: String, modifier: Modifier = Modifier, color: Color = PracticeSkin.colors.onPrimary) {
-    Canvas(modifier) {
-        val w = size.width; val h = size.height
-        if (kind == "pause") {
-            drawRoundRect(color, Offset(w * .15f, h * .1f), Size(w * .22f, h * .8f), CornerRadius(w * .07f))
-            drawRoundRect(color, Offset(w * .63f, h * .1f), Size(w * .22f, h * .8f), CornerRadius(w * .07f))
-        } else if (kind == "speaker") {
-            val p = Path().apply { moveTo(w * .1f, h * .35f); lineTo(w * .3f, h * .35f); lineTo(w * .53f, h * .13f); lineTo(w * .53f, h * .87f); lineTo(w * .3f, h * .65f); lineTo(w * .1f, h * .65f); close() }
-            drawPath(p, color)
-            drawArc(color, -55f, 110f, false, Offset(w * .4f, h * .18f), Size(w * .48f, h * .64f), style = Stroke(w * .1f))
-        } else {
-            val p = Path().apply { moveTo(w * .22f, h * .1f); lineTo(w * .86f, h * .5f); lineTo(w * .22f, h * .9f); close() }
-            drawPath(p, color)
-        }
-    }
 }
 
 private fun DrawScope.musicNote(x: Float, y: Float, s: Float, color: Color) {

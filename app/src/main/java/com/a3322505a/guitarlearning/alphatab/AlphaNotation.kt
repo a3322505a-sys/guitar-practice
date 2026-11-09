@@ -9,19 +9,24 @@ import alphaTab.model.Automation
 object AlphaNotation {
     /** The SDK generates MIDI synchronously. Fixed practice speed must never rewrite
      * the source score's printed tempo, including after rotation or a track switch. */
-    fun <T> withPlaybackTempo(score: Score, sourceTempo: Boolean, bpm: Int, generate: () -> T): T {
-        if (sourceTempo) return generate()
-        require(bpm > 0)
+    fun <T> withPlaybackTempo(score: Score, sourceTempo: Boolean, bpm: Int,
+        tempoScale: Double = 1.0, generate: () -> T): T {
+        if (sourceTempo && tempoScale == 1.0) return generate()
         val original = score.masterBars.toList().map { it.tempoAutomations }
+        val values = original.map { events -> events.toList().map { it.value } }
         try {
             score.masterBars.forEachIndexed { index, bar ->
-                bar.tempoAutomations = if (index == 0) alphaTab.collections.List(
-                    Automation.buildTempoAutomation(false, 0.0, bpm.toDouble(), 2.0, false))
+                if (sourceTempo) bar.tempoAutomations.forEach { it.value *= tempoScale }
+                else bar.tempoAutomations = if (index == 0) alphaTab.collections.List(
+                    Automation.buildTempoAutomation(false, 0.0, bpm * tempoScale, 2.0, false))
                 else alphaTab.collections.List()
             }
             return generate()
         } finally {
-            score.masterBars.forEachIndexed { index, bar -> bar.tempoAutomations = original[index] }
+            score.masterBars.forEachIndexed { index, bar ->
+                bar.tempoAutomations = original[index]
+                bar.tempoAutomations.forEachIndexed { event, automation -> automation.value = values[index][event] }
+            }
         }
     }
 

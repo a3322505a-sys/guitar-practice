@@ -8,11 +8,21 @@ import alphaTab.midi.*
 import alphaTab.synth.AlphaSynth
 import alphaTab.synth.ISynthOutput
 import com.a3322505a.guitarlearning.practice.TempoControl
+import com.a3322505a.guitarlearning.practice.Sequence
+import com.a3322505a.guitarlearning.practice.Event
+import com.a3322505a.guitarlearning.music.Position
+import com.a3322505a.guitarlearning.music.score.Q
+import com.a3322505a.guitarlearning.music.score.Tempo
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.lang.reflect.Proxy
 
 /** Exercise the shipped 1.8.4 synth, not a duplicate rate formula. No device audio output. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class PlaybackTempoTest {
     private class Signal : IEventEmitter {
         private val listeners=mutableListOf<() -> Unit>()
@@ -45,31 +55,29 @@ class PlaybackTempoTest {
     @Test fun actualSynthAccepts20BpmBelowFormer25PercentAndPreservesTempoMap() {
         val engine = synth()
         try {
-            for (source in listOf(60.0, 124.0, 132.0, 160.0, 180.0, 240.0)) {
-                val midi = MidiFile().apply {
-                    addEvent(TempoChangeEvent(0.0, 60000000 / source))
-                    addEvent(TempoChangeEvent(1920.0, 60000000 / (source * 1.5)))
-                    addEvent(EndOfTrackEvent(0.0, 3840.0))
-                }
-                engine.loadMidiFile(midi)
-                val target = TempoControl.minimum(source)
+            val sequence = Sequence((0 until 8).map { Event(it * 12, 12, listOf(Position(1, 5))) }, 96, "tempo")
+            for ((source, target) in listOf(30.0 to 60, 30.0 to 90, 30.0 to 120,
+                60.0 to 20, 132.0 to 20, 180.0 to 20, 240.0 to 20, 20.0 to 240)) {
+                val score = AlphaScoreAdapter.fromPlan(sequence.performance.copy(tempos = listOf(
+                    Tempo(Q.ZERO, Q.ONE, source), Tempo(Q(2), Q.ONE, source * 1.5))))
                 val ratio = TempoControl.ratio(target, source)
-                engine.playbackSpeed = ratio
-                assertEquals(ratio, engine.playbackSpeed, 1e-12)
+                val speed = TempoControl.engineSpeed(ratio)
+                val midi = AlphaNotation.withPlaybackTempo(score, true, target, ratio / speed) {
+                    EngineProjection.generate(score).first
+                }
+                // Generating playback MIDI leaves the printed source tempo untouched.
+                assertEquals(source, score.masterBars.first().tempoAutomations.first().value, 1e-9)
+                engine.loadMidiFile(midi)
+                engine.playbackSpeed = speed
+                assertEquals(speed, engine.playbackSpeed, 1e-12)
                 engine.tickPosition = 960.0
-                assertEquals("source=$source", 60000.0 / target, engine.timePosition, 1e-5)
+                assertEquals("source=$source target=$target", 60000.0 / target, engine.timePosition, .01)
                 engine.tickPosition = 2880.0
-                assertEquals(2 * 60000.0 / target + 60000.0 / (target * 1.5), engine.timePosition, 1e-5)
+                assertEquals(2 * 60000.0 / target + 60000.0 / (target * 1.5), engine.timePosition, .01)
                 engine.tickPosition = 0.0
-                samplesPlayed.trigger(44100.0) // output reports one real second heard
-                // 1.8.4 snapshots truncate to whole MIDI ticks and add one tick.
-                // Floating point conversion can land on either side of that boundary.
-                assertEquals(target * 960 / 60.0, engine.tickPosition, 1.000001)
+                samplesPlayed.trigger(11025.0)
+                assertEquals(target * 960 / 60.0 / 4, engine.tickPosition, 1.000001)
             }
-            assertEquals(20, TempoControl.minimum(132.0))
-            assertEquals(23, TempoControl.minimum(180.0))
-            engine.playbackSpeed = .01
-            assertEquals(.125, engine.playbackSpeed, 0.0)
         } finally { engine.destroy() }
     }
 }
