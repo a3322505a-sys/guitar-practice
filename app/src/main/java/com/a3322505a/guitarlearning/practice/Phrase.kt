@@ -32,7 +32,7 @@ fun validatePhrases(phrases: List<Phrase>) {
         val seq=phrase.sequence
         val conditions=if(seq.capoFret==0) "标准调弦 · 无变调夹" else "标准调弦 · 变调夹${seq.capoFret}品"
         valid(phrase.conditions==conditions,"unsupported tuning/capo label: does not match actual pitch")
-        valid(phrase.goal.isNotBlank() && phrase.suggestedBpm in 30..180,"missing goal or invalid starting BPM")
+        valid(phrase.goal.isNotBlank() && phrase.suggestedBpm > 0,"missing goal or invalid starting BPM")
         val expression=runCatching { seq.validateExpression() }
         valid(expression.isSuccess,expression.exceptionOrNull()?.message ?: "invalid expression")
         valid((seq.barMeters.isNotEmpty() || seq.length%seq.barTicks==0) && seq.events.isNotEmpty(),"length must contain complete bars and events")

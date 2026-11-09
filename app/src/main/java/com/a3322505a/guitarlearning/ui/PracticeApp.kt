@@ -68,7 +68,7 @@ internal fun PracticeWorkbench(
     var favorites by remember { mutableStateOf(store.favorites()) }
     var focusedPackageId by remember { mutableStateOf<String?>(null) }
     var quickSwitchOpen by remember { mutableStateOf(false) }
-    var carrySettings by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    var carryLooping by remember { mutableStateOf<Boolean?>(null) }
     var phraseId by rememberSaveable { mutableStateOf(store.selected().id) }
     var preparedEpoch by remember { mutableIntStateOf(0) }
     var libraryVisible by rememberSaveable { mutableStateOf(true) }
@@ -111,10 +111,10 @@ internal fun PracticeWorkbench(
     LaunchedEffect(sequence) {
         if (sequence != null) {
             val saved = store.load(phrase)
-            val inherited = carrySettings.takeUnless { store.hasSavedSettings(phrase) }
-            bpm = inherited?.first ?: store.targetBpm(phrase)
-            looping = inherited?.second ?: (saved.repeats == 0)
-            carrySettings = null
+            val inheritedLooping = carryLooping.takeUnless { store.hasSavedSettings(phrase) }
+            bpm = store.targetBpm(phrase)
+            looping = inheritedLooping ?: (saved.repeats == 0)
+            carryLooping = null
             settingsSequence = sequence
         }
         nativePlayer?.prepareSequence(sequence)
@@ -145,7 +145,7 @@ internal fun PracticeWorkbench(
     }
     fun selectPractice(practice: LibraryPractice) {
         if (phraseId != practice.key.encoded) {
-            carrySettings = if (phrase.assetKey?.packageId == practice.key.packageId) bpm to looping else null
+            carryLooping = if (phrase.assetKey?.packageId == practice.key.packageId) looping else null
             player.invalidate(); preparationError = ""; settingsSequence = null
             phraseId = practice.key.encoded
         }
