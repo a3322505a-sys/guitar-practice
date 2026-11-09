@@ -82,7 +82,7 @@ internal fun PackageLibraryScreen(
                     size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
             }
             if (!ready) LinearProgressIndicator(Modifier.fillMaxWidth())
-            LazyColumn(Modifier.weight(1f).widthIn(max = 1080.dp).fillMaxWidth().align(Alignment.CenterHorizontally),
+            LazyColumn(Modifier.weight(1f).widthIn(max = 1080.dp).fillMaxWidth().align(Alignment.CenterHorizontally).testTag("library-list"),
                 state = listState, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item("search") {

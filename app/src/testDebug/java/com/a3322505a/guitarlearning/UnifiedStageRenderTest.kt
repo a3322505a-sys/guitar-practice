@@ -43,6 +43,7 @@ class UnifiedStageRenderTest {
     private fun selectDaily(): LibraryPractice {
         val practice = packageCards(SongTestLibrary.repository.snapshot)
             .single { it.id == "local.daily-practice" }.practices.first()
+        compose.onNodeWithTag("library-list").performScrollToKey("local.daily-practice")
         compose.onNodeWithTag("package-local.daily-practice").performScrollTo().performClick()
         compose.onNodeWithTag("practice-${practice.key.encoded}").performScrollTo().performClick()
         compose.waitUntil(45000) {
