@@ -82,8 +82,8 @@ internal fun PackageLibraryScreen(
                     size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
             }
             if (!ready) LinearProgressIndicator(Modifier.fillMaxWidth())
-            LazyColumn(Modifier.weight(1f).widthIn(max = 1080.dp).fillMaxWidth().align(Alignment.CenterHorizontally).testTag("library-list"),
-                state = listState, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            LazyColumn(Modifier.weight(1f).widthIn(max = 1080.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(horizontal = 12.dp).testTag("library-list"),
+                state = listState, contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item("search") {
                     OutlinedTextField(query, { query = it }, singleLine = true, label = { Text("搜索曲名、作者、段落") },
