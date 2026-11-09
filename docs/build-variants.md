@@ -1,6 +1,6 @@
-# Android 构建与签名（v115）
+# Android 构建与签名
 
-当前参考 `main` 的 `app/build.gradle.kts`：JDK 17、compileSdk 36、targetSdk 35、minSdk 26，`versionCode=116`、`versionName=1.4.6`。以实时 Gradle 文件为最终准则。
+当前参考 `main` 的 `app/build.gradle.kts`：JDK 17、compileSdk 36、targetSdk 35、minSdk 26，Studio UI 2.0 P1 `versionCode=121`、`versionName=1.4.11`。以实时 Gradle 文件为最终准则。
 
 | 变体 | 包名 | 说明 |
 | --- | --- | --- |

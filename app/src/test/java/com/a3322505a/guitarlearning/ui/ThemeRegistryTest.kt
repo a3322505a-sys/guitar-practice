@@ -58,7 +58,7 @@ class ThemeRegistryTest {
         assertEquals(ThemeRegistry.default, ThemeRegistry.find("retired-skin"))
         ThemeRegistry.all.forEach {
             assertEquals(20.dp, it.metrics.cornerLarge)
-            assertEquals(14.dp, it.metrics.cornerMedium)
+            assertEquals(16.dp, it.metrics.cornerMedium)
             assertEquals(12.dp, it.metrics.cornerSmall)
             assertEquals(1.dp, it.metrics.borderWidth)
             assertEquals(48.dp, it.metrics.segmentStyle.height)

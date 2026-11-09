@@ -66,8 +66,9 @@ data class ThemeTokens(
 
 @Immutable
 data class ThemeButtonStyle(
-    val minHeight: Dp = 48.dp,
-    val minHeightLarge: Dp = 64.dp,
+    val minHeight: Dp = 44.dp,
+    val minHeightSmall: Dp = 36.dp,
+    val minHeightLarge: Dp = 56.dp,
     val horizontalPadding: Dp = 12.dp,
 )
 
@@ -83,7 +84,7 @@ data class ThemeMetrics(
     val transportButtonHeight: Dp = 52.dp,
     val workbenchWidth: Dp = 420.dp,
     val cornerLarge: Dp = 20.dp,
-    val cornerMedium: Dp = 14.dp,
+    val cornerMedium: Dp = 16.dp,
     val cornerSmall: Dp = 12.dp,
     val borderWidth: Dp = 1.dp,
     val shadowLevel: Dp = 1.dp,

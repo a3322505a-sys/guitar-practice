@@ -30,6 +30,8 @@ jobs:
           --tests '*BundledSongsTest'
           --tests '*PackageLibraryTest'
           --tests '*StageTransportTest'
+          --tests '*ThemeRegistryTest'
+          --tests '*ThemeManagerTest'
           lintStandalone assembleStandalone assembleRelease
       - uses: actions/upload-artifact@v4
         with:
