@@ -213,8 +213,8 @@ internal fun PracticeWorkbench(
             Box(Modifier.fillMaxSize().onGloballyPositioned { hostOrigin = it.positionInRoot() }) {
                 Column(Modifier.fillMaxSize()) {
                     PackageStageTopBar(
-                        title = phrase.title,
-                        subtitle = packageCard?.title?.takeUnless { it == phrase.title } ?: phrase.conditions,
+                        title = packageCard?.title ?: phrase.title,
+                        sectionTitle = phrase.title,
                         chord = listOf(currentChord, nextChord).filter(String::isNotBlank).distinct().joinToString(" → "),
                         measure = "${visit + 1}/${sequence?.barCount ?: 1} · $meterLabel",
                         practices = packageCard?.practices.orEmpty(), selectedId = phraseId,
@@ -241,10 +241,11 @@ internal fun PracticeWorkbench(
                     if (progress.phase == Phase.ENDED && !libraryVisible) {
                         Row(Modifier.fillMaxWidth().testTag("practice-ended"), horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { player.restart() }) { Text("再练一次") }
-                            if (nextPractice != null) TextButton(onClick = { selectPractice(nextPractice) }) { Text("下一段 ›") }
-                            else Text("已到最后一段", style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
-                            TextButton(onClick = { quickSwitchOpen = true }) { Text("换曲包") }
+                            AppButton("再练一次", { player.restart() }, Modifier.weight(1f), size = AppButtonSize.Sm, style = AppButtonStyle.Quiet, symbol = AppSymbol.Restart)
+                            if (nextPractice != null) AppButton("下一段", { selectPractice(nextPractice) }, Modifier.weight(1f),
+                                size = AppButtonSize.Sm, style = AppButtonStyle.Quiet, symbol = AppSymbol.Next)
+                            else Text("已到最后一段", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = PracticeSkin.colors.textSecondary)
+                            AppButton("换曲包", { quickSwitchOpen = true }, Modifier.weight(1f), size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
                         }
                     }
                     StageTransport(targetBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),

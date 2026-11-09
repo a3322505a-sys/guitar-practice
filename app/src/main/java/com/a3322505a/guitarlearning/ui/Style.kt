@@ -139,22 +139,6 @@ fun DiagramContainer(modifier: Modifier = Modifier, content: @Composable BoxScop
     Box(modifier, content = content)
 }
 
-@Composable
-fun PracticeAction(title: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    AppButton(title, onClick, modifier,
-        size = if (LocalLargePracticeControls.current) AppButtonSize.Lg else AppButtonSize.Md,
-        symbol = if (title == "暂停") AppSymbol.Pause else AppSymbol.Play, enabled = enabled)
-}
-
-@Composable
-fun TransportMotif(kind: String, modifier: Modifier = Modifier, color: Color = PracticeSkin.colors.onPrimary) {
-    AppIcon(when (kind) {
-        "pause" -> AppSymbol.Pause
-        "speaker" -> AppSymbol.Volume
-        else -> AppSymbol.Play
-    }, contentDescription = null, modifier = modifier, tint = color)
-}
-
 private fun DrawScope.musicNote(x: Float, y: Float, s: Float, color: Color) {
     drawOval(color, Offset(x, y + s * .65f), Size(s * .38f, s * .25f))
     drawLine(color, Offset(x + s * .34f, y + s * .77f), Offset(x + s * .34f, y), s * .075f)

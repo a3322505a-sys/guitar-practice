@@ -80,14 +80,30 @@ class UnifiedStageRenderTest {
         }
     }
     @Test fun packageSelectionTitleMenuAndBackUseTheSamePracticeIdentities() {
-        start(); selectDaily()
+        start()
+        val first = packageCards(SongTestLibrary.repository.snapshot).single { it.id == "local.daily-practice" }.practices.first()
+        compose.onNodeWithTag("favorite-local.daily-practice").performScrollTo().performClick()
+        compose.onNodeWithTag("practice-${first.key.encoded}").assertDoesNotExist() // favorite must not expand the row
+        selectDaily()
         compose.onNodeWithTag("package-library").assertDoesNotExist()
+        val backBounds = compose.onNodeWithTag("back-to-library").fetchSemanticsNode().boundsInRoot
+        val previousBounds = compose.onNodeWithTag("previous-practice").fetchSemanticsNode().boundsInRoot
+        assertTrue(backBounds.toString(), backBounds.bottom <= previousBounds.top)
         compose.onNodeWithTag("practice-title").performClick()
+        compose.onNodeWithTag("practice-menu").assertIsDisplayed()
         val other = packageCards(SongTestLibrary.repository.snapshot).single { it.id == "local.daily-practice" }.practices[1]
         compose.onNodeWithTag("switch-${other.key.encoded}").performScrollTo().performClick()
         compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("practice-title").assertTextContains(other.title, substring = true) }.isSuccess }
         compose.onNodeWithTag("back-to-library").performClick()
         compose.onNodeWithTag("package-library").assertIsDisplayed()
+        compose.onNodeWithTag("continue-banner").performScrollTo().assertIsDisplayed()
+        capture("phone-library-banner")
+        compose.onNodeWithTag("continue-practice").performClick()
+        compose.onNodeWithTag("practice-title").assertTextContains(other.title, substring = true)
+        compose.onNodeWithTag("previous-practice").performClick()
+        compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("practice-title").assertTextContains(first.title, substring = true) }.isSuccess }
+        compose.onNodeWithTag("next-practice").performClick()
+        compose.waitUntil(45000) { runCatching { compose.onNodeWithTag("practice-title").assertTextContains(other.title, substring = true) }.isSuccess }
     }
     @Test fun bpmPlayPauseLoopAndMetronomeReachTheExistingPlaybackContract() {
         start(); selectDaily(); assertFourControls()

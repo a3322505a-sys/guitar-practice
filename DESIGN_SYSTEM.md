@@ -2,11 +2,14 @@
 
 ## 当前执行状态与入口
 
-以 main 的 v120 为基础执行。P1 已实现组件与规范；P2 曲包库、P3 练习页、P4 全站清理按顺序迁移。当前保留这些页面的旧交互，不能把设计约束写入文档视为页面已完成。
+以 main 已合并的 v120 为基础执行。Studio UI 2.0 的 P1→P4 代码已实施，当前版本 1.4.12 / 122；具体构建和主流程结果以 PR #36 对应提交的 Android core 为准。
 
 - 主题：`ui/Style.kt` 的 `PracticeTheme` / `PracticeSkin`；色彩：`ui/ThemeTokens.kt`、`ui/ThemeRegistry.kt`。使用现有主题切换与持久化。
 - 七个组件与图标：`app/src/main/java/com/a3322505a/guitarlearning/ui/AppUiKit.kt`。
-- 代表接入：`ThemePreviewCard.kt` 的主题恢复按钮、`Style.kt` 的 `PracticeAction` / `TransportMotif` 及 `PracticeStage.kt` 的 `StageIcon`。不修改播放、导入、谱面或段落状态。
+- 页面接入：`PackageLibrary.kt` 的搜索/横幅/筛选/列表/快速换曲包；`SongLibrary.kt` 的管理与导入/帮助/外观；`PracticeStage.kt` 的主顶栏、二级段落栏、BottomSheet 和指板外围；`PracticeApp.kt` 的练习结束操作；`PracticeTransport.kt` 的速度面板与播控布局。
+- 主顶栏显示曲包曲名，二级栏显示真实练习名与顺序；选段继续走既有 onPractice / selectPractice，保留 ID、顺序及状态处理。NativeScore 位于原来的固定 Box 中，未修改音频、原生谱面、曲包读写或练习编译。
+- 窄屏首页内容进入同一滚动列表；短横屏的进度与四主控并排展示，指板默认折叠以保留谱面空间。普通曲包行的收藏有独立触控区，副标题仅显示作者与段数。
+- AppChoiceMenu / AppDialog / AppFullScreenDialog / AppIconButton 为共享辅助入口，复用已有 Material 组件；七个基础业务组件的划分保持不变。旧 PracticeAction、TransportMotif、StageIcon 入口已删除。
 - Material Symbols Outlined 24px / weight 400，保存在 `app/src/main/res/drawable/ms_*.xml`；默认 20dp、紧凑 16dp、导航可 24dp。图标通过 `AppIcon` 渲染，单独操作通过 `AppIconButton` 提供 48dp 热区。装饰图标描述传 null；图标按钮提供准确的动作描述。
 - 上游：https://github.com/google/material-design-icons/tree/master/symbols/android 。Apache 2.0 许可证见 `third_party/material-symbols-LICENSE.txt`。
 
@@ -25,7 +28,7 @@
 | 组件 | 使用方式 |
 | --- | --- |
 | AppTopBar | 返回、页面/曲名标题、右侧操作；不承载上一段 |
-| SecondaryBar | 上一段、当前段名与展开矢量、下一段，各自独立热区；onSelect 由 Screen 打开 AppBottomSheet |
+| SecondaryBar | 上一段、当前段名与展开矢量、下一段，各自独立热区；onSelect 直接打开 AppBottomSheet；另一重载支持管理 Tab |
 | AppButton | Primary / Secondary / Quiet；Sm / Md / Lg；禁用反馈、可选矢量图标 |
 | FilterChips | 横向可滚动标签、选中索引、选择回调 |
 | AppCard | Normal / Banner 变体；继续练习横幅复用 Banner |
@@ -115,10 +118,10 @@ AppListRow(pkg.title, onClick = onPackage, subtitle = pkg.author, trailing = {
 
 ## 分阶段验收
 
-- P1：七个组件可编译、现有主题与核心 Happy Path 正常；仅挑简单接入点。实际 CI 结果以对应提交的 Android core 为准。
-- P2：首页继续练习横幅、整行曲包点击、独立收藏、导入图标与紧凑完成按钮全部落地。
-- P3：顶栏和段落栏分开，BottomSheet 直接选段，原有播放/返回/切段/横竖屏/谱面快滚行为正常。
-- P4：清理重复入口，补全示例、持续使用本规范；不额外搭建门禁框架。
+- P1：七个组件与现有主题共用，初始 P1 已通过 Android core；后续完整迁移继续检查相同主题持久化主流程。
+- P2：已接入继续练习横幅、整行曲包点击、独立收藏、FolderOpen 导入图标与 Sm 完成按钮；导入和曲包读取仍使用原调用链。
+- P3：已拆分顶栏和段落栏，BottomSheet 直接选段；既有 UnifiedStageRenderTest 覆盖返回/相邻切段/面板选段/播放/大字体/横竖屏和三套主题。NativeScore 快滚恢复源码保持原样，触控与真机声音待设备验收。
+- P4：已清理旧按钮/图标入口与页面伪图标，统一常规菜单和弹窗，保留谱面/指板手势与专业播控复合组件；沿用现有 CI 并运行既有 UI 主流程。
 
 ## 后续开发约束
 
