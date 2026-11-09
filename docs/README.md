@@ -1,6 +1,6 @@
 # 当前文档索引
 
-发布主线：`main`（已合并 1.4.10 / 120）；Studio UI 2.0 P1→P4：1.4.12 / 122。
+发布主线：`main`。版本以 Gradle 为准；长期规则见 [AGENTS.md](../AGENTS.md)，操作步骤见 [构建/变体/签名](build-variants.md)。
 
 - [UI 设计系统与迁移状态](../DESIGN_SYSTEM.md)
 

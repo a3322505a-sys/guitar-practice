@@ -413,18 +413,21 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             rejectStart("选段起点含上一小节延音，请把起点前移")
             return
         }
-        require(repeats >= 0 && speed in TempoControl.ENGINE_MIN_SPEED..TempoControl.MAX_SPEED)
+        val engineSpeed = TempoControl.engineSpeed(speed)
         stopDisplayCursor()
         focus=null; focusNoteIds=emptySet()
         callbackEpoch++; api.stop(); auditioning=false; pausedTick=null; round = 0; rounds = repeats
         countIn = pre; beginning = true; positions = emptyList()
         entryLight = 0; entryBeatNumber = 0; entryBeatTotal = 0
         progress = Progress(Phase.PREPARING, message = "准备声音…")
-        pendingStart = {
+        pendingStart = start@ {
             val visits = checkNotNull(projection).visits
             api.playbackRange = PlaybackRange().apply { startTick = visits[first].start; endTick = visits[last].end }
-            api.playbackSpeed = speed
-            check(kotlin.math.abs(api.playbackSpeed - speed) < 1e-9) { "播放器未接受目标速度" }
+            api.playbackSpeed = engineSpeed
+            if (kotlin.math.abs(api.playbackSpeed - engineSpeed) > 1e-9) {
+                fail(IllegalStateException("播放器未接受目标速度，请重试"))
+                return@start
+            }
             api.isLooping = repeats == 0 || repeats > 1
             applyMix(); currentTick = visits[entryVisit].start; currentVisit = entryVisit
             val trackLookup = alphaTab.core.ecmaScript.Set<Double>(
@@ -446,7 +449,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
             } else fail(IllegalStateException("当前音频被其他应用占用，请稍后重试"))
         }
         ready = false
-        AlphaNotation.withPlaybackTempo(model, sourceTempo, bpm) { api.loadMidiForScore() }
+        AlphaNotation.withPlaybackTempo(model, sourceTempo, bpm, speed / engineSpeed) { api.loadMidiForScore() }
     }
     private fun updateCursor() {
         val s = session

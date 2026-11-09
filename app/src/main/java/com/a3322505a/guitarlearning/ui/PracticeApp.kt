@@ -120,8 +120,8 @@ internal fun PracticeWorkbench(
         nativePlayer?.prepareSequence(sequence)
     }
     val referenceBpm = sequence?.let { TempoControl.sourceBpm(it) } ?: 60.0
-    val minBpm = TempoControl.minimum(referenceBpm)
-    val maxBpm = TempoControl.maximum(referenceBpm)
+    val minBpm = TempoControl.MIN_BPM
+    val maxBpm = TempoControl.MAX_BPM
     val targetBpm = bpm.coerceIn(minBpm, maxBpm)
     val speed = TempoControl.ratio(targetBpm, referenceBpm)
     LaunchedEffect(sequence, settingsSequence, targetBpm, repeats, speed) {

@@ -17,7 +17,7 @@ class PhraseSettingsTest {
         val phrase=SongTestLibrary.sourceMozart[0].copy(assetKey=com.a3322505a.guitarlearning.music.score.PracticeKey("test.tempo","one"))
         val reference=TempoControl.sourceBpm(phrase.sequence)
         store.saveTempo(phrase,true,75.0)
-        val migrated=kotlin.math.round(reference*.75).toInt().coerceIn(TempoControl.minimum(reference),TempoControl.maximum(reference))
+        val migrated=kotlin.math.round(reference*.75).toInt().coerceIn(TempoControl.MIN_BPM,TempoControl.MAX_BPM)
         assertEquals(migrated,store.targetBpm(phrase))
         store.saveTargetBpm(phrase,20)
         assertEquals(20,PhraseSettingsStore(prefs).targetBpm(phrase))

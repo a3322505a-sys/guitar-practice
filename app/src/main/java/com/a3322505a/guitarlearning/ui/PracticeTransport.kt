@@ -136,8 +136,6 @@ internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, 
                             Modifier.testTag("tempo-step-$step"), size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
                     }
                 }
-                if (minBpm > TempoControl.TARGET_MIN_BPM) Text(
-                    "此曲引擎最低 $minBpm BPM（最低倍率 12.5%）", style = MaterialTheme.typography.bodySmall)
                 HorizontalDivider()
                 Text("光标同步微调", style = MaterialTheme.typography.titleMedium)
                 Text("正值延后，负值提前；仅调整光标显示。", style = MaterialTheme.typography.bodySmall)
