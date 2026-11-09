@@ -53,7 +53,10 @@ class BundledSongsTest {
                 assertEquals(practice.id, plan.practice.id)
                 assertEquals(source.score, plan.score)
                 assertTrue(phrase.id, plan.notes.isNotEmpty())
-                plan.notes.forEach { note -> assertEquals(note.track.midi(note.note.string, note.note.fret), note.note.midi) }
+                plan.notes.forEach { note ->
+                    val expected = note.note.harmonic?.soundMidi ?: note.track.midi(note.note.string, note.note.fret)
+                    assertEquals(note.note.id, expected, note.note.midi)
+                }
                 count++
             }
         }
