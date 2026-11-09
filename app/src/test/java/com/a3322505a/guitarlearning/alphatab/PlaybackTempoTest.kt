@@ -75,8 +75,8 @@ class PlaybackTempoTest {
                 engine.tickPosition = 2880.0
                 assertEquals(2 * 60000.0 / target + 60000.0 / (target * 1.5), engine.timePosition, .01)
                 engine.tickPosition = 0.0
-                samplesPlayed.trigger(44100.0)
-                assertEquals(target * 960 / 60.0, engine.tickPosition, 1.000001)
+                samplesPlayed.trigger(11025.0)
+                assertEquals(target * 960 / 60.0 / 4, engine.tickPosition, 1.000001)
             }
         } finally { engine.destroy() }
     }
