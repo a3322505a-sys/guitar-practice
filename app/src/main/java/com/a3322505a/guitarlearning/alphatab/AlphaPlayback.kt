@@ -184,6 +184,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     /** Native milliseconds already include synth speed. Only the MIDI tick bounds
      * need conversion; subtract the selected range's start without scaling again. */
     internal fun playbackTime(range: BarRange, multiplier: Double): PlaybackTime {
+        if (loading) return PlaybackTime()
         val visits = projection?.visits ?: return PlaybackTime()
         val selected = session?.range ?: range
         val first = visits.getOrNull(selected.first) ?: return PlaybackTime()

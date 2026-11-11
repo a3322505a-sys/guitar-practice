@@ -137,7 +137,8 @@ class PlaybackTempoTest {
                 }
                 engine.playbackRange = null
                 val total = expectedMillis(plan, 0.0, plan.length.value(), ratio)
-                assertEquals("native endTime already scaled, target=$target", total, engine.endTime, 2.0)
+                engine.tickPosition = projection.visits.last().end
+                assertEquals("native duration already scaled, target=$target", total, engine.timePosition, 2.0)
                 assertEquals(reference, score.masterBars.first().tempoAutomations.first().value, 1e-9)
             }
         } finally { engine.destroy() }
