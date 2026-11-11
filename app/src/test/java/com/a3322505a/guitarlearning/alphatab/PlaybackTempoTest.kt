@@ -79,6 +79,8 @@ class PlaybackTempoTest {
                 assertEquals("source=$source target=$target", 60000.0 / target, engine.timePosition, .01)
                 engine.tickPosition = 2880.0
                 assertEquals(2 * 60000.0 / target + 60000.0 / (target * 1.5), engine.timePosition, .01)
+                val timeline = PlaybackTimeline(CursorTempoMap(midi), 0.0, 8 * 960.0, speed)
+                assertEquals(2 * 60000.0 / target + 6 * 60000.0 / (target * 1.5), timeline.durationMillis, 2.0)
                 engine.tickPosition = 0.0
                 samplesPlayed.trigger(11025.0)
                 assertEquals(target * 960 / 60.0 / 4, engine.tickPosition, 1.000001)

@@ -267,7 +267,8 @@ fun Fretboard(
                         val a = x(movingItem.source.fret.toFloat())
                         val b = x(movingItem.target.fret.toFloat())
                         drawLine(colors.primary, Offset(a, y), Offset(b, y), (metrics.borderWidth * 3).toPx())
-                        val movingX = if (hasOpen && movingItem.fret < 1) x(0f) + (x(1f) - x(0f)) * movingItem.fret else x(movingItem.fret.toFloat())
+                        val span = movingItem.target.fret - movingItem.source.fret
+                        val movingX = if (span == 0) a else a + (b - a) * (movingItem.fret - movingItem.source.fret) / span
                         drawCircle(colors.fretboardNoteActive, 9.dp.toPx(), Offset(movingX, y))
                         label(
                             measurer,
