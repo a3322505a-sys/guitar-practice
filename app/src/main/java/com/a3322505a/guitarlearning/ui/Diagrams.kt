@@ -13,8 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
@@ -26,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -114,8 +113,10 @@ fun Fretboard(
         Hint.ROOTS -> positions.filter { p -> (openStringMidi[p.string-1]+p.fret+capoFret)%12 == (key?.root ?: teaching.root) }
         Hint.HIDDEN -> emptyList()
     }.filter { fretWindow == null || it.fret == 0 || it.fret in fretWindow }
-    val hasOpen = reserveOpenString || positions.any { it.fret == 0 }
-    val low = fretWindow?.first ?: positions.filter { it.fret > 0 }.minOfOrNull { it.fret }?.let { if (hasOpen) 1 else it } ?: 1
+    val containsOpen = reserveOpenString || positions.any { it.fret == 0 }
+    val low = fretWindow?.first ?: positions.filter { it.fret > 0 }.minOfOrNull { it.fret }?.let { if (containsOpen) 1 else it } ?: 1
+    val hasOpen = low == 1 || containsOpen
+    val openGap = if (hasOpen && low > 1) 12 else 0
     val high = fretWindow?.last ?: positions.maxOf { it.fret }.coerceAtLeast(low)
     val columns = (high - low + 1).coerceAtLeast(1)
     val animatedLow by animateFloatAsState(low.toFloat(), tween(if (fretWindow == null) 0 else 180), label = "fret-window-start")
@@ -125,12 +126,13 @@ fun Fretboard(
     val colors = PracticeSkin.colors
     val metrics = PracticeSkin.metrics
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val width = maxOf(maxWidth, (columns * 36 + 56 + if (hasOpen) 36 else 0).dp)
+        val width = maxOf(maxWidth, (columns * 36 + 56 + if (hasOpen) 36 + openGap else 0).dp)
         Box(Modifier.horizontalScroll(rememberScrollState())) {
             Canvas(
                 Modifier.width(width).height(diagramHeight).clipToBounds().testTag("fretboard").semantics {
                     contentDescription = if (hint == Hint.HIDDEN) "指板，提示已隐藏" else buildString {
-                        append("指板，上为 1 弦，下为 6 弦。")
+                        append("指板，上为 1 弦，下为 6 弦。显示 $low 至 $high 品。")
+                        if (hasOpen) append(if (low == 1) "0 品为空弦，琴枕右侧为 1 品。" else "0 品空弦区与高把位断开。")
                         if (capoFret > 0) append("变调夹${capoFret}品，品位相对变调夹，音名为实际发声。")
                         current.filter { it in visible }.forEach { append("当前 ${it.string} 弦 ${it.fret} 品；") }
                         upcoming.filter { it in visible }.forEach { append("下一 ${it.string} 弦 ${it.fret} 品；") }
@@ -139,10 +141,10 @@ fun Fretboard(
                             append(" ${move.source.fret}${move.mark}${move.target.fret}；")
                         }
                     }
-                }.pointerInput(visible, enabled, onTap) {
+                }.pointerInput(visible, enabled, onTap, hasOpen, openGap, columns) {
                     if (enabled) detectTapGestures { tap ->
                         val left = 46.dp.toPx()
-                        val gridLeft = left + if (hasOpen) 36.dp.toPx() else 0f
+                        val gridLeft = left + if (hasOpen) (36 + openGap).dp.toPx() else 0f
                         val cell = (size.width - gridLeft - 10.dp.toPx()) / columns
                         fun x(fret: Int) = if (fret == 0) left + 18.dp.toPx() else gridLeft + (fret - touchLow + .5f) * cell
                         val vertical = size.height / 238.dp.toPx()
@@ -156,7 +158,7 @@ fun Fretboard(
                 },
             ) {
                 val left = 46.dp.toPx()
-                val gridLeft = left + if (hasOpen) 36.dp.toPx() else 0f
+                val gridLeft = left + if (hasOpen) (36 + openGap).dp.toPx() else 0f
                 val cell = (size.width - gridLeft - 10.dp.toPx()) / columns
                 fun x(fret: Float) = if (fret == 0f) left + 18.dp.toPx() else gridLeft + (fret - animatedLow + .5f) * cell
                 val vertical = size.height / 238.dp.toPx()
@@ -164,41 +166,47 @@ fun Fretboard(
                 val row = 32.dp.toPx() * vertical
                 drawRoundRect(
                     colors.fretboardWood,
-                    Offset(left, top - 12.dp.toPx() * vertical),
-                    androidx.compose.ui.geometry.Size(size.width - left, 5 * row + 24.dp.toPx() * vertical),
+                    Offset(gridLeft, top - 12.dp.toPx() * vertical),
+                    androidx.compose.ui.geometry.Size(size.width - gridLeft, 5 * row + 24.dp.toPx() * vertical),
                     androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()),
                 )
-                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
-                    val cx = gridLeft + (fretNumber - animatedLow + 0.5f) * cell
-                    if (fretNumber in SINGLE_INLAY_FRETS) {
-                        drawCircle(colors.fretboardInlay, 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
-                    } else if (fretNumber in DOUBLE_INLAY_FRETS) {
-                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
-                        drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
+                clipRect(left = gridLeft, right = size.width - 10.dp.toPx()) {
+                    for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
+                        val cx = gridLeft + (fretNumber - animatedLow + 0.5f) * cell
+                        if (fretNumber in SINGLE_INLAY_FRETS) {
+                            drawCircle(colors.fretboardInlay, 4.5.dp.toPx() * vertical, Offset(cx, top + 2.5f * row))
+                        } else if (fretNumber in DOUBLE_INLAY_FRETS) {
+                            drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 1.5f * row))
+                            drawCircle(colors.fretboardInlay, 4.dp.toPx() * vertical, Offset(cx, top + 3.5f * row))
+                        }
+                    }
+                    for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns).toInt()) {
+                        drawLine(
+                            colors.fretboardWire,
+                            Offset(gridLeft + (fretNumber - animatedLow) * cell, top - 12.dp.toPx() * vertical),
+                            Offset(gridLeft + (fretNumber - animatedLow) * cell, top + 5 * row + 12.dp.toPx() * vertical),
+                            metrics.borderWidth.toPx(),
+                        )
+                    }
+                    for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
+                        val isMarker = fretNumber in SINGLE_INLAY_FRETS || fretNumber in DOUBLE_INLAY_FRETS
+                        label(
+                            measurer,
+                            "$fretNumber",
+                            gridLeft + (fretNumber - animatedLow + 0.5f) * cell,
+                            16.dp.toPx() * vertical,
+                            if (isMarker) colors.primaryText else colors.textSecondary,
+                            bold = isMarker,
+                        )
                     }
                 }
-                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns).toInt()) {
-                    drawLine(
-                        colors.fretboardWire,
-                        Offset(gridLeft + (fretNumber - animatedLow) * cell, top - 12.dp.toPx() * vertical),
-                        Offset(gridLeft + (fretNumber - animatedLow) * cell, top + 5 * row + 12.dp.toPx() * vertical),
-                        metrics.borderWidth.toPx(),
-                    )
-                }
-                for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
-                    val isMarker = fretNumber in SINGLE_INLAY_FRETS || fretNumber in DOUBLE_INLAY_FRETS
-                    label(
-                        measurer,
-                        "$fretNumber",
-                        gridLeft + (fretNumber - animatedLow + 0.5f) * cell,
-                        16.dp.toPx() * vertical,
-                        if (isMarker) colors.primaryText else colors.textSecondary,
-                        bold = isMarker,
-                    )
-                }
                 if (hasOpen) {
-                    label(measurer, "O", x(0f), 16.dp.toPx() * vertical, colors.textPrimary, bold = true)
-                    drawLine(
+                    drawRoundRect(colors.surfaceHigh,
+                        Offset(left, top - 12.dp.toPx() * vertical),
+                        androidx.compose.ui.geometry.Size(36.dp.toPx(), 5 * row + 24.dp.toPx() * vertical),
+                        androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()))
+                    label(measurer, "0", x(0f), 16.dp.toPx() * vertical, colors.textPrimary, bold = true)
+                    if (low == 1) drawLine(
                         colors.textPrimary,
                         Offset(gridLeft, top - 12.dp.toPx() * vertical),
                         Offset(gridLeft, top + 5 * row + 12.dp.toPx() * vertical),
@@ -207,7 +215,9 @@ fun Fretboard(
                 }
                 for (s in 1..6) {
                     val y = top + (s - 1) * row
-                    drawLine(colors.fretboardWire, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), (0.45 + s * 0.13).dp.toPx())
+                    val wire = (0.45 + s * 0.13).dp.toPx()
+                    drawLine(colors.fretboardWire, Offset(gridLeft, y), Offset(size.width - 10.dp.toPx(), y), wire)
+                    if (hasOpen) drawLine(colors.fretboardWire, Offset(left, y), Offset(left + 36.dp.toPx(), y), wire)
                     label(measurer, "$s ${Music.name(openStringMidi[s - 1] + capoFret)}", 21.dp.toPx(), y, colors.textSecondary, size = 12)
                 }
                 for (p in visible) {
@@ -257,7 +267,8 @@ fun Fretboard(
                         val a = x(movingItem.source.fret.toFloat())
                         val b = x(movingItem.target.fret.toFloat())
                         drawLine(colors.primary, Offset(a, y), Offset(b, y), (metrics.borderWidth * 3).toPx())
-                        val movingX = if (hasOpen && movingItem.fret < 1) x(0f) + (x(1f) - x(0f)) * movingItem.fret else x(movingItem.fret.toFloat())
+                        val span = movingItem.target.fret - movingItem.source.fret
+                        val movingX = if (span == 0) a else a + (b - a) * (movingItem.fret - movingItem.source.fret) / span
                         drawCircle(colors.fretboardNoteActive, 9.dp.toPx(), Offset(movingX, y))
                         label(
                             measurer,
@@ -383,15 +394,10 @@ internal class LessonBoardIndex(private val plan: PerformancePlan) {
         val pitches = values.map { it.note.harmonic?.soundMidi ?: it.note.midi }.distinct()
         if (pitches.size == 1) Music.name(pitches.single(), true) else "${position.fret}品"
     }
-    fun labelsAt(q: Double, next: BoardTarget?, mode: String, root: Int?, keyContext: KeyContext? = null): Map<Position,String> {
+    fun labelsAt(q: Double, next: BoardTarget?, keyContext: KeyContext? = null): Map<Position,String> {
         val heads=intervals.query(q,q+1e-7)+next?.let { t -> byOnset[t.at].orEmpty() }.orEmpty()
         return heads.groupBy { it.position }.mapValues { (position,values) ->
-            when {
-                mode=="fingers" && position.fret==0 -> "O"
-                mode=="fingers" && values.map { it.finger }.distinct().singleOrNull()!=null -> if(values.first().finger==5) "T" else values.first().finger.toString()
-                mode=="degrees" && root!=null -> keyContext?.degree(values.first().note.midi) ?: listOf("1","♭2","2","♭3","3","4","♯4","5","♭6","6","♭7","7")[Math.floorMod(values.first().note.midi-root,12)]
-                else -> values.map { val midi=it.note.harmonic?.soundMidi ?: it.note.midi; (keyContext?.noteName(midi) ?: Music.name(midi))+(midi/12-1) }.distinct().singleOrNull() ?: "${position.fret}品"
-            }
+            values.map { val midi=it.note.harmonic?.soundMidi ?: it.note.midi; (keyContext?.noteName(midi) ?: Music.name(midi))+(midi/12-1) }.distinct().singleOrNull() ?: "${position.fret}品"
         }
     }
     fun pool(visit: Int): List<Position> {
@@ -435,8 +441,6 @@ internal fun LinkedFretboardDock(
     modifier: Modifier = Modifier,
     enabled: Boolean = false,
     loopContinues: Boolean = false,
-    labelRoot: Int? = null,
-    labelMode: String = "notes",
 ) {
     val plan = remember(sequence) { sequence.performance }
     val index = remember(plan) { LessonBoardIndex(plan) }
@@ -457,7 +461,7 @@ internal fun LinkedFretboardDock(
     var window by remember(sequence) { mutableStateOf(stableFretWindow(1..7, required)) }
     LaunchedEffect(required) { window = stableFretWindow(window, required) }
     val positions = (pool + active + upcoming).distinct()
-    val noteLabels=index.labelsAt(q,next.first,labelMode,labelRoot,LocalBoardTeaching.current.key)
+    val noteLabels=index.labelsAt(q,next.first,LocalBoardTeaching.current.key)
     val techniques = if (cursor?.pre == true || phase == Phase.ENDED || phase == Phase.ERROR) emptyList()
         else cursor?.movingPositions?.takeIf { it.isNotEmpty() } ?: index.techniquesAt(q)
     Box(modifier) {
