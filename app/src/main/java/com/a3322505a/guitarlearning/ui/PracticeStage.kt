@@ -6,10 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
@@ -61,33 +59,21 @@ internal fun PackageStageTopBar(
 @Composable
 internal fun StageFretboard(
     sequence: Sequence?, cursor: Cursor?, phase: Phase, current: List<Position>, range: BarRange,
-    labelRoot: Int?, expanded: Boolean, onToggle: () -> Unit, height: Dp,
+    expanded: Boolean, onToggle: () -> Unit, height: Dp,
     onTap: (Position) -> Unit, enabled: Boolean, loopContinues: Boolean,
 ) {
-    val preferences = LocalContext.current.getSharedPreferences("practice-settings", 0)
-    var labels by rememberSaveable { mutableStateOf(if (preferences.getString("board-labels", null) == "degrees") "degrees" else "notes") }
-    var menuOpen by remember { mutableStateOf(false) }
     Surface(color = PracticeSkin.colors.surfaceLow, shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth().height(height).testTag("stage-fretboard")) {
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().height(48.dp).padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("指板", style = MaterialTheme.typography.titleMedium)
-                Box(Modifier.weight(1f)) {
-                    AppButton(if (labels == "degrees" && labelRoot != null) "度数" else "当前音位", { menuOpen = true },
-                        Modifier.testTag("board-label-menu"), size = AppButtonSize.Sm,
-                        style = AppButtonStyle.Quiet, symbol = AppSymbol.Expand)
-                    AppChoiceMenu(menuOpen, listOf("当前音位", "度数"), if (labels == "degrees") 1 else 0,
-                        onSelect = { index ->
-                            labels = if (index == 0) "notes" else "degrees"
-                            preferences.edit().putString("board-labels", labels).apply()
-                        }, onDismiss = { menuOpen = false }, enabled = { it == 0 || labelRoot != null })
-                }
+                Spacer(Modifier.weight(1f))
                 AppIconButton(if (expanded) AppSymbol.Collapse else AppSymbol.Expand,
                     if (expanded) "收起指板" else "展开指板", onToggle, Modifier.testTag("fold-fretboard"))
             }
             if (expanded && sequence != null) LinkedFretboardDock(sequence, cursor, phase, current, range,
                 onTap, Modifier.weight(1f).fillMaxWidth(), enabled = enabled,
-                loopContinues = loopContinues, labelRoot = labelRoot, labelMode = labels)
+                loopContinues = loopContinues)
         }
     }
 }

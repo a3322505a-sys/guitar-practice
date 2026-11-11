@@ -39,6 +39,8 @@ jobs:
           --tests '*ThemeManagerTest'
           --tests '*UnifiedStageRenderTest'
           --tests '*PlaybackTempoTest'
+          --tests '*LinkedBoardIndexTest'
+          --tests '*TeachingDiagramTest'
           --tests '*PhraseSettingsTest'
           --tests '*AlphaNotationTest.fixedPracticeTempoRestoresPrintedSourceEventsEvenWhenGenerationFails'
           lintDebug assembleRelease

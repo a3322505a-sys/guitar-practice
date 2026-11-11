@@ -35,6 +35,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     private var view: AlphaTabView? = null
     private val scoreCursor = PracticeCursorHandler { view?.api?.scrollToCursor() }
     private var cursorTempoMap: CursorTempoMap? = null
+    private var sourceTempoMap: CursorTempoMap? = null
     private var displayClock: CursorDisplayClock? = null
     // Exactly one frame callback owns cursor placement. Player position callbacks only
     // update the observed clock; never cancel/restart the animation between screen frames.
@@ -180,9 +181,26 @@ class AlphaPlayback(context: Context) : PracticePlayback {
     var currentVisit by mutableIntStateOf(0); private set
     var currentTick by mutableDoubleStateOf(0.0); private set
     var effectiveBpm by mutableDoubleStateOf(60.0); private set
-    // Read-only telemetry for the stage progress display; the engine remains the sole clock.
-    val positionMillis get() = view?.api?.timePosition ?: 0.0
-    val durationMillis get() = view?.api?.endTime ?: 0.0
+    /** Native milliseconds already include synth speed. Only the MIDI tick bounds
+     * need conversion; subtract the selected range's start without scaling again. */
+    internal fun playbackTime(range: BarRange, multiplier: Double): PlaybackTime {
+        val visits = projection?.visits ?: return PlaybackTime()
+        val selected = session?.range ?: range
+        val first = visits.getOrNull(selected.first) ?: return PlaybackTime()
+        val last = visits.getOrNull(selected.last) ?: return PlaybackTime()
+        val api = view?.api ?: return PlaybackTime()
+        val nativeClock = session != null && focus == null && ready && !beginning
+        val map = (if (nativeClock) cursorTempoMap else sourceTempoMap) ?: return PlaybackTime()
+        val rate = if (nativeClock) api.playbackSpeed else multiplier
+        val timeline = PlaybackTimeline(map, first.start, last.end, rate)
+        val position = when {
+            progress.phase == Phase.ENDED -> timeline.durationMillis
+            countIn || beginning || progress.phase in listOf(Phase.IDLE, Phase.ERROR, Phase.PREPARING) -> 0.0
+            nativeClock -> timeline.elapsedMillis(api.timePosition)
+            else -> timeline.elapsedMillis(map.millisAt(currentTick) / rate)
+        }
+        return PlaybackTime(position, timeline.durationMillis)
+    }
     override var progress by mutableStateOf(Progress()); private set
     override var session: Session? by mutableStateOf(null); private set
     override var cursor: Cursor? by mutableStateOf(null); private set
@@ -250,7 +268,10 @@ class AlphaPlayback(context: Context) : PracticePlayback {
                 AlphaScoreAdapter.adaptMidi(current, midi)
                 val projected = EngineProjection.fromMidi(current, midi, api.tickCache!!.masterBars.toList())
                 val displayMap = CursorTempoMap(midi)
-                ui { if (score === current) { projection = projected; cursorTempoMap = displayMap } }
+                ui { if (score === current) {
+                    projection = projected; cursorTempoMap = displayMap
+                    if (sourceTempoMap == null) sourceTempoMap = displayMap
+                } }
             }
         }
         api.playerReady.on { ui { onReady() } }
@@ -350,7 +371,7 @@ class AlphaPlayback(context: Context) : PracticePlayback {
         score = value
         modelLoads++; Log.i("AlphaPractice","modelLoad=$modelLoads")
         selectedTrack = value.tracks.firstOrNull { it.index.toInt() == trackIndex } ?: value.tracks.first()
-        projection = null; cursorTempoMap = null; ready = false; loading = false; error = ""; rendered = false
+        projection = null; cursorTempoMap = null; sourceTempoMap = null; ready = false; loading = false; error = ""; rendered = false
         currentTick = 0.0; currentVisit = 0; positions = emptyList()
         render()
     }

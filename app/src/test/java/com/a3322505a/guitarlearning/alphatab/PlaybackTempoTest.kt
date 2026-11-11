@@ -13,6 +13,11 @@ import com.a3322505a.guitarlearning.practice.Event
 import com.a3322505a.guitarlearning.music.Position
 import com.a3322505a.guitarlearning.music.score.Q
 import com.a3322505a.guitarlearning.music.score.Tempo
+import com.a3322505a.guitarlearning.SongTestLibrary
+import com.a3322505a.guitarlearning.assets.song.SongReader
+import com.a3322505a.guitarlearning.practice.compile.PracticeCompiler
+import com.a3322505a.guitarlearning.practice.compile.PerformancePlan
+import java.io.File
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,4 +85,78 @@ class PlaybackTempoTest {
             }
         } finally { engine.destroy() }
     }
+    // Independent score integration: visits already include written repeats and
+    // segment boundaries. Never derive expected seconds from MIDI or UI output.
+    private fun expectedMillis(plan: PerformancePlan, first: Double, end: Double, ratio: Double): Double {
+        val cuts = (listOf(first, end) + plan.tempos.map { it.at.value() }.filter { it > first && it < end }).distinct().sorted()
+        return cuts.zipWithNext().sumOf { (a, b) ->
+            val tempo = plan.tempos.last { it.at.value() <= a }
+            (b - a) * 60000.0 / (tempo.bpm * tempo.beatUnit.value() * ratio)
+        }
+    }
+    private fun auditTimeline(plan: PerformancePlan, targets: List<Int>) {
+        val score = AlphaScoreAdapter.fromPlan(plan)
+        val (sourceMidi, sourceProjection) = EngineProjection.generate(score)
+        val sourceMap = CursorTempoMap(sourceMidi)
+        val reference = plan.tempos.first().let { it.bpm * it.beatUnit.value() }
+        val engine = synth()
+        try {
+            for (target in targets) {
+                val ratio = TempoControl.ratio(target, reference)
+                val rate = TempoControl.engineSpeed(ratio)
+                val (midi, projection) = AlphaNotation.withPlaybackTempo(score, true, target, ratio / rate) {
+                    EngineProjection.generate(score)
+                }
+                engine.loadMidiFile(midi)
+                engine.playbackSpeed = rate
+                val map = CursorTempoMap(midi)
+                val ranges = listOf(0 to projection.visits.lastIndex,
+                    1 to minOf(3, projection.visits.lastIndex))
+                for ((first, last) in ranges) {
+                    val a = projection.visits[first].start
+                    val b = projection.visits[last].end
+                    val expected = expectedMillis(plan, a / 960, b / 960, ratio)
+                    val timeline = PlaybackTimeline(map, a, b, rate)
+                    val preview = PlaybackTimeline(sourceMap, sourceProjection.visits[first].start,
+                        sourceProjection.visits[last].end, ratio)
+                    val label = "${plan.score.documentId}/${plan.practice.id} target=$target range=$first..$last"
+                    assertEquals(label, expected, timeline.durationMillis, 2.0)
+                    assertEquals("idle preview: $label", expected, preview.durationMillis, 2.0)
+                    engine.playbackRange = alphaTab.synth.PlaybackRange().apply { startTick = a; endTick = b }
+                    engine.tickPosition = a
+                    assertEquals("entry: $label", 0.0, timeline.elapsedMillis(engine.timePosition), 2.0)
+                    val middle = (a + b) / 2
+                    engine.tickPosition = middle
+                    assertEquals("seek/pause: $label", expectedMillis(plan, a / 960, middle / 960, ratio),
+                        timeline.elapsedMillis(engine.timePosition), 2.0)
+                    engine.tickPosition = b
+                    assertEquals("end: $label", expected, timeline.elapsedMillis(engine.timePosition), 2.0)
+                    engine.tickPosition = a // native loop wraps to the selected range
+                    assertEquals("loop: $label", 0.0, timeline.elapsedMillis(engine.timePosition), 2.0)
+                    println("TIME_AUDIT $label quarters=${(b-a)/960} expectedMs=$expected actualMs=${timeline.durationMillis}")
+                }
+                engine.playbackRange = null
+                val total = expectedMillis(plan, 0.0, plan.length.value(), ratio)
+                assertEquals("native endTime already scaled, target=$target", total, engine.endTime, 2.0)
+                assertEquals(reference, score.masterBars.first().tempoAutomations.first().value, 1e-9)
+            }
+        } finally { engine.destroy() }
+    }
+    @Test fun importedMozart80BarsHasCorrectNativeAndStageTimeAt30_60_90Bpm() {
+        val song = SongReader(SongTestLibrary.schema()).read(File("src/test/resources/mozart-timeline-r10.gpractice").readBytes())
+        val plan = PracticeCompiler.compile(song.score, song.practices.first { it.id == "K265-THEME-TO-VAR1" })
+        assertEquals(80, plan.visits.size)
+        assertEquals(160.0, plan.length.value(), 1e-9)
+        auditTimeline(plan, listOf(30, 60, 90))
+    }
+    @Test fun sampledPackagesKeepCorrectTimeAcrossTempoChangesRestsAndPolyphony() {
+        val samples = listOf("doraemon-no-uta-v4" to "doraemon-full", "isana-v1" to "isana-complete",
+            "tsukiusagi-ensemble-v3" to "complete", "your-trip-v3" to "YT-GROOVE")
+        samples.forEach { (file, id) ->
+            val song = SongReader(SongTestLibrary.schema()).read(File(SongTestLibrary.assets, "$file.gpractice").readBytes())
+            val plan = PracticeCompiler.compile(song.score, song.practices.first { it.id == id })
+            auditTimeline(plan, listOf(20, 60, 90, 240))
+        }
+    }
+
 }

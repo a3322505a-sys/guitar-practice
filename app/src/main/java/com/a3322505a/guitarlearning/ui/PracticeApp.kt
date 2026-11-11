@@ -188,17 +188,12 @@ internal fun PracticeWorkbench(
     val meter = sequence?.performance?.visits?.getOrNull(visit)?.measure?.meter
     val meterLabel = meter?.let { "${it.numerator}/${it.denominator}" } ?: "4/4"
     val teaching = BoardTeachingContext(phrase.lesson?.key, shownChord ?: Chords.named("C"), hasHarmony = shownChord != null)
-    val labelRoot = phrase.lesson?.key?.tonic?.pitchClass ?: shownChord?.root
     val currentPositions = if (cursor != null && !cursor.pre) {
         nativePlayer?.focus?.positions ?: nativePlayer?.positions ?: cursor.positions
     } else emptyList()
-    val timingScale = if (session != null) {
-        if (session.sourceTempo) session.tempoMultiplier else 1.0
-    } else speed
-    val nativeDuration = if (nativePlayer?.ready == true) nativePlayer.durationMillis else 0.0
-    val duration = (nativeDuration / timingScale.coerceAtLeast(.01) / 1000.0).coerceAtLeast(0.0)
-    val elapsed = if (progress.phase == Phase.ENDED) duration else if (cursor?.pre == true) 0.0
-        else ((nativePlayer?.positionMillis ?: 0.0) / timingScale.coerceAtLeast(.01) / 1000.0).coerceIn(0.0, duration)
+    val playbackTime = nativePlayer?.playbackTime(range, speed)
+    val duration = (playbackTime?.durationMillis ?: 0.0) / 1000.0
+    val elapsed = (playbackTime?.positionMillis ?: 0.0) / 1000.0
     val configuration = LocalConfiguration.current
     PracticeTheme(largeControls = minOf(configuration.screenWidthDp, configuration.screenHeightDp) >= 600,
         theme = themeManager.current) {
@@ -226,7 +221,7 @@ internal fun PracticeWorkbench(
                         val boardHeight = minOf(204.dp, maxHeight * .34f)
                         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             CompositionLocalProvider(LocalBoardTeaching provides teaching) {
-                                StageFretboard(sequence, cursor, progress.phase, currentPositions, range, labelRoot,
+                                StageFretboard(sequence, cursor, progress.phase, currentPositions, range,
                                     expanded, { boardOverride = !expanded },
                                     if (expanded) boardHeight else 48.dp,
                                     onTap = { position -> sequence?.let {
