@@ -7,6 +7,8 @@ python -m pip install -r scripts/song_package/requirements.txt
 python scripts/song-package.py build --input my-song --output my-song.gpractice
 ```
 
+成品文件名统一为 `<name>.gpractice`，制包时直接写入该路径。**不要**额外追加 `.zip`，也无需下载后去掉 `.zip` 或重命名。`.gpractice` 内部依然是 ZIP_DEFLATED 压缩容器，根目录恰好只有 UTF-8 的 `manifest.json`、`score.json`、`practices.json`，不套子文件夹。
+
 `manifest.json` 使用以下外壳，乐谱仍沿用 scoreSchemaVersion 1：
 
 ```json
