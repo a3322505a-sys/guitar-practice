@@ -17,3 +17,9 @@
 - `app/build.gradle.kts` 是唯一版本值来源：`versionName=X.Y.Z`，`versionCode` 严格递增；日常修复升 PATCH。正式文件名由 Gradle 生成 `GuitarPractice-X.Y.Z.apk`；无签名检查包带 `-unsigned`。
 - 流程：任务分支修改 → 核心 CI 通过 → 合并 main → main CI 用 Secrets 签署 → 正式 APK 上传 Google Drive【APK】。只推荐一份正式包。首次从 standalone 迁移可卸载旧包，此后固定覆盖更新。
 - 内置曲包打包来源固定 `app/src/main/assets/song-packages/`；同 packageId 按 revision 更新，不在 CI 抓取整个网盘。具体构建/签名与一次性 Secrets 设置见 `docs/build-variants.md`。
+
+## 工作区与分支卫生（单线串行开发）
+
+- 本项目按单线串行迭代（不同时并行多个开发任务）：**直接在仓库根目录切任务分支开发，不再在 `work/` 下新建 git worktree**。
+- 接手任何新任务前，先确保本地处于干净的 `main` 并执行 `git pull --ff-only origin main` 同步云端最新基线，再基于 `main` 创建任务分支。
+- 任务分支合并进 `main`（或确认废弃）后立即收尾：切回 `main`、拉取最新、删除已结束的本地任务分支，并清理 `work/` 下的临时日志、APK 或交付文件；不在工作区遗留半成品未提交改动。
