@@ -1,25 +1,11 @@
-# 吉他练习 App：当前开发指引
+# 吉他练习 App：开发指引
 
-- `main` 是唯一正式发布基线。保留 Studio UI 2.0 和已预装的 13 个曲包，以最新代码为准；不按旧施工单回滚。
-- 项目是个人工具，优先快速可用、简单易改。合理默认值；不做过度防御、企业级抽象、冗余校验或无目的测试。关键崩溃/数据损坏/谱面事实错误/权限风险保留必要保护。
-- 曲包内容读取与存储依赖 `SongReader`、`SongRepository`、Schema、ScoreValidation 与编译链；不因简化需求删除必要音乐校验与 ID/路径安全。
-- 新版曲包统一以 v2 manifest/score/practices 三文件为准。旧 v1 文件在读取时抽取核心三份数据走同一路径，旧 review、provenance、hash 和能力声明不参与导入；旧包用 `scripts/convert-song-packages-v2.py` 批量转换。
-- 新制曲包成品统一直接输出 `<name>.gpractice` 文件，不加 `.zip` 后缀，也不要求下载后改名。文件内部仍为 ZIP_DEFLATED 压缩包；根目录只能有 UTF-8 编码的 `manifest.json`、`score.json`、`practices.json`，不得额外套目录。使用 `scripts/song-package.py build --input <目录> --output <name>.gpractice` 制包；旧包导入兼容行为不变。
-- 播放保持一个 AlphaTab 1.8.4 宿主、统一原生时间轴和声音。保留光标微调、完整预备拍、重来、整数 BPM、指板折叠及底部【BPM、播放、循环、节拍】，不恢复退役的双播放器或旧 P0 探针。
-- 新交互施工依据 `docs/曲包库与连续练习-整合实施方案.md`，与既有 `PracticeApp.kt`、`SongLibrary.kt`、`PhraseSettingsStore` 直接结合，先实现 Happy Path。
-- 构建与签名参考 `docs/build-variants.md`；保持正式包名、长期签名、原生音源与许可证。未真实运行的 CI、构建、APK 或真机结果不得声明已通过。
-- 不直接改写 Git 历史；删除历史文档和截图只改变当前分支文件树，不删业务代码、测试夹具、构建脚本或第三方授权文件。不再向 Git 追加入库旧截图和每版独立施工方案。
-
-- UI 新增/修改先读根目录 `DESIGN_SYSTEM.md`：复用现有主题和七个共享组件；普通图标必须用 Material Symbols；专业谱面/指板/乐理豁免。已接入曲包库/管理/练习页，保持顶栏与段落栏分离、BottomSheet 直接选段，并复用共享菜单/弹窗辅助入口。
-
-- 练习速度统一 20～240 BPM；保存值优先，其次曲包/练习初始值，默认 60。原谱速度曲线按起点固定倍率播放；引擎范围外仅临时缩放 MIDI，不重绘或改写源谱。
-- 正式发布统一 `release` / `com.a3322505a.guitarlearning` / `吉他练习`，只复用既有正式证书；debug 独立 `.debug`。不得自行换证书、包名、版本格式。
-- `app/build.gradle.kts` 是唯一版本值来源：`versionName=X.Y.Z`，`versionCode` 严格递增；日常修复升 PATCH。正式文件名由 Gradle 生成 `GuitarPractice-X.Y.Z.apk`；无签名检查包带 `-unsigned`。
-- 流程：任务分支修改 → 核心 CI 通过 → 合并 main → main CI 用 Secrets 签署 → 正式 APK 上传 Google Drive【APK】。只推荐一份正式包。首次从 standalone 迁移可卸载旧包，此后固定覆盖更新。
-- 内置曲包打包来源固定 `app/src/main/assets/song-packages/`；同 packageId 按 revision 更新，不在 CI 抓取整个网盘。具体构建/签名与一次性 Secrets 设置见 `docs/build-variants.md`。
-
-## 工作区与分支卫生（单线串行开发）
-
-- 本项目按单线串行迭代（不同时并行多个开发任务）：**直接在仓库根目录切任务分支开发，不再在 `work/` 下新建 git worktree**。
-- 接手任何新任务前，先确保本地处于干净的 `main` 并执行 `git pull --ff-only origin main` 同步云端最新基线，再基于 `main` 创建任务分支。
-- 任务分支合并进 `main`（或确认废弃）后立即收尾：切回 `main`、拉取最新、删除已结束的本地任务分支，并清理 `work/` 下的临时日志、APK 或交付文件；不在工作区遗留半成品未提交改动。
+- 本项目为个人自用离线 Android 工具，优先简单、直接、好用；不做过度防御、企业级抽象或无目的测试，只保留防崩溃、防数据损坏、防谱面/节奏事实错误与路径安全检查。
+- **架构红线**：保持单个 AlphaTab 1.8.4 宿主（`NativeScore` 固定挂载）与统一原生时间轴/音频输出。严禁引入第二套 `AudioTrack`/`MediaPlayer`/伪计时器、严禁反射 AlphaTab 私有字段、严禁为预备拍改写源谱显示小节、严禁修改 `app/src/main/assets/sonivox.sf2`。
+- **交互基线**：保留上方可折叠指板、主体六线谱、底部四主控【BPM、播放/暂停、循环、节拍】、重新开始、预备拍与光标同步微调；练习速度统一 20～240 BPM（已存值 > 曲包建议值 > 默认 60；超出引擎倍率范围仅临时缩放 MIDI，不改写源谱）。
+- **UI 约束**：改动界面前先读根目录 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)，复用语义主题色、Material Symbols 矢量图标与共享 UI 组件。
+- **曲包协议**：统一以三文件 v2（`manifest.json`、`score.json`、`practices.json`）读取；旧 v1 自动抽取三文件忽略旧审核元数据。保留 `SongReader`、`SongRepository`、Schema 与 `ScoreValidation` 校验。
+- **曲包制作与预装**：新制曲包用 `scripts/song-package.py build --input <目录> --output <name>.gpractice` 直接输出 `.gpractice`（ZIP_DEFLATED，根目录平放三份 UTF-8 JSON，不套目录）；旧包可用 `scripts/convert-song-packages-v2.py` 批量转换。内置曲包固定放在 `app/src/main/assets/song-packages/`（同 `packageId` 按 `revision` 更新）。
+- **包名、签名与版本**：正式包固定 `release` / `com.a3322505a.guitarlearning` / `吉他练习`，复用既有正式证书（见 [docs/build-variants.md](docs/build-variants.md)）；debug 独立 `.debug`。不得自行换包名、证书或版本格式。`app/build.gradle.kts` 是唯一版本来源（`versionName=X.Y.Z`，`versionCode` 严格递增，日常修复升 PATCH）。
+- **开发与发布方式**：开始前先同步最新 `main`；改完并在本地跑通单测、Lint 与构建后，可直接提交推送到 `main`，由 GitHub Actions 自动跑全量校验并签发正式 APK（仅做高风险大实验时自行临时切分支）。
+- **仓库卫生与汇报**：一次性施工单、临时日志和验收截图不提交进 Git；未实际运行的 CI、构建或真机试弹结果不得声称已通过。

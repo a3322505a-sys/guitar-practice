@@ -27,23 +27,8 @@ jobs:
           PYTHONPATH=scripts python -m unittest
           test_song_packages.PackageTests.test_all_original_shared_fixtures
           test_song_packages.PackageTests.test_bundled_content_matches_independent_source_facts
-      - name: Import, playback and Android build
-        run: >-
-          chmod +x gradlew && ./gradlew testDebugUnitTest
-          --tests '*SongKernelTest.originalSharedFixturesRetainPolyphonyTupletsAndTechniques'
-          --tests '*SongRepositoryTest.importUpdateRollbackAndRestartPreserveLegacySettingsAndPinnedSession'
-          --tests '*BundledSongsTest'
-          --tests '*PackageLibraryTest'
-          --tests '*StageTransportTest'
-          --tests '*ThemeRegistryTest'
-          --tests '*ThemeManagerTest'
-          --tests '*UnifiedStageRenderTest'
-          --tests '*PlaybackTempoTest'
-          --tests '*LinkedBoardIndexTest'
-          --tests '*TeachingDiagramTest'
-          --tests '*PhraseSettingsTest'
-          --tests '*AlphaNotationTest.fixedPracticeTempoRestoresPrintedSourceEventsEvenWhenGenerationFails'
-          lintDebug assembleRelease
+      - name: Unit tests, lint and Android build
+        run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleRelease --console=plain
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-release-check
