@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
 class PracticeFocusTest {
     @Test fun repeatedVisitsAndPolyphonicHeadsKeepTheirOwnIdentity() {
         val root=File("../contracts/song-package/v1")
-        val song=SongReader(SongSchema { File(root,it).readBytes() }).read(File(root,"fixtures/complex.gpractice").readBytes())
+        val song=SongReader(SongTestLibrary.schema()).read(File(root,"fixtures/complex.gpractice").readBytes())
         val plan=PracticeCompiler.compile(song.score,song.practices.single(),"test/revision/2")
         val index=PracticeFocusIndex(plan)
         val repeated=index.groups.first { plan.visits[it.visit].occurrence==2 }
@@ -45,7 +45,7 @@ class PracticeFocusTest {
     }
     @Test fun reviewedFingeringsRoundTripToPlanAndSdkWithoutChangingSourceMusic() {
         val root=File("../contracts/song-package/v1")
-        val reader=SongReader(SongSchema { File(root,it).readBytes() })
+        val reader=SongReader(SongTestLibrary.schema())
         val song=reader.read(File(root,"fixtures/note-fingering.gpractice").readBytes())
         assertTrue("teaching.note-fingering.v1" in song.requires)
         val practice=song.practices.single()

@@ -18,8 +18,8 @@ android {
         manifestPlaceholders["appLabel"] = "吉他练习"
         minSdk = 26
         targetSdk = 35
-        versionCode = 124
-        versionName = "1.4.14"
+        versionCode = 125
+        versionName = "1.4.15"
     }
     signingConfigs {
         if (hasReleaseSigning) create("official") {

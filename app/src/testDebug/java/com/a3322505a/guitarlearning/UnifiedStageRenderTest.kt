@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.Density
@@ -159,6 +160,44 @@ class UnifiedStageRenderTest {
         compose.onNodeWithText("完成").performClick()
         assertFourControls()
     }
+    @Test fun volumeAndLoopCanBeAdjustedDuringPlaybackWithoutInvalidatingTheSession() {
+        start(); selectDaily()
+        compose.onNodeWithTag("play-button").performClick()
+        val session = compose.runOnIdle { player.session }
+        compose.onNodeWithTag("volume-button").performClick()
+        compose.onNodeWithTag("volume-popup").assertIsDisplayed()
+        compose.onNodeWithTag("music-volume-slider").performSemanticsAction(SemanticsActions.SetProgress) { it(0.45f) }
+        compose.onNodeWithTag("music-volume-value").assertTextEquals("45%")
+        compose.onNodeWithTag("metronome-volume-slider").performSemanticsAction(SemanticsActions.SetProgress) { it(0.6f) }
+        compose.onNodeWithTag("metronome-volume-value").assertTextEquals("60%")
+        compose.runOnIdle {
+            assertSame(session, player.session)
+            assertEquals(Phase.PLAYING, player.progress.phase)
+            val prefs = compose.activity.getSharedPreferences("practice-settings", 0)
+            val persisted = PlaybackMix.load(prefs)
+            assertEquals(0.45, persisted.music, 0.02)
+            assertEquals(0.60, persisted.metronome, 0.02)
+            assertEquals(0.45, player.lastMix!!.music, 0.02)
+            assertEquals(0.60, player.lastMix!!.metronome, 0.02)
+        }
+        compose.onNodeWithTag("volume-reset").performScrollTo().performClick()
+        compose.onNodeWithTag("music-volume-value").assertTextEquals("100%")
+        compose.onNodeWithTag("metronome-volume-value").assertTextEquals("100%")
+        compose.onNodeWithText("完成").performClick()
+        compose.onNodeWithTag("volume-popup").assertDoesNotExist()
+        compose.onNodeWithTag("loop-button").performClick()
+        compose.runOnIdle {
+            assertSame(session, player.session)
+            assertEquals(Phase.PLAYING, player.progress.phase)
+            assertEquals(true, player.loopingSet)
+        }
+        compose.onNodeWithTag("loop-button").performClick()
+        compose.runOnIdle {
+            assertSame(session, player.session)
+            assertEquals(Phase.PLAYING, player.progress.phase)
+            assertEquals(false, player.loopingSet)
+        }
+    }
     @Test @Config(qualifiers = "w412dp-h892dp-mdpi")
     fun portrait412KeepsTheBoardAboveTheActualScoreSlot() {
         start(); selectDaily(); assertFourControls(); capture("phone-412-mint")
@@ -200,6 +239,10 @@ class UnifiedStageRenderTest {
 private class RecordingPlayback : PracticePlayback {
     override var guitar = true
     override var click = true
+    var lastMix by mutableStateOf<PlaybackMix?>(null)
+    var loopingSet by mutableStateOf<Boolean?>(null)
+    override fun setMix(mix: PlaybackMix) { lastMix = mix }
+    override fun setLooping(enabled: Boolean) { loopingSet = enabled }
     override var progress by mutableStateOf(Progress())
     override var session by mutableStateOf<Session?>(null)
     override val active get() = progress.phase in listOf(Phase.PLAYING, Phase.PREPARING)

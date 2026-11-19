@@ -1,7 +1,10 @@
 package com.a3322505a.guitarlearning.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,7 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
@@ -18,8 +21,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.a3322505a.guitarlearning.alphatab.AlphaPlayback
 import com.a3322505a.guitarlearning.audio.Phase
-import com.a3322505a.guitarlearning.practice.TempoControl
+import com.a3322505a.guitarlearning.audio.PlaybackMix
 import kotlin.math.roundToInt
 
 internal fun stageTime(seconds: Double): String {
@@ -33,7 +37,6 @@ internal fun StageTransport(
     bpm: Int, phase: Phase, enabled: Boolean, loop: Boolean, click: Boolean,
     elapsed: Double, duration: Double, onTempo: () -> Unit, onPlay: () -> Unit,
     onLoop: () -> Unit, onClick: () -> Unit, onRestart: () -> Unit,
-    entryLight: Int = 0, entryBeat: Int = 0, entryBeatTotal: Int = 0,
 ) {
     val colors = PracticeSkin.colors
     Surface(color = colors.background, modifier = Modifier.fillMaxWidth().testTag("transport-bar")) {
@@ -42,30 +45,6 @@ internal fun StageTransport(
             @Composable fun progressRow(modifier: Modifier) {
                 Row(modifier.heightIn(min = 22.dp).testTag("playback-progress"),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Compact audio-following traffic light; always reserves the same
-                    // width, never overlays the score or controls audio playback.
-                    val cueText = when (entryLight) {
-                        1 -> "预备拍 ${entryBeat}/${entryBeatTotal}"
-                        2 -> "预备拍最后一拍 ${entryBeat}/${entryBeatTotal}"
-                        3 -> "正式第一拍"
-                        else -> "入拍提示待机"
-                    }
-                    Row(
-                        modifier = Modifier.testTag("entry-signal")
-                            .semantics { contentDescription = cueText },
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        listOf(
-                            Triple(1, Color(0xFFDC5751), "entry-light-red"),
-                            Triple(2, Color(0xFFE3B341), "entry-light-amber"),
-                            Triple(3, Color(0xFF3EAE76), "entry-light-green")
-                        ).forEach { (light, tint, tag) ->
-                            Box(Modifier.size(12.dp)
-                                .background(tint.copy(alpha = if (entryLight == light) 1f else .18f), CircleShape)
-                                .testTag(tag))
-                        }
-                    }
                     Text(stageTime(elapsed), style = MaterialTheme.typography.labelMedium, color = colors.textSecondary)
                     LinearProgressIndicator(progress = { if (duration > 0) (elapsed / duration).toFloat().coerceIn(0f, 1f) else 0f },
                         modifier = Modifier.weight(1f).height(4.dp), color = colors.primary, trackColor = colors.surfaceSelected)
@@ -151,5 +130,210 @@ internal fun BpmSheet(bpm: Int, minBpm: Int, maxBpm: Int, onBpm: (Int) -> Unit, 
                 AppButton("恢复默认值", { onCursorOffset(0) }, Modifier.testTag("cursor-offset-reset"),
                     size = AppButtonSize.Sm, style = AppButtonStyle.Quiet)
             }
+    }
+}
+
+@Composable
+internal fun VolumeSheet(
+    mix: PlaybackMix,
+    onMix: (PlaybackMix) -> Unit,
+    onClose: () -> Unit,
+) {
+    val musicPct = (mix.music.coerceIn(0.0, 1.0) * 100).roundToInt()
+    val effectiveMetronome = if (mix.metronome <= 0.0) 1.0 else mix.metronome.coerceIn(0.20, 1.0)
+    val metronomePct = (effectiveMetronome * 100).roundToInt()
+    AppDialog("音量", onClose, Modifier.testTag("volume-popup")) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("音乐音量", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "$musicPct%",
+                    modifier = Modifier.testTag("music-volume-value"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = PracticeSkin.colors.primaryText,
+                )
+            }
+            Slider(
+                value = mix.music.toFloat().coerceIn(0f, 1f),
+                onValueChange = { value ->
+                    onMix(mix.copy(music = value.toDouble().coerceIn(0.0, 1.0)))
+                },
+                valueRange = 0f..1f,
+                modifier = Modifier.testTag("music-volume-slider"),
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("节拍与预备拍音量", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "$metronomePct%",
+                    modifier = Modifier.testTag("metronome-volume-value"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = PracticeSkin.colors.primaryText,
+                )
+            }
+            Slider(
+                value = effectiveMetronome.toFloat().coerceIn(0.2f, 1f),
+                onValueChange = { value ->
+                    onMix(mix.copy(metronome = value.toDouble().coerceIn(0.20, 1.0)))
+                },
+                valueRange = 0.2f..1f,
+                modifier = Modifier.testTag("metronome-volume-slider"),
+            )
+            Text(
+                "关闭演奏中的节拍声请点击底部【节拍】按钮，预备拍始终保持发声。",
+                style = MaterialTheme.typography.bodySmall,
+                color = PracticeSkin.colors.textSecondary,
+            )
+            AppButton(
+                "恢复默认",
+                { onMix(PlaybackMix(1.0, 1.0)) },
+                Modifier.testTag("volume-reset"),
+                size = AppButtonSize.Sm,
+                style = AppButtonStyle.Quiet,
+            )
+        }
+    }
+}
+
+/** 方案 A：仅在预备拍与正式入拍瞬间浮于谱面上方的只读逐拍脉冲提示。 */
+@Composable
+internal fun StageCountInCue(
+    cue: AlphaPlayback.CountInVisualState,
+    modifier: Modifier = Modifier,
+) {
+    if (!cue.active && !cue.entryFlash) return
+    val colors = PracticeSkin.colors
+    val metrics = PracticeSkin.metrics
+    if (cue.entryFlash) {
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = colors.primary,
+            contentColor = colors.onPrimary,
+            shadowElevation = 4.dp,
+            border = BorderStroke(metrics.borderWidth, colors.primary),
+            modifier = modifier
+                .testTag("count-in-cue")
+                .semantics { contentDescription = "正式进拍" },
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "进拍",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onPrimary,
+                )
+            }
+        }
+        return
+    }
+    val plan = cue.plan ?: return
+    val activeBeat = if (cue.currentClick > 0) {
+        plan.beats.getOrNull((cue.currentClick - 1).coerceIn(0, plan.beats.lastIndex))
+    } else {
+        null
+    }
+    val activeBarIndex = activeBeat?.barIndex ?: 0
+    val barBeats = plan.beats.filter { it.barIndex == activeBarIndex }
+    val isLeadInBar = barBeats.firstOrNull()?.isLeadIn == true
+    val hasTwoBaseBars = plan.beats.any { !it.isLeadIn && it.barIndex == 1 }
+    val barSize = barBeats.firstOrNull()?.barSize ?: plan.meter.numerator.coerceAtLeast(1)
+    val label = when {
+        isLeadInBar -> "弱起 · 第${plan.entrySlotInBar}拍进"
+        hasTwoBaseBars -> "预备 ${activeBarIndex + 1}/2"
+        else -> "预备拍"
+    }
+    val description = if (isLeadInBar) {
+        "弱起引拍 ${cue.currentClick}/${plan.totalClicks}，第${plan.entrySlotInBar}拍进"
+    } else {
+        "预备拍 ${cue.currentClick}/${plan.totalClicks}"
+    }
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = colors.surfaceLow.copy(alpha = 0.94f),
+        contentColor = colors.textPrimary,
+        shadowElevation = 4.dp,
+        border = BorderStroke(metrics.borderWidth, colors.borderSubtle),
+        modifier = modifier
+            .testTag("count-in-cue")
+            .semantics { contentDescription = description },
+    ) {
+        Row(
+            Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.textSecondary,
+                maxLines = 1,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                for (slot in 1..barSize) {
+                    if (slot > 1 && slot in plan.groupStarts) {
+                        Spacer(Modifier.width(4.dp).testTag("count-in-group-gap-$slot"))
+                    }
+                    val isEntrySlot = isLeadInBar && slot == plan.entrySlotInBar
+                    val isCurrent = activeBeat != null && slot == activeBeat.displayNumber
+                    val isPast = activeBeat != null && slot < activeBeat.displayNumber
+                    val isFinal = isCurrent && activeBeat?.isFinalBeat == true
+                    val isAccent = slot in plan.groupStarts
+                    val scale by animateFloatAsState(
+                        targetValue = if (isCurrent) (if (isFinal) 1.18f else 1.08f) else 1f,
+                        animationSpec = tween(durationMillis = 120),
+                        label = "count-in-beat-$slot",
+                    )
+                    val bgColor = when {
+                        isCurrent -> if (isAccent || isFinal) colors.primary else colors.secondary
+                        isEntrySlot -> colors.surfaceSelected
+                        isPast -> colors.surfaceSelected
+                        else -> colors.surfaceHigh
+                    }
+                    val fgColor = when {
+                        isCurrent -> if (isAccent || isFinal) colors.onPrimary else colors.onAccent
+                        isEntrySlot -> colors.primaryText
+                        isPast -> colors.primaryText
+                        else -> colors.textSecondary
+                    }
+                    val border = when {
+                        isFinal -> BorderStroke(metrics.borderWidth * 1.5f, colors.primaryText)
+                        isEntrySlot -> BorderStroke(metrics.borderWidth * 1.5f, colors.primary)
+                        else -> null
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = bgColor,
+                        border = border,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                            .testTag("count-in-slot-$slot"),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = if (isEntrySlot) "进" else "$slot",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = if (isCurrent || isAccent || isEntrySlot) FontWeight.Bold else FontWeight.Medium,
+                                color = fgColor,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

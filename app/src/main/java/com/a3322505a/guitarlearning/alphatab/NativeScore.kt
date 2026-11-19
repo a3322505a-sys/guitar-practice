@@ -18,18 +18,22 @@ import com.a3322505a.guitarlearning.ui.PracticeSkin
 import com.a3322505a.guitarlearning.ui.ThemeTokens
 
 /** Observe gestures without intercepting the native scroll container. */
-internal class PracticeScoreHost(context: Context, private val refreshViewport: Boolean = true) : FrameLayout(context) {
-    val native = AlphaTabView(context,null)
-    init { addView(native,LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT)) }
+internal class PracticeScoreHost(
+    context: Context,
+    private val refreshViewport: Boolean = true,
+    nativeFactory: ((Context) -> View)? = null,
+) : FrameLayout(context) {
+    private val nativeView: View = nativeFactory?.invoke(context) ?: AlphaTabView(context, null)
+    val native: AlphaTabView get() = nativeView as AlphaTabView
+    init { addView(nativeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)) }
     // AlphaTab 1.8.4 measures its visible bitmap chunks on the render surface.
-    // During a fling the scroll changes faster than the child can complete layout;
-    // an off-screen bitmap can be recycled after the last scroll callback.
-    // Coalesce the cheap viewport sync to one frame, then rerender once at rest.
+    // OnScrollChange has a bug comparing _bottomVisibleItem.top on upward scroll,
+    // and Compose AndroidView fixed constraints swallow child requestLayout().
+    // Coalesce viewport sync to one animation frame and drive measure/layout directly
+    // on the render surface without ever clearing existing chunks via api.render(null).
     private var viewport: List<Int>? = null
     private var framePending = false
     private var forceFrame = false
-    private var redrawOnIdle = false
-    private var userScrollInProgress = false
     private val touchGate = ScoreTouchGate(ViewConfiguration.get(context).scaledTouchSlop) {
         val cancel = MotionEvent.obtain(0L, android.os.SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, 0f, 0f, 0)
         super.dispatchTouchEvent(cancel)
@@ -49,45 +53,79 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
             postOnAnimation(viewportFrame)
         }
     }
+    internal fun notifyScoreRendered() {
+        scheduleViewportRefresh(force = true)
+    }
+    internal fun notifyBecameVisible() {
+        scheduleViewportRefresh(force = true)
+    }
+    internal fun resetScrollPosition() {
+        viewport = null
+        nativeView.findViewById<android.widget.HorizontalScrollView>(net.alphatab.R.id.outerScroll)?.scrollTo(0, 0)
+        nativeView.findViewById<android.widget.ScrollView>(net.alphatab.R.id.innerScroll)?.scrollTo(0, 0)
+        scheduleViewportRefresh(force = true)
+    }
+    internal var viewportSyncs = 0; private set
+    internal fun syncRenderSurfaceViewport(force: Boolean = false) = refreshViewport(force)
     private fun refreshViewport(force: Boolean = false) {
-        if (!refreshViewport || !isAttachedToWindow) return
-        if (!isShown) { viewport = null; return }
-        val horizontal = native.findViewById<android.widget.HorizontalScrollView>(net.alphatab.R.id.outerScroll)
-        val vertical = native.findViewById<android.widget.ScrollView>(net.alphatab.R.id.innerScroll)
-        val value = listOf(horizontal?.scrollX ?: 0, vertical?.scrollY ?: 0,
-            vertical?.width ?: 0, vertical?.height ?: 0)
-        if (value[2] <= 0 || value[3] <= 0) return
-        if (!force && value == viewport) return
-        viewport = value
-        native.findViewById<View>(net.alphatab.R.id.renderSurface)?.let { surface ->
-            surface.forceLayout()
-            surface.requestLayout()
-            surface.postInvalidateOnAnimation()
+        if (!refreshViewport || !isAttachedToWindow || !isShown) {
+            if (!isShown) viewport = null
+            return
         }
-    }
-    private val settledRedraw = Runnable {
-        val shouldRender = redrawOnIdle
-        redrawOnIdle = false
-        userScrollInProgress = false
-        // Even if the user returned to the previous scroll offset, the visible
-        // chunk bitmap might already have been recycled.
-        refreshViewport(force = true)
-        if (shouldRender && isAttachedToWindow && isShown && native.api.score != null) {
-            // Redraw the existing score, never reassign tracks or reload MIDI/audio.
-            native.api.render(null)
+        val hostW = width
+        val hostH = height
+        if (hostW <= 0 || hostH <= 0) return
+        if (isInLayout) {
+            scheduleViewportRefresh(force = true)
+            return
         }
-    }
-    private fun scheduleSettledRedraw() {
-        if (!refreshViewport) return
-        redrawOnIdle = true
-        removeCallbacks(settledRedraw)
-        postDelayed(settledRedraw, 160L)
+        val horizontal = nativeView.findViewById<android.widget.HorizontalScrollView>(net.alphatab.R.id.outerScroll)
+        val vertical = nativeView.findViewById<android.widget.ScrollView>(net.alphatab.R.id.innerScroll)
+        val surface = nativeView.findViewById<View>(net.alphatab.R.id.renderSurface) ?: return
+        val state = listOf(
+            horizontal?.scrollX ?: 0,
+            vertical?.scrollY ?: 0,
+            vertical?.width ?: hostW,
+            vertical?.height ?: hostH,
+            surface.measuredWidth,
+            surface.measuredHeight,
+        )
+        if (!force && state == viewport) return
+        viewport = state
+
+        val prevW = surface.measuredWidth
+        val prevH = surface.measuredHeight
+        // Ensure onMeasure runs even if incoming MeasureSpecs match cached specs,
+        // so AlphaTabRenderSurface sets _visibleRectDirty = true and PFLAG_LAYOUT_REQUIRED.
+        surface.forceLayout()
+        surface.measure(
+            MeasureSpec.makeMeasureSpec(prevW.coerceAtLeast(0), MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(prevH.coerceAtLeast(0), MeasureSpec.EXACTLY),
+        )
+        val newW = surface.measuredWidth
+        val newH = surface.measuredHeight
+        if (newW != prevW || newH != prevH || surface.width != newW || surface.height != newH ||
+            (vertical != null && (vertical.width <= 0 || vertical.height <= 0))
+        ) {
+            var ancestor: View? = surface
+            while (ancestor != null) {
+                ancestor.forceLayout()
+                ancestor = if (ancestor === this) null else ancestor.parent as? View
+            }
+            measure(
+                MeasureSpec.makeMeasureSpec(hostW, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(hostH, MeasureSpec.EXACTLY),
+            )
+            layout(left, top, right, bottom)
+            viewportSyncs++
+        } else if (newW > 0 && newH > 0) {
+            surface.layout(surface.left, surface.top, surface.right, surface.bottom)
+            viewportSyncs++
+        }
+        surface.postInvalidateOnAnimation()
     }
     private val viewportObserver = android.view.ViewTreeObserver.OnScrollChangedListener {
         scheduleViewportRefresh()
-        // An alphaTab player-follow scroll still gets the cheap viewport sync.
-        // Only a user drag/fling or a restored window requires the full redraw.
-        if (userScrollInProgress || redrawOnIdle) scheduleSettledRedraw()
     }
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -102,29 +140,21 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         super.onVisibilityChanged(changedView, visibility)
         if (visibility == View.VISIBLE) {
             scheduleViewportRefresh(force = true)
-            scheduleSettledRedraw()
         } else {
             viewport = null
-            redrawOnIdle = false
-            userScrollInProgress = false
-            removeCallbacks(settledRedraw)
         }
     }
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
         if (hasWindowFocus) {
             scheduleViewportRefresh(force = true)
-            scheduleSettledRedraw()
         }
     }
     override fun onDetachedFromWindow() {
         if (refreshViewport) viewTreeObserver.removeOnScrollChangedListener(viewportObserver)
         removeCallbacks(viewportFrame)
-        removeCallbacks(settledRedraw)
         framePending = false
         forceFrame = false
-        redrawOnIdle = false
-        userScrollInProgress = false
         viewport = null
         super.onDetachedFromWindow()
     }
@@ -133,11 +163,6 @@ internal class PracticeScoreHost(context: Context, private val refreshViewport: 
         set(value) { touchGate.enabled = value }
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (isAttachedToWindow && !hasWindowFocus() || !touchGate.observe(event)) return true
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> userScrollInProgress = false
-            MotionEvent.ACTION_MOVE -> if (touchGate.dragged) userScrollInProgress = true
-            MotionEvent.ACTION_UP -> if (userScrollInProgress) scheduleSettledRedraw()
-        }
         return super.dispatchTouchEvent(event)
     }
     fun consumeTap(): Boolean = touchGate.consumeTap()
@@ -207,8 +232,10 @@ fun NativeScore(player: AlphaPlayback, modifier: Modifier, visible: Boolean, inp
         player.attach(host.native,host::consumeTap)
     } },
         modifier = modifier, update = {
+            val becomingVisible = visible && it.visibility != View.VISIBLE
             it.inputEnabled = inputEnabled && visible
             it.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+            if (becomingVisible) it.notifyBecameVisible()
             if (applied[0] != colors) {
                 applyScoreSkin(it.native, colors)
                 applied[0] = colors

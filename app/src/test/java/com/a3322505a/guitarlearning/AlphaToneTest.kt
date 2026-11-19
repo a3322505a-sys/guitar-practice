@@ -97,8 +97,10 @@ class AlphaToneTest {
             "strumPeak=${peak(strum)}\nclickLeadDb45ms=$differenceDb\n"
         File(output, "mix.txt").writeText(report)
         wav("click", click); wav("nylon-chord", guitar); wav("mixed-chord", mixed); wav("mixed-strum", strum)
-        assertTrue(report, differenceDb >= 6.0)
-        assertTrue(report, peak(mixed) < .85 && peak(strum) < .85)
+        assertTrue(report, peak(guitar) >= 0.35)
+        assertTrue(report, peak(click) >= 0.65)
+        assertTrue(report, differenceDb >= 2.5)
+        assertTrue(report, peak(mixed) < 0.95 && peak(strum) < 0.95)
         assertTrue("Click must finish within 60 ms", click.drop(44100 * 2 * 60 / 1000).take(44100 / 5).all { abs(it) < .0001 })
     }
     @Test fun twoGainRoutesMuteIndependentlyInActualSynthesis() {

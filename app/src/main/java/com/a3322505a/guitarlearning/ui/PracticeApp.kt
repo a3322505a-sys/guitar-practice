@@ -75,6 +75,7 @@ internal fun PracticeWorkbench(
     var managementOpen by rememberSaveable { mutableStateOf(false) }
     var practiceMenuOpen by remember { mutableStateOf(false) }
     var tempoOpen by remember { mutableStateOf(false) }
+    var volumeOpen by remember { mutableStateOf(false) }
     var boardOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var bpm by rememberSaveable { mutableIntStateOf(60) }
     var looping by rememberSaveable { mutableStateOf(false) }
@@ -82,7 +83,7 @@ internal fun PracticeWorkbench(
     var cursorOffsetMs by remember { mutableIntStateOf(cursorSettings.load()) }
     var click by rememberSaveable { mutableStateOf(preferences.getBoolean("click", true)) }
     var preparationError by remember { mutableStateOf("") }
-    val mix = remember { PlaybackMix.load(preferences) }
+    var mix by remember { mutableStateOf(PlaybackMix.load(preferences)) }
     val revision = snapshot.packages.firstOrNull { pkg ->
         snapshot.packagePractices[pkg.identity.packageId].orEmpty().any { it.key.encoded == phraseId }
     }?.identity
@@ -140,7 +141,7 @@ internal fun PracticeWorkbench(
 
     LaunchedEffect(incomingImport, ready, managementOpen) {
         if (incomingImport != null && ready) {
-            player.pause(); managementOpen = true; quickSwitchOpen = false; practiceMenuOpen = false; tempoOpen = false
+            player.pause(); managementOpen = true; quickSwitchOpen = false; practiceMenuOpen = false; tempoOpen = false; volumeOpen = false
         }
     }
     fun selectPractice(practice: LibraryPractice) {
@@ -151,10 +152,10 @@ internal fun PracticeWorkbench(
         }
         store.select(repository.named(phraseId)); recent = store.recent()
         focusedPackageId = null
-        libraryVisible = false; practiceMenuOpen = false; quickSwitchOpen = false
+        libraryVisible = false; practiceMenuOpen = false; quickSwitchOpen = false; volumeOpen = false
     }
-    fun openLibrary() { player.pause(); libraryVisible = true; practiceMenuOpen = false; quickSwitchOpen = false; focusedPackageId = null }
-    BackHandler(enabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen && !quickSwitchOpen) { openLibrary() }
+    fun openLibrary() { player.pause(); libraryVisible = true; practiceMenuOpen = false; quickSwitchOpen = false; volumeOpen = false; focusedPackageId = null }
+    BackHandler(enabled = !libraryVisible && !managementOpen && !tempoOpen && !volumeOpen && !practiceMenuOpen && !quickSwitchOpen) { openLibrary() }
     val progress = player.progress
     val session = player.session?.takeUnless { it.preview }
     val cursor = player.cursor?.takeIf { session != null && progress.phase != Phase.IDLE }
@@ -215,6 +216,7 @@ internal fun PracticeWorkbench(
                         practices = packageCard?.practices.orEmpty(), selectedId = phraseId,
                         expanded = practiceMenuOpen, onExpanded = { practiceMenuOpen = it },
                         onPractice = ::selectPractice, onBack = ::openLibrary,
+                        onVolume = { volumeOpen = true },
                     )
                     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
                         val expanded = boardOverride ?: (maxHeight >= 350.dp)
@@ -245,12 +247,13 @@ internal fun PracticeWorkbench(
                     }
                     StageTransport(targetBpm, progress.phase, sequence != null && (nativePlayer == null || nativePlayer.ready),
                         looping, click, elapsed, duration, { tempoOpen = true }, ::play,
-                        { player.invalidate(); looping = !looping },
+                        {
+                            looping = !looping
+                            player.setLooping(looping)
+                        },
                         { click = !click; preferences.edit().putBoolean("click", click).apply() },
                         { if (session != null) player.restart()
-                            else sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) } },
-                        nativePlayer?.entryLight ?: 0, nativePlayer?.entryBeatNumber ?: 0,
-                        nativePlayer?.entryBeatTotal ?: 0)
+                            else sequence?.let { player.start(it, targetBpm, true, repeats, range, true, speed) } })
                 }
                 val bounds = scoreBounds
                 val hasFrame = bounds != null && bounds.width > 0 && bounds.height > 0
@@ -260,7 +263,7 @@ internal fun PracticeWorkbench(
                 else Modifier.fillMaxSize()
                 if (nativePlayer != null) {
                     NativeScore(nativePlayer, frame, hasFrame && sequence != null && !libraryVisible,
-                        inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !practiceMenuOpen && !quickSwitchOpen)
+                        inputEnabled = !libraryVisible && !managementOpen && !tempoOpen && !volumeOpen && !practiceMenuOpen && !quickSwitchOpen)
                 }
                 val error = preparationError.ifBlank {
                     if (ready && revision == null) "曲目不存在或曲包已停用，请从曲包库重新选择" else nativePlayer?.error.orEmpty()
@@ -270,6 +273,18 @@ internal fun PracticeWorkbench(
                     Box(frame.background(PracticeSkin.colors.diagramSurface), contentAlignment = Alignment.Center) {
                         Text(error.ifBlank { "正在准备谱面…" }, modifier = Modifier.padding(16.dp),
                             color = if (error.isBlank()) PracticeSkin.colors.textSecondary else PracticeSkin.colors.danger)
+                    }
+                }
+                val cue = nativePlayer?.countInCue ?: AlphaPlayback.CountInVisualState()
+                if (!libraryVisible && hasFrame && (cue.active || cue.entryFlash)) {
+                    Box(
+                        Modifier
+                            .offset { IntOffset((bounds!!.left - hostOrigin.x).roundToInt(), (bounds.top - hostOrigin.y).roundToInt()) }
+                            .width(with(density) { bounds!!.width.toDp() })
+                            .padding(top = 8.dp, start = 12.dp, end = 12.dp),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        StageCountInCue(cue)
                     }
                 }
                 if (libraryVisible) PackageLibraryScreen(packages, ready, phraseId, ::selectPractice, { managementOpen = true },
@@ -289,6 +304,15 @@ internal fun PracticeWorkbench(
                         cursorSettings.save(cursorOffsetMs)
                         nativePlayer?.cursorOffsetMs = cursorOffsetMs
                     })
+                if (volumeOpen) VolumeSheet(
+                    mix = mix,
+                    onMix = { updated ->
+                        mix = updated
+                        player.setMix(updated)
+                        updated.save(preferences)
+                    },
+                    onClose = { volumeOpen = false },
+                )
             }
         }
     }

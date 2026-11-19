@@ -4,6 +4,7 @@ package com.a3322505a.guitarlearning.alphatab
 
 import alphaTab.Settings
 import alphaTab.collections.DoubleList
+import alphaTab.midi.TimeSignatureEvent
 import alphaTab.model.*
 import com.a3322505a.guitarlearning.music.score.Q
 import com.a3322505a.guitarlearning.practice.Sequence
@@ -239,7 +240,63 @@ object AlphaScoreAdapter {
                 on.noteVelocity = ((source.articulation.velocity ?: 1.0) * 96).toInt().coerceIn(1, 127).toDouble()
             }
         }
+        val v0 = plan.visits.firstOrNull()
+        val leadIn0 = CountInPlan.leadInForFirstVisit(plan)
+        val tsEvents = midi.tracks.flatMap { it.events.toList() }.filterIsInstance<TimeSignatureEvent>()
+        tsEvents.forEach { event ->
+            if (abs(event.tick) < 1e-6 && v0 != null) {
+                event.numerator = CountInPlan.midiNumeratorFor(v0.measure.meter, leadIn0).toDouble()
+            } else if (event.tick >= 1.0) {
+                val visitIndex = plan.visits.indexOfFirst {
+                    it.start > Q.ZERO && abs(it.start.value() * 960.0 - event.tick) < 1e-6
+                }
+                if (visitIndex > 0) {
+                    val visit = plan.visits[visitIndex]
+                    val prev = plan.visits[visitIndex - 1]
+                    event.numerator = CountInPlan.midiNumeratorFor(visit.measure.meter, Q.ZERO).toDouble()
+                    // Shift before the bar boundary with enough margin to precede MidiFileSequencer's
+                    // final synthesis microbuffer when mainSeek(barStartTime) runs before count-in.
+                    event.tick = preSeekSafeTick(event.tick, prev.duration.value() * 960.0, prev.measure.meter.denominator)
+                }
+            }
+        }
+        if (v0 != null && CountInPlan.exactLeadInBeats(v0.measure.meter, leadIn0) > 0 && plan.visits.size >= 2) {
+            val v1 = plan.visits[1]
+            val bar1Tick = v1.start.value() * 960.0
+            val targetTick = preSeekSafeTick(bar1Tick, v0.duration.value() * 960.0, v0.measure.meter.denominator)
+            val restoredAtBar1 = midi.tracks.any { track ->
+                track.events.toList().any { it is TimeSignatureEvent && abs(it.tick - targetTick) < 1e-6 }
+            }
+            if (bar1Tick >= 1.0 && !restoredAtBar1) {
+                midi.addEvent(
+                    TimeSignatureEvent(
+                        0.0,
+                        targetTick,
+                        CountInPlan.midiNumeratorFor(v1.measure.meter, Q.ZERO).toDouble(),
+                        denominatorIndex(v1.measure.meter.denominator),
+                        48.0,
+                        8.0,
+                    )
+                )
+            }
+        }
         midi.tracks.forEach { it.events.sort { a, b -> a.tick - b.tick } }
+    }
+
+    private fun preSeekSafeTick(barTick: Double, prevDurationTicks: Double, prevDenominator: Int): Double {
+        val prevBeatTicks = 960.0 * 4.0 / prevDenominator.coerceAtLeast(1)
+        val shift = minOf(60.0, prevDurationTicks / 4.0, prevBeatTicks / 4.0).coerceAtLeast(1.0)
+        return (barTick - shift).coerceAtLeast(0.0)
+    }
+
+    private fun denominatorIndex(denominator: Int): Double {
+        var idx = 0
+        var d = denominator.coerceAtLeast(1)
+        while ((d shr 1) > 0) {
+            d = d shr 1
+            idx++
+        }
+        return idx.toDouble()
     }
 
     private fun applyArticulation(note: Note, art: Articulation, event: PlanEvent) {

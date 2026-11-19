@@ -19,11 +19,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -164,12 +169,36 @@ fun Fretboard(
                 val vertical = size.height / 238.dp.toPx()
                 val top = 40.dp.toPx() * vertical
                 val row = 32.dp.toPx() * vertical
-                drawRoundRect(
-                    colors.fretboardWood,
-                    Offset(gridLeft, top - 12.dp.toPx() * vertical),
-                    androidx.compose.ui.geometry.Size(size.width - gridLeft, 5 * row + 24.dp.toPx() * vertical),
-                    androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()),
-                )
+                val boardTop = top - 12.dp.toPx() * vertical
+                val boardHeight = 5 * row + 24.dp.toPx() * vertical
+                val boardBottom = boardTop + boardHeight
+                val boardCorner = CornerRadius(metrics.cornerSmall.toPx())
+                val unifiedOpenBoard = hasOpen && low == 1
+                if (unifiedOpenBoard) {
+                    drawRoundRect(
+                        colors.fretboardWood,
+                        Offset(left, boardTop),
+                        Size(size.width - left, boardHeight),
+                        boardCorner,
+                    )
+                    val boardClip = Path().apply {
+                        addRoundRect(RoundRect(left, boardTop, size.width, boardBottom, boardCorner))
+                    }
+                    clipPath(boardClip) {
+                        drawRect(
+                            Color.Black.copy(alpha = 0.14f),
+                            Offset(left, boardTop),
+                            Size(gridLeft - left, boardHeight),
+                        )
+                    }
+                } else {
+                    drawRoundRect(
+                        colors.fretboardWood,
+                        Offset(gridLeft, boardTop),
+                        Size(size.width - gridLeft, boardHeight),
+                        boardCorner,
+                    )
+                }
                 clipRect(left = gridLeft, right = size.width - 10.dp.toPx()) {
                     for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns - 1).toInt()) {
                         val cx = gridLeft + (fretNumber - animatedLow + 0.5f) * cell
@@ -183,8 +212,8 @@ fun Fretboard(
                     for (fretNumber in floor(animatedLow).toInt()..ceil(animatedLow + columns).toInt()) {
                         drawLine(
                             colors.fretboardWire,
-                            Offset(gridLeft + (fretNumber - animatedLow) * cell, top - 12.dp.toPx() * vertical),
-                            Offset(gridLeft + (fretNumber - animatedLow) * cell, top + 5 * row + 12.dp.toPx() * vertical),
+                            Offset(gridLeft + (fretNumber - animatedLow) * cell, boardTop),
+                            Offset(gridLeft + (fretNumber - animatedLow) * cell, boardBottom),
                             metrics.borderWidth.toPx(),
                         )
                     }
@@ -201,23 +230,45 @@ fun Fretboard(
                     }
                 }
                 if (hasOpen) {
-                    drawRoundRect(colors.surfaceHigh,
-                        Offset(left, top - 12.dp.toPx() * vertical),
-                        androidx.compose.ui.geometry.Size(36.dp.toPx(), 5 * row + 24.dp.toPx() * vertical),
-                        androidx.compose.ui.geometry.CornerRadius(metrics.cornerSmall.toPx()))
-                    label(measurer, "0", x(0f), 16.dp.toPx() * vertical, colors.textPrimary, bold = true)
-                    if (low == 1) drawLine(
-                        colors.textPrimary,
-                        Offset(gridLeft, top - 12.dp.toPx() * vertical),
-                        Offset(gridLeft, top + 5 * row + 12.dp.toPx() * vertical),
-                        (metrics.borderWidth * 3).toPx(),
-                    )
+                    if (unifiedOpenBoard) {
+                        drawLine(
+                            colors.fretboardWire,
+                            Offset(gridLeft, boardTop),
+                            Offset(gridLeft, boardBottom),
+                            (metrics.borderWidth * 3.5f).toPx(),
+                        )
+                    } else {
+                        val openWidth = 36.dp.toPx()
+                        drawRoundRect(
+                            colors.fretboardWood.copy(alpha = 0.88f),
+                            Offset(left, boardTop),
+                            Size(openWidth, boardHeight),
+                            boardCorner,
+                        )
+                        val openClip = Path().apply {
+                            addRoundRect(RoundRect(left, boardTop, left + openWidth, boardBottom, boardCorner))
+                        }
+                        clipPath(openClip) {
+                            val nutX = left + openWidth - metrics.borderWidth.toPx()
+                            drawLine(
+                                colors.fretboardWire,
+                                Offset(nutX, boardTop),
+                                Offset(nutX, boardBottom),
+                                (metrics.borderWidth * 2f).toPx(),
+                            )
+                        }
+                    }
+                    label(measurer, "0", x(0f), 16.dp.toPx() * vertical, colors.textSecondary, bold = false)
                 }
                 for (s in 1..6) {
                     val y = top + (s - 1) * row
                     val wire = (0.45 + s * 0.13).dp.toPx()
-                    drawLine(colors.fretboardWire, Offset(gridLeft, y), Offset(size.width - 10.dp.toPx(), y), wire)
-                    if (hasOpen) drawLine(colors.fretboardWire, Offset(left, y), Offset(left + 36.dp.toPx(), y), wire)
+                    if (unifiedOpenBoard) {
+                        drawLine(colors.fretboardWire, Offset(left, y), Offset(size.width - 10.dp.toPx(), y), wire)
+                    } else {
+                        drawLine(colors.fretboardWire, Offset(gridLeft, y), Offset(size.width - 10.dp.toPx(), y), wire)
+                        if (hasOpen) drawLine(colors.fretboardWire, Offset(left, y), Offset(left + 36.dp.toPx(), y), wire)
+                    }
                     label(measurer, "$s ${Music.name(openStringMidi[s - 1] + capoFret)}", 21.dp.toPx(), y, colors.textSecondary, size = 12)
                 }
                 for (p in visible) {

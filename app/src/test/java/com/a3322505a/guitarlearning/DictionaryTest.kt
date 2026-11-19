@@ -26,7 +26,7 @@ class DictionaryTest {
                 if(ps.size>1) assertTrue(v.id,c.barres.any { b -> b.finger==finger && ps.all { it.fret==b.fret && it.string in b.toString..b.fromString } })
             }
         }
-        java.io.File("../docs/validation/v107-dictionary.json").writeText("""{"pitchClasses":12,"chordDefinitions":${ChordDictionary.definitions.size},"physicalVoicings":${ChordDictionary.voicings.size},"scaleDefinitions":${ScaleDictionary.definitions.size},"closedScalePositions":300,"spellingAndPitchAndBarresChecked":true}"""+"\n")
+        java.io.File("../docs/validation/v107-dictionary.json").apply { parentFile?.mkdirs() }.writeText("""{"pitchClasses":12,"chordDefinitions":${ChordDictionary.definitions.size},"physicalVoicings":${ChordDictionary.voicings.size},"scaleDefinitions":${ScaleDictionary.definitions.size},"closedScalePositions":300,"spellingAndPitchAndBarresChecked":true}"""+"\n")
     }
     @Test fun namedCorrectionsKeepBassExtensionsAndOpenStringsHonest() {
         val cm7=ChordDictionary.find("C#m7")

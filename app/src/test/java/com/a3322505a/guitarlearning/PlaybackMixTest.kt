@@ -1,4 +1,5 @@
 package com.a3322505a.guitarlearning
+import com.a3322505a.guitarlearning.alphatab.AlphaTone
 import com.a3322505a.guitarlearning.audio.PlaybackMix
 import org.junit.Assert.*
 import org.junit.Test
@@ -30,5 +31,13 @@ class PlaybackMixTest {
                 assertEquals(gain,loaded.metronome,1e-6)
             }
         }
+    }
+    @Test fun countInVolumeHealsLegacyZeroAndScalesWithMetronomeSlider() {
+        assertTrue(AlphaTone.countInVolume(0.0) > 0.0)
+        assertEquals(AlphaTone.CLICK, AlphaTone.countInVolume(0.0), 1e-6)
+        assertEquals(AlphaTone.CLICK * 0.5, AlphaTone.countInVolume(0.5), 1e-6)
+        assertEquals(AlphaTone.CLICK * AlphaTone.MIN_COUNT_IN_MIX, AlphaTone.countInVolume(0.05), 1e-6)
+        assertEquals(0.0, AlphaTone.clickVolume(0.0), 1e-6)
+        assertEquals(AlphaTone.CLICK * 0.5, AlphaTone.clickVolume(0.5), 1e-6)
     }
 }

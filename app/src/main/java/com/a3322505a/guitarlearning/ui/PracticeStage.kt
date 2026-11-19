@@ -22,12 +22,26 @@ internal fun PackageStageTopBar(
     title: String, sectionTitle: String, chord: String, measure: String,
     practices: List<LibraryPractice>, selectedId: String, expanded: Boolean,
     onExpanded: (Boolean) -> Unit, onPractice: (LibraryPractice) -> Unit, onBack: () -> Unit,
+    onVolume: () -> Unit = {},
 ) {
     val selectedIndex = practices.indexOfFirst { it.key.encoded == selectedId }
     val shortWindow = LocalConfiguration.current.screenHeightDp < 480
     Column(Modifier.fillMaxWidth().testTag("stage-header")) {
-        AppTopBar(title, Modifier.testTag("stage-top-bar"), onBack,
-            backModifier = Modifier.testTag("back-to-library"), backDescription = "返回曲包库")
+        AppTopBar(
+            title,
+            Modifier.testTag("stage-top-bar"),
+            onBack,
+            backModifier = Modifier.testTag("back-to-library"),
+            backDescription = "返回曲包库",
+            actions = {
+                AppIconButton(
+                    symbol = AppSymbol.Volume,
+                    description = "音量调节",
+                    onClick = onVolume,
+                    modifier = Modifier.testTag("volume-button"),
+                )
+            },
+        )
         SecondaryBar(
             sectionTitle + if (selectedIndex >= 0) " · ${selectedIndex + 1}/${practices.size}" else "",
             onSelect = { onExpanded(true) },

@@ -45,7 +45,7 @@ class DailyPracticeTest {
     }
     @Test fun v106NativeLibraryUpgradesWithoutChangingTheStorageRootOrLosingItsPracticeIds() {
         val root=kotlin.io.path.createTempDirectory("v106-upgrade").toFile()
-        val reader=com.a3322505a.guitarlearning.assets.song.SongReader(com.a3322505a.guitarlearning.assets.song.SongSchema { File("../contracts/song-package/v1",it).readBytes() })
+        val reader=com.a3322505a.guitarlearning.assets.song.SongReader(SongTestLibrary.schema())
         val old=com.a3322505a.guitarlearning.assets.song.SongRepository(root,reader,mapOf("teaching-native.gpractice" to { File("src/test/resources/v106-teaching-native.gpractice").inputStream() }))
         val ids=old.reload().phrases.map { it.id }.toSet()
         val upgraded=SongTestLibrary.repository(root).reload()
